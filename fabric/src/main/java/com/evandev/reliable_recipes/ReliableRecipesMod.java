@@ -62,13 +62,6 @@ public class ReliableRecipesMod implements ModInitializer {
                                 server.getPlayerList().getPlayers().forEach(p ->
                                         ServerPlayNetworking.send(p, packetId, packetBuf)
                                 );
-                                player.sendSystemMessage(Component.literal("Reliable Recipes: Deleted " + id + " ")
-                                        .append(Component.literal("[UNDO]")
-                                                .withStyle(style -> style
-                                                        .withColor(ChatFormatting.RED)
-                                                        .withBold(true)
-                                                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/reliable_recipes_undo " + id))
-                                                )));
                             } else {
                                 player.sendSystemMessage(Component.literal("Reliable Recipes: Could not find recipe " + id));
                             }

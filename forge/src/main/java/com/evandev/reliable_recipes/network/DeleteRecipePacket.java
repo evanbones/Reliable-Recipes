@@ -46,13 +46,6 @@ public class DeleteRecipePacket {
                             ClientboundDeleteRecipePacket packet = new ClientboundDeleteRecipePacket(msg.recipeId);
                             PacketHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(), packet);
 
-                            player.sendSystemMessage(Component.literal("Reliable Recipes: Deleted " + msg.recipeId + " ")
-                                    .append(Component.literal("[UNDO]")
-                                            .withStyle(style -> style
-                                                    .withColor(ChatFormatting.RED)
-                                                    .withBold(true)
-                                                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/reliable_recipes_undo " + msg.recipeId))
-                                            )));
                         } else {
                             player.sendSystemMessage(Component.literal("Reliable Recipes: Could not find recipe " + msg.recipeId));
                         }
