@@ -5,7 +5,6 @@ import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.*;
 import com.evandev.reliable_recipes.platform.Services;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
@@ -66,12 +65,8 @@ public class RecipeModifier {
         for (ResourceLocation id : toRemove) {
             RecipeHolder<?> recipe = recipesByName.remove(id);
             if (recipe != null) {
-                ArrayList<RecipeHolder<?>> typeMap = new ArrayList<>(recipesByType.asMap().get(recipe.value().getType()));
-                if (typeMap != null) {
-                    typeMap = new ArrayList<>(typeMap);
-                    recipesByType.putAll(recipe.value().getType(), typeMap);
-                    typeMap.removeIf(holder -> holder.id() == id);
-                }
+                recipesByType.get(recipe.value().getType())
+                        .removeIf(r -> r.id().equals(id));
             }
         }
 
@@ -97,12 +92,8 @@ public class RecipeModifier {
         if (recipe != null) {
             DELETED_RECIPES_CACHE.put(recipeId, recipe);
 
-            ArrayList<RecipeHolder<?>> typeMap = new ArrayList<>(recipesByType.asMap().get(recipe.value().getType()));
-            if (typeMap != null) {
-                typeMap = new ArrayList<>(typeMap);
-                typeMap.removeIf(holder-> holder.id() == recipeId);
-                recipesByType.putAll(recipe.value().getType(), typeMap);
-            }
+            recipesByType.get(recipe.value().getType())
+                    .removeIf(r -> r.id().equals(recipeId));
 
             managerAccessor.setByName(recipesByName);
             managerAccessor.setRecipes(recipesByType);
@@ -117,17 +108,13 @@ public class RecipeModifier {
         if (recipe == null) return false;
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
+
         Map<ResourceLocation, RecipeHolder<?>> recipesByName = new HashMap<>(managerAccessor.getByName());
         HashMultimap<RecipeType<?>, RecipeHolder<?>> recipesByType = HashMultimap.create(managerAccessor.getRecipes());
 
         recipesByName.put(recipeId, recipe);
 
-        ArrayList<RecipeHolder<?>> typeMap = new ArrayList<>(recipesByType.asMap().get(recipe.value().getType()));
-        if (typeMap == null) typeMap = new ArrayList<>();
-        else typeMap = new ArrayList<>(typeMap);
-
-        typeMap.add(recipe);
-        recipesByType.putAll(recipe.value().getType(), typeMap);
+        recipesByType.put(recipe.value().getType(), recipe);
 
         managerAccessor.setByName(recipesByName);
         managerAccessor.setRecipes(recipesByType);
@@ -151,22 +138,24 @@ public class RecipeModifier {
                 recipe.getIngredients().set(i, replacement);
             }
         }
-        if (recipe instanceof SingleItemRecipe single && ingredientMatches(single.getIngredients().get(0), target)) {
+        if (recipe instanceof SingleItemRecipe single && ingredientMatches(single.getIngredients().getFirst(), target)) {
             ((SingleItemRecipeAccessor) single).setIngredient(replacement);
         }
-        if (recipe instanceof AbstractCookingRecipe cooking && ingredientMatches(cooking.getIngredients().get(0), target)) {
+        if (recipe instanceof AbstractCookingRecipe cooking && ingredientMatches(cooking.getIngredients().getFirst(), target)) {
             ((AbstractCookingRecipeAccessor) cooking).setIngredient(replacement);
         }
     }
 
     private static void replaceOutputInRecipe(RecipeHolder<?> holder, ItemStack newResult) {
         var recipe = holder.value();
-        if (recipe instanceof ShapedRecipe shaped) ((ShapedRecipeAccessor) shaped).setResult(newResult);
-        else if (recipe instanceof ShapelessRecipe shapeless)
-            ((ShapelessRecipeAccessor) shapeless).setResult(newResult);
-        else if (recipe instanceof AbstractCookingRecipe cooking)
-            ((AbstractCookingRecipeAccessor) cooking).setResult(newResult);
-        else if (recipe instanceof SingleItemRecipe single) ((SingleItemRecipeAccessor) single).setResult(newResult);
+        switch (recipe) {
+            case ShapedRecipe shaped -> ((ShapedRecipeAccessor) shaped).setResult(newResult);
+            case ShapelessRecipe shapeless -> ((ShapelessRecipeAccessor) shapeless).setResult(newResult);
+            case AbstractCookingRecipe cooking -> ((AbstractCookingRecipeAccessor) cooking).setResult(newResult);
+            case SingleItemRecipe single -> ((SingleItemRecipeAccessor) single).setResult(newResult);
+            default -> {
+            }
+        }
     }
 
     private static boolean ingredientMatches(Ingredient ing, Ingredient target) {
