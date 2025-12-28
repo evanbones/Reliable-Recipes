@@ -10,7 +10,7 @@ A powerful, developer-friendly utility designed for manipulating recipes and tag
 * **No Scripting Required:** Uses standard Minecraft-style JSON syntax for ease of use.
 
 ## Mod Compatibility
-* Automatically removes recipes and tags from items in [https://modrinth.com/mod/item-obliterator](Item Obliterator)'s blacklist.
+* Automatically removes recipes and tags from items in [Item Obliterator](https://modrinth.com/mod/item-obliterator)'s blacklist.
 * Press the delete key while hovering over a recipe output in EMI while in dev mode to automatically generate a removal JSON.
 
 ## Usage
