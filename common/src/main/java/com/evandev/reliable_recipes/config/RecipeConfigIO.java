@@ -121,9 +121,8 @@ public class RecipeConfigIO {
         Path generatedPath = CONFIG_DIR.resolve("generated_removals.json");
         File file = generatedPath.toFile();
         JsonObject root;
-        JsonArray modifications;
 
-        // Load existing or create new
+        // Load existing or create new root
         if (file.exists()) {
             try (FileReader reader = new FileReader(file)) {
                 root = JsonParser.parseReader(reader).getAsJsonObject();
@@ -138,35 +137,61 @@ public class RecipeConfigIO {
         if (!root.has("recipe_modifications")) {
             root.add("recipe_modifications", new JsonArray());
         }
-        modifications = root.getAsJsonArray("recipe_modifications");
+        JsonArray modifications = root.getAsJsonArray("recipe_modifications");
 
-        // Check if rule already exists to avoid duplicates
+        // Find an existing bulk remove rule or create one
+        JsonObject bulkRemoveRule = null;
         for (JsonElement e : modifications) {
             if (e.isJsonObject()) {
-                JsonObject rule = e.getAsJsonObject();
-                if ("remove".equals(rule.get("action").getAsString()) &&
-                        rule.has("filter") &&
-                        rule.getAsJsonObject("filter").has("id") &&
-                        rule.getAsJsonObject("filter").get("id").getAsString().equals(recipeId)) {
-                    return;
+                JsonObject obj = e.getAsJsonObject();
+                if ("remove".equals(obj.get("action").getAsString()) && obj.has("filter")) {
+                    bulkRemoveRule = obj;
+                    break;
                 }
             }
         }
 
-        // Create new removal rule
-        JsonObject newRule = new JsonObject();
-        newRule.addProperty("action", "remove");
-        JsonObject filter = new JsonObject();
-        filter.addProperty("id", recipeId);
-        newRule.add("filter", filter);
+        if (bulkRemoveRule == null) {
+            bulkRemoveRule = new JsonObject();
+            bulkRemoveRule.addProperty("action", "remove");
+            bulkRemoveRule.add("filter", new JsonObject());
+            modifications.add(bulkRemoveRule);
+        }
 
-        modifications.add(newRule);
+        JsonObject filter = bulkRemoveRule.getAsJsonObject("filter");
+        JsonArray ids;
 
-        // Save back to file
-        try (FileWriter writer = new FileWriter(file)) {
-            GSON.toJson(root, writer);
-        } catch (IOException e) {
-            Constants.LOG.error("Failed to save generated config", e);
+        // Convert single "id" to array if necessary, or get existing array
+        if (filter.has("id")) {
+            JsonElement existingId = filter.get("id");
+            if (existingId.isJsonArray()) {
+                ids = existingId.getAsJsonArray();
+            } else {
+                ids = new JsonArray();
+                ids.add(existingId);
+                filter.add("id", ids);
+            }
+        } else {
+            ids = new JsonArray();
+            filter.add("id", ids);
+        }
+
+        // Add the new ID if it's not already there
+        boolean exists = false;
+        for (JsonElement e : ids) {
+            if (e.getAsString().equals(recipeId)) {
+                exists = true;
+                break;
+            }
+        }
+
+        if (!exists) {
+            ids.add(recipeId);
+            try (FileWriter writer = new FileWriter(file)) {
+                GSON.toJson(root, writer);
+            } catch (IOException e) {
+                Constants.LOG.error("Failed to save generated config", e);
+            }
         }
     }
 
@@ -181,18 +206,37 @@ public class RecipeConfigIO {
 
             if (root.has("recipe_modifications")) {
                 JsonArray mods = root.getAsJsonArray("recipe_modifications");
-                Iterator<JsonElement> iterator = mods.iterator();
+                Iterator<JsonElement> modIterator = mods.iterator();
 
-                while (iterator.hasNext()) {
-                    JsonElement e = iterator.next();
-                    if (e.isJsonObject()) {
-                        JsonObject obj = e.getAsJsonObject();
-                        if ("remove".equals(obj.get("action").getAsString()) &&
-                                obj.has("filter") &&
-                                obj.getAsJsonObject("filter").has("id") &&
-                                obj.getAsJsonObject("filter").get("id").getAsString().equals(recipeId)) {
-                            iterator.remove();
-                            changed = true;
+                while (modIterator.hasNext()) {
+                    JsonElement m = modIterator.next();
+                    if (!m.isJsonObject()) continue;
+
+                    JsonObject rule = m.getAsJsonObject();
+                    if ("remove".equals(rule.get("action").getAsString()) && rule.has("filter")) {
+                        JsonObject filter = rule.getAsJsonObject("filter");
+                        if (filter.has("id")) {
+                            JsonElement idEl = filter.get("id");
+
+                            if (idEl.isJsonArray()) {
+                                // Handle array removal
+                                JsonArray ids = idEl.getAsJsonArray();
+                                Iterator<JsonElement> idIterator = ids.iterator();
+                                while (idIterator.hasNext()) {
+                                    if (idIterator.next().getAsString().equals(recipeId)) {
+                                        idIterator.remove();
+                                        changed = true;
+                                    }
+                                }
+                                // Clean up empty rules
+                                if (ids.isEmpty()) {
+                                    modIterator.remove();
+                                }
+                            } else if (idEl.getAsString().equals(recipeId)) {
+                                // Handle single string removal
+                                modIterator.remove();
+                                changed = true;
+                            }
                         }
                     }
                 }
