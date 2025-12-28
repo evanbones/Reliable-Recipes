@@ -2,55 +2,76 @@ package com.evandev.reliable_recipes;
 
 import com.evandev.reliable_recipes.command.UndoCommand;
 import com.evandev.reliable_recipes.config.ClothConfigIntegration;
-import com.evandev.reliable_recipes.network.PacketHandler;
+import com.evandev.reliable_recipes.networking.ClientboundDeleteRecipePayload;
+import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import com.evandev.reliable_recipes.recipe.TagModifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
-import net.minecraftforge.client.ConfigScreenHandler;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.TagsUpdatedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.TagsUpdatedEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 @Mod(Constants.MOD_ID)
+@EventBusSubscriber(modid = Constants.MOD_ID)
 public class ReliableRecipesMod {
 
-    public ReliableRecipesMod() {
+    public ReliableRecipesMod(IEventBus eventBus) {
         CommonClass.init();
-        MinecraftForge.EVENT_BUS.register(this);
-
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::commonSetup);
 
         if (ModList.get().isLoaded("cloth_config")) {
-            FMLJavaModLoadingContext.get().getModEventBus().register(new Object() {
+            eventBus.register(new Object() {
                 @SubscribeEvent
-                public void onConstructMod(net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent event) {
-                    net.minecraftforge.fml.ModLoadingContext.get().registerExtensionPoint(
-                            ConfigScreenHandler.ConfigScreenFactory.class,
-                            () -> new ConfigScreenHandler.ConfigScreenFactory(
-                                    (client, parent) -> ClothConfigIntegration.createScreen(parent)
-                            )
+                public void onConstructMod(FMLConstructModEvent event) {
+                    ModLoadingContext.get().registerExtensionPoint(
+                            IConfigScreenFactory.class,
+                            () -> new IConfigScreenFactory() {
+                                @Override
+                                public Screen createScreen(ModContainer modContainer, Screen parent) {
+                                    return ClothConfigIntegration.createScreen(parent);
+                                }
+                            }
                     );
                 }
             });
         }
     }
 
-    private void commonSetup(final FMLCommonSetupEvent event) {
-        PacketHandler.register();
-    }
-
     @SubscribeEvent
-    public void registerCommands(RegisterCommandsEvent event) {
+    public static void registerCommands(RegisterCommandsEvent event) {
         UndoCommand.register(event.getDispatcher());
     }
 
     @SubscribeEvent
-    public void onTagsUpdated(TagsUpdatedEvent event) {
+    private static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
+        final PayloadRegistrar registrar = event.registrar("1");
+        registrar.playToServer(
+                DeleteRecipePayload.TYPE,
+                DeleteRecipePayload.STREAM_CODEC,
+                (payload, context)-> DeleteRecipePayload.handle(payload.recipeId(), context.player().getServer(), (ServerPlayer) context.player())
+        );
+        registrar.playToClient(
+                ClientboundDeleteRecipePayload.TYPE,
+                ClientboundDeleteRecipePayload.STREAM_CODEC,
+                (payload, context)-> ClientboundDeleteRecipePayload.handle(payload.recipeId(), Minecraft.getInstance())
+        );
+    }
+
+    @SubscribeEvent
+    public static void onTagsUpdated(TagsUpdatedEvent event) {
         TagModifier.apply();
 
         var server = ServerLifecycleHooks.getCurrentServer();

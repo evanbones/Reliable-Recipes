@@ -1,6 +1,7 @@
 package com.evandev.reliable_recipes.platform.services;
 
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import java.nio.file.Path;
 
@@ -69,5 +70,8 @@ public interface IPlatformHelper {
      *
      */
     default void sendDeleteRecipePacket(ResourceLocation recipeId) {
+    }
+
+    default void sendDeleteRecipePacketToPlayer(ServerPlayer player, ResourceLocation recipeId) {
     }
 }

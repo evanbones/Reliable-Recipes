@@ -1,7 +1,7 @@
 package com.evandev.reliable_recipes.compat;
 
 import net.minecraft.world.item.ItemStack;
-import elocindev.item_obliterator.forge.utils.Utils;
+import elocindev.item_obliterator.neoforge.utils.Utils;
 
 public class ItemObliteratorCompat {
 

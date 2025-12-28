@@ -2,6 +2,7 @@ package com.evandev.reliable_recipes;
 
 import com.evandev.reliable_recipes.command.UndoCommand;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
+import com.evandev.reliable_recipes.networking.ClientboundDeleteRecipePayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.recipe.TagModifier;
@@ -44,7 +45,7 @@ public class ReliableRecipesMod implements ModInitializer {
             }
         });
 
-        PayloadTypeRegistry.playS2C().register(DeleteRecipePayload.TYPE, DeleteRecipePayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(ClientboundDeleteRecipePayload.TYPE, ClientboundDeleteRecipePayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(DeleteRecipePayload.TYPE, DeleteRecipePayload.STREAM_CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(DeleteRecipePayload.TYPE,
@@ -52,30 +53,7 @@ public class ReliableRecipesMod implements ModInitializer {
                     ResourceLocation id = payload.recipeId();
                     var server = context.server();
                     var player = context.player();
-                    server.execute(() -> {
-                        if (player.hasPermissions(2)) {
-                            RecipeConfigIO.addRemovalRule(id.toString());
-
-                            boolean removed = RecipeModifier.removeRecipe(server.getRecipeManager(), id);
-
-                            if (removed) {
-                                Constants.LOG.info("Runtime deletion of recipe: {}", id);
-
-                                FriendlyByteBuf packetBuf = PacketByteBufs.create();
-                                packetBuf.writeResourceLocation(id);
-
-                                ResourceLocation packetId = ResourceLocation.fromNamespaceAndPath("reliable_recipes", "client_delete_recipe");
-
-                                server.getPlayerList().getPlayers().forEach(p ->
-                                        ServerPlayNetworking.send(p, new DeleteRecipePayload(payload.recipeId()))
-                                );
-                            } else {
-                                player.sendSystemMessage(Component.literal("Reliable Recipes: Could not find recipe " + id));
-                            }
-                        } else {
-                            player.sendSystemMessage(Component.literal("Reliable Recipes: You need OP to delete recipes."));
-                        }
-                    });
+                    server.execute(() -> DeleteRecipePayload.handle(id, server, player));
                 });
     }
 }
