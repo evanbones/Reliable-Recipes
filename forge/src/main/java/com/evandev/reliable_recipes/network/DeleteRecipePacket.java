@@ -2,7 +2,9 @@ package com.evandev.reliable_recipes.network;
 
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -42,7 +44,13 @@ public class DeleteRecipePacket {
                             server.getPlayerList().getPlayers().forEach(p ->
                                     p.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
                             );
-                            player.sendSystemMessage(Component.literal("Reliable Recipes: Deleted " + msg.recipeId));
+                            player.sendSystemMessage(Component.literal("Reliable Recipes: Deleted " + msg.recipeId + " ")
+                                    .append(Component.literal("[UNDO]")
+                                            .withStyle(style -> style
+                                                    .withColor(ChatFormatting.RED)
+                                                    .withBold(true)
+                                                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/reliable_recipes_undo " + msg.recipeId))
+                                            )));
                         } else {
                             player.sendSystemMessage(Component.literal("Reliable Recipes: Could not find recipe " + msg.recipeId));
                         }
