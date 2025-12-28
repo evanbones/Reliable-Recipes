@@ -12,7 +12,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.nio.file.Path;
 
-public class ForgePlatformHelper implements IPlatformHelper {
+public class NeoForgePlatformHelper implements IPlatformHelper {
     private final boolean hasItemObliterator = ModList.get().isLoaded("item_obliterator");
 
     @Override
