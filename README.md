@@ -14,7 +14,7 @@ A powerful, developer-friendly utility designed for manipulating recipes and tag
 
 ### Usage
 
-The mod watches a specific folder in your instance (e.g., `./config/reliable_recipes`) for JSON files. Upon game startup or data reload, it injects these changes into the internal registries.
+The mod watches a specific folder in your instance (e.g., `./config/reliable_recipes`) for JSON files. Upon server startup or data reload, it injects these changes into the internal registries.
 
 
 ## JSON Structure
