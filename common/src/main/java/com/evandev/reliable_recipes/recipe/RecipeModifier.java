@@ -1,7 +1,7 @@
 package com.evandev.reliable_recipes.recipe;
 
 import com.evandev.reliable_recipes.Constants;
-import com.evandev.reliable_recipes.config.RecipeConfig;
+import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.*;
 import com.evandev.reliable_recipes.platform.Services;
 import net.minecraft.core.RegistryAccess;
@@ -9,24 +9,20 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class RecipeModifier {
 
     public static void apply(RecipeManager manager) {
         int lastErrorCount = 0;
+        List<RecipeRule> rules = RecipeConfigIO.loadRules();
 
-        List<RecipeRule> rules = RecipeConfig.loadRules();
-
-        // Check if we have any rules or if we need to hide items via compat
-        // (If there are no rules and the platform returns false for everything, we might still want to run
-        // if we suspect hidden items, but generally checking rules.isEmpty() is a good optimization
-        // if you aren't using Item Obliterator. However, since we don't know if items need hiding
-        // without checking them, we proceed if rules exist OR if the compat mod is loaded.)
-        if (rules.isEmpty() && !Services.PLATFORM.isModLoaded("item_obliterator")) return;
+        if (rules.isEmpty() && !Services.PLATFORM.hasItemHidingCapabilities()) return;
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
-        // Copy maps to avoid concurrent modification issues
         Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> recipesByType = new HashMap<>(managerAccessor.getRecipes());
         Map<ResourceLocation, Recipe<?>> recipesByName = new HashMap<>(managerAccessor.getByName());
 
@@ -65,13 +61,11 @@ public class RecipeModifier {
             }
         }
 
-        // Apply removals to the local maps
         for (ResourceLocation id : toRemove) {
             Recipe<?> recipe = recipesByName.remove(id);
             if (recipe != null) {
                 Map<ResourceLocation, Recipe<?>> typeMap = recipesByType.get(recipe.getType());
                 if (typeMap != null) {
-                    // Ensure type map is mutable
                     if (!(typeMap instanceof HashMap)) {
                         typeMap = new HashMap<>(typeMap);
                         recipesByType.put(recipe.getType(), typeMap);
@@ -81,7 +75,6 @@ public class RecipeModifier {
             }
         }
 
-        // Write changes back to the RecipeManager
         managerAccessor.setRecipes(recipesByType);
         managerAccessor.setByName(recipesByName);
 
@@ -107,7 +100,6 @@ public class RecipeModifier {
                 recipe.getIngredients().set(i, replacement);
             }
         }
-        // Handle specific recipe types that store ingredients in special fields
         if (recipe instanceof SingleItemRecipe single && ingredientMatches(single.getIngredients().get(0), target)) {
             ((SingleItemRecipeAccessor) single).setIngredient(replacement);
         }
@@ -118,8 +110,10 @@ public class RecipeModifier {
 
     private static void replaceOutputInRecipe(Recipe<?> recipe, ItemStack newResult) {
         if (recipe instanceof ShapedRecipe shaped) ((ShapedRecipeAccessor) shaped).setResult(newResult);
-        else if (recipe instanceof ShapelessRecipe shapeless) ((ShapelessRecipeAccessor) shapeless).setResult(newResult);
-        else if (recipe instanceof AbstractCookingRecipe cooking) ((AbstractCookingRecipeAccessor) cooking).setResult(newResult);
+        else if (recipe instanceof ShapelessRecipe shapeless)
+            ((ShapelessRecipeAccessor) shapeless).setResult(newResult);
+        else if (recipe instanceof AbstractCookingRecipe cooking)
+            ((AbstractCookingRecipeAccessor) cooking).setResult(newResult);
         else if (recipe instanceof SingleItemRecipe single) ((SingleItemRecipeAccessor) single).setResult(newResult);
     }
 
@@ -130,7 +124,8 @@ public class RecipeModifier {
             for (ItemStack targetItem : target.getItems()) {
                 if (ing.test(targetItem)) return true;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return false;
     }
 }

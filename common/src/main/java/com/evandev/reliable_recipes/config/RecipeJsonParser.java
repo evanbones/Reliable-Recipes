@@ -2,10 +2,10 @@ package com.evandev.reliable_recipes.config;
 
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.mixin.accessor.IngredientAccessor;
-import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.recipe.TagRule;
-import com.google.gson.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -17,58 +17,18 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-public class RecipeConfig {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+/**
+ * Handles the logic of converting JSON elements into Recipe Rules and Filters.
+ * Pure logic, no file I/O.
+ */
+public class RecipeJsonParser {
 
-    private static final Path CONFIG_PATH = Services.PLATFORM.getConfigDirectory().resolve("reliable-recipes.json");
-
-    public static List<RecipeRule> loadRules() {
-        List<RecipeRule> rules = new ArrayList<>();
-        JsonObject config = loadJson();
-
-        if (config == null || !config.has("modifications")) return rules;
-
-        for (JsonElement element : config.getAsJsonArray("modifications")) {
-            try {
-                if (!element.isJsonObject()) continue;
-                JsonObject mod = element.getAsJsonObject();
-                RecipeRule rule = parseRule(mod);
-                if (rule != null) rules.add(rule);
-            } catch (Exception e) {
-                Constants.LOG.error("Failed to parse recipe rule: {}", element, e);
-            }
-        }
-        return rules;
-    }
-
-    public static List<TagRule> loadTagRules() {
-        List<TagRule> rules = new ArrayList<>();
-        JsonObject config = loadJson();
-
-        if (config == null || !config.has("tag_modifications")) return rules;
-
-        for (JsonElement element : config.getAsJsonArray("tag_modifications")) {
-            try {
-                if (!element.isJsonObject()) continue;
-                JsonObject mod = element.getAsJsonObject();
-                rules.add(parseTagRule(mod));
-            } catch (Exception e) {
-                Constants.LOG.error("Failed to parse tag rule: {}", element, e);
-            }
-        }
-        return rules;
-    }
-
-    private static RecipeRule parseRule(JsonObject mod) {
+    public static RecipeRule parseRule(JsonObject mod) {
         String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
         if (!mod.has("filter")) throw new IllegalArgumentException("Missing filter");
 
@@ -94,7 +54,7 @@ public class RecipeConfig {
         };
     }
 
-    private static TagRule parseTagRule(JsonObject mod) {
+    public static TagRule parseTagRule(JsonObject mod) {
         String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
 
         List<ResourceLocation> items = new ArrayList<>();
@@ -198,43 +158,6 @@ public class RecipeConfig {
         return str::equals;
     }
 
-    private static JsonObject loadJson() {
-        if (!CONFIG_PATH.toFile().exists()) createDefault();
-        try (FileReader reader = new FileReader(CONFIG_PATH.toFile())) {
-            return GSON.fromJson(reader, JsonObject.class);
-        } catch (Exception e) {
-            Constants.LOG.error("Failed to load recipe config JSON", e);
-            return null;
-        }
-    }
-
-    private static void createDefault() {
-        JsonObject root = new JsonObject();
-        JsonArray modifications = new JsonArray();
-        JsonObject removeExample = new JsonObject();
-        removeExample.addProperty("action", "remove");
-        JsonObject filter = new JsonObject();
-        filter.addProperty("output", "minecraft:stone_pickaxe");
-        removeExample.add("filter", filter);
-        modifications.add(removeExample);
-        root.add("modifications", modifications);
-
-        JsonArray tagModifications = new JsonArray();
-        JsonObject tagRemoveExample = new JsonObject();
-        tagRemoveExample.addProperty("action", "remove_all_tags");
-        JsonArray items = new JsonArray();
-        items.add("minecraft:wooden_hoe");
-        tagRemoveExample.add("items", items);
-        tagModifications.add(tagRemoveExample);
-        root.add("tag_modifications", tagModifications);
-
-        try (FileWriter writer = new FileWriter(CONFIG_PATH.toFile())) {
-            GSON.toJson(root, writer);
-        } catch (IOException e) {
-            Constants.LOG.error("Failed to create default recipe config: {}", CONFIG_PATH, e);
-        }
-    }
-
     private static Ingredient parseIngredient(JsonElement json) {
         if (json == null) return Ingredient.EMPTY;
         if (json.isJsonArray()) {
@@ -262,10 +185,8 @@ public class RecipeConfig {
         }
 
         Ingredient newIngredient = Ingredient.of();
-
         ((IngredientAccessor) (Object) newIngredient)
                 .setValues(combinedValues.toArray(new Ingredient.Value[0]));
-
         return newIngredient;
     }
 

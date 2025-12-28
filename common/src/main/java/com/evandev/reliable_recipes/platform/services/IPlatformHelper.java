@@ -44,7 +44,15 @@ public interface IPlatformHelper {
     Path getConfigDirectory();
 
     /**
-     * Checks if an item should be hidden (via Item Obliterator).
+     * Checks if the platform has a mod loaded that provides item hiding capabilities
+     * (e.g. Item Obliterator).
+     *
+     * @return True if item hiding logic should be processed.
+     */
+    boolean hasItemHidingCapabilities();
+
+    /**
+     * Checks if an item should be hidden.
      *
      * @param stack The item stack to check.
      * @return True if the item is hidden/disabled, false otherwise.

@@ -13,14 +13,14 @@ public class ReliableRecipesMod implements ModInitializer {
         CommonClass.init();
 
         ServerLifecycleEvents.SYNC_DATA_PACK_CONTENTS.register((player, joined) -> {
-            // Re-sync recipes to player if needed, though SERVER_STARTED below handles the modification
+            // TODO: Re-sync recipes to player? SERVER_STARTED should handle the modification though
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             TagModifier.apply();
             RecipeModifier.apply(server.getRecipeManager());
 
-            // Sync recipes to all players (important for recipe viewers and clientside crafting)
+            // Sync recipes to all players
             server.getPlayerList().getPlayers().forEach(player ->
                     player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
             );

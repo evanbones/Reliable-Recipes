@@ -1,7 +1,7 @@
 package com.evandev.reliable_recipes.recipe;
 
 import com.evandev.reliable_recipes.Constants;
-import com.evandev.reliable_recipes.config.RecipeConfig;
+import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.HolderSetNamedAccessor;
 import com.evandev.reliable_recipes.platform.Services;
 import net.minecraft.core.Holder;
@@ -20,9 +20,8 @@ public class TagModifier {
         applyToRegistry(BuiltInRegistries.ITEM, "Item");
         applyToRegistry(BuiltInRegistries.BLOCK, "Block");
 
-        // Use the service to check if the mod is loaded before running specific logic
-        if (Services.PLATFORM.isModLoaded("item_obliterator")) {
-            applyItemObliterator();
+        if (Services.PLATFORM.hasItemHidingCapabilities()) {
+            applyHiddenItemRules();
         }
     }
 
@@ -31,7 +30,7 @@ public class TagModifier {
      */
     private static <T> void applyToRegistry(Registry<T> registry, String debugName) {
         int removalCount = 0;
-        List<TagRule> rules = RecipeConfig.loadTagRules();
+        List<TagRule> rules = RecipeConfigIO.loadTagRules();
 
         for (TagRule rule : rules) {
             try {
@@ -84,19 +83,16 @@ public class TagModifier {
         }
     }
 
-    private static void applyItemObliterator() {
+    private static void applyHiddenItemRules() {
         int removalCount = 0;
         try {
-            // Iterate over all registered items in the built-in registry
             for (Item item : BuiltInRegistries.ITEM) {
-                // Use the platform helper to check if this item is disabled/hidden
                 if (item != null && Services.PLATFORM.isItemHidden(item.getDefaultInstance())) {
 
                     // Remove tags from the item itself
                     removalCount += removeAllTagsFrom(BuiltInRegistries.ITEM, item);
 
                     // Check if it's a BlockItem and remove tags from the Block as well
-                    // (Using vanilla logic to get block from item)
                     var block = net.minecraft.world.level.block.Block.byItem(item);
                     if (block != net.minecraft.world.level.block.Blocks.AIR) {
                         removalCount += removeAllTagsFrom(BuiltInRegistries.BLOCK, block);
@@ -104,11 +100,11 @@ public class TagModifier {
                 }
             }
         } catch (Exception e) {
-            Constants.LOG.error("Error processing Item Obliterator integration", e);
+            Constants.LOG.error("Error processing hidden items integration", e);
         }
 
         if (removalCount > 0) {
-            Constants.LOG.info("Item Obliterator integration removed {} item-tag associations.", removalCount);
+            Constants.LOG.info("Hidden items integration removed {} item-tag associations.", removalCount);
         }
     }
 

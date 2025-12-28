@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import java.nio.file.Path;
 
 public class FabricPlatformHelper implements IPlatformHelper {
+    private final boolean hasItemObliterator = FabricLoader.getInstance().isModLoaded("item_obliterator");
 
     @Override
     public String getPlatformName() {
@@ -30,8 +31,13 @@ public class FabricPlatformHelper implements IPlatformHelper {
     }
 
     @Override
+    public boolean hasItemHidingCapabilities() {
+        return hasItemObliterator;
+    }
+
+    @Override
     public boolean isItemHidden(ItemStack stack) {
-        if (isModLoaded("item_obliterator")) {
+        if (hasItemObliterator) {
             return ItemObliteratorCompat.shouldHide(stack);
         }
         return false;

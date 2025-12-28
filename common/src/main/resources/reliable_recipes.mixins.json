@@ -9,14 +9,12 @@
     "accessor.HolderSetNamedAccessor",
     "accessor.IngredientAccessor",
     "accessor.IngredientItemValueAccessor",
-    "accessor.IngredientTagValueAccessor",
     "accessor.RecipeManagerAccessor",
     "accessor.ShapedRecipeAccessor",
     "accessor.ShapelessRecipeAccessor",
     "accessor.SingleItemRecipeAccessor"
   ],
   "client": [
-    "MixinMinecraft"
   ],
   "server": [
   ],

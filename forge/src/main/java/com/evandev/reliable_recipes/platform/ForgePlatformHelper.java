@@ -10,6 +10,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import java.nio.file.Path;
 
 public class ForgePlatformHelper implements IPlatformHelper {
+    private final boolean hasItemObliterator = ModList.get().isLoaded("item_obliterator");
 
     @Override
     public String getPlatformName() {
@@ -32,8 +33,13 @@ public class ForgePlatformHelper implements IPlatformHelper {
     }
 
     @Override
+    public boolean hasItemHidingCapabilities() {
+        return hasItemObliterator;
+    }
+
+    @Override
     public boolean isItemHidden(ItemStack stack) {
-        if (isModLoaded("item_obliterator")) {
+        if (hasItemObliterator) {
             return ItemObliteratorCompat.shouldHide(stack);
         }
         return false;
