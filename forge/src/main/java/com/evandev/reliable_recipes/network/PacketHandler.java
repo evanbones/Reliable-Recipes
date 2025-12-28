@@ -20,5 +20,10 @@ public class PacketHandler {
                 DeleteRecipePacket::encode,
                 DeleteRecipePacket::decode,
                 DeleteRecipePacket::handle);
+
+        INSTANCE.registerMessage(id++, ClientboundDeleteRecipePacket.class,
+                ClientboundDeleteRecipePacket::encode,
+                ClientboundDeleteRecipePacket::decode,
+                ClientboundDeleteRecipePacket::handle);
     }
 }

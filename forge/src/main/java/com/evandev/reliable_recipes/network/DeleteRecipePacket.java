@@ -6,7 +6,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -41,9 +40,9 @@ public class DeleteRecipePacket {
                         boolean removed = RecipeModifier.removeRecipe(server.getRecipeManager(), msg.recipeId);
 
                         if (removed) {
-                            server.getPlayerList().getPlayers().forEach(p ->
-                                    p.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
-                            );
+                            ClientboundDeleteRecipePacket packet = new ClientboundDeleteRecipePacket(msg.recipeId);
+                            PacketHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(), packet);
+
                             player.sendSystemMessage(Component.literal("Reliable Recipes: Deleted " + msg.recipeId + " ")
                                     .append(Component.literal("[UNDO]")
                                             .withStyle(style -> style

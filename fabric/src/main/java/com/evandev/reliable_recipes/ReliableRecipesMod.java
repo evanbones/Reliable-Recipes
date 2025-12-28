@@ -7,8 +7,10 @@ import com.evandev.reliable_recipes.recipe.TagModifier;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
@@ -50,8 +52,13 @@ public class ReliableRecipesMod implements ModInitializer {
                             boolean removed = RecipeModifier.removeRecipe(server.getRecipeManager(), id);
 
                             if (removed) {
+                                FriendlyByteBuf packetBuf = PacketByteBufs.create();
+                                packetBuf.writeResourceLocation(id);
+
+                                ResourceLocation packetId = new ResourceLocation("reliable_recipes", "client_delete_recipe");
+
                                 server.getPlayerList().getPlayers().forEach(p ->
-                                        p.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
+                                        ServerPlayNetworking.send(p, packetId, packetBuf)
                                 );
                                 player.sendSystemMessage(Component.literal("Reliable Recipes: Deleted " + id + " ")
                                         .append(Component.literal("[UNDO]")

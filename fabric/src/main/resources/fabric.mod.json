@@ -17,6 +17,9 @@
     "entrypoints": {
         "main": [
             "com.evandev.reliable_recipes.ReliableRecipesMod"
+        ],
+        "client": [
+            "com.evandev.reliable_recipes.client.ReliableRecipesModClient"
         ]
     },
     "mixins": [

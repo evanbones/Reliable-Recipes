@@ -40,6 +40,7 @@ public abstract class EmiRecipeScreenMixin extends Screen {
 
             if (hoveredRecipe != null) {
                 if (EmiInteractions.requestDeletion(hoveredRecipe)) {
+                    this.onClose();
                     cir.setReturnValue(true);
                 }
             }
