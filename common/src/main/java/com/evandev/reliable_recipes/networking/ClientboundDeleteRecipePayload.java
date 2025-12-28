@@ -49,8 +49,8 @@ public record ClientboundDeleteRecipePayload(ResourceLocation recipeId) implemen
 		}
 
 		if (config.showChatMessages && client.player != null) {
-			client.player.sendSystemMessage(Component.literal("Reliable Recipes: Deleted " + recipeId + " ")
-					.append(Component.literal("[UNDO]")
+			client.player.sendSystemMessage(Component.translatable("toast.reliable_recipes.deleted", recipeId)
+					.append(Component.translatable("toast.reliable_recipes.undo")
 							.withStyle(style -> style
 									.withColor(ChatFormatting.RED)
 									.withBold(true)

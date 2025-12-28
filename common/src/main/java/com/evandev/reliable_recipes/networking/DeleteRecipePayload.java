@@ -35,10 +35,10 @@ public record DeleteRecipePayload(ResourceLocation recipeId) implements CustomPa
 							Services.PLATFORM.sendDeleteRecipePacketToPlayer(p, id)
 					);
 				} else {
-					player.sendSystemMessage(Component.literal("Reliable Recipes: Could not find recipe " + id));
+					player.sendSystemMessage(Component.translatable("toast.reliable_recipes.could_not_find_recipe", id));
 				}
 			} else {
-				player.sendSystemMessage(Component.literal("Reliable Recipes: You need OP to delete recipes."));
+				player.sendSystemMessage(Component.translatable("toast.reliable_recipes.permission_denied"));
 			}
 		}
 	}
