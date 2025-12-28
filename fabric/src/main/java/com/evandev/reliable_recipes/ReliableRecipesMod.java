@@ -52,6 +52,8 @@ public class ReliableRecipesMod implements ModInitializer {
                             boolean removed = RecipeModifier.removeRecipe(server.getRecipeManager(), id);
 
                             if (removed) {
+                                Constants.LOG.info("Runtime deletion of recipe: {}", id);
+
                                 FriendlyByteBuf packetBuf = PacketByteBufs.create();
                                 packetBuf.writeResourceLocation(id);
 

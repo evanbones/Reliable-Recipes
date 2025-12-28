@@ -108,7 +108,6 @@ public class RecipeModifier {
             managerAccessor.setByName(recipesByName);
             managerAccessor.setRecipes(recipesByType);
 
-            Constants.LOG.info("Runtime deletion of recipe: {}", recipeId);
             return true;
         }
         return false;

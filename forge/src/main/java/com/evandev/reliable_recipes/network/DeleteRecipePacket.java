@@ -1,5 +1,6 @@
 package com.evandev.reliable_recipes.network;
 
+import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import net.minecraft.ChatFormatting;
@@ -40,6 +41,8 @@ public class DeleteRecipePacket {
                         boolean removed = RecipeModifier.removeRecipe(server.getRecipeManager(), msg.recipeId);
 
                         if (removed) {
+                            Constants.LOG.info("Runtime deletion of recipe: {}", msg.recipeId);
+
                             ClientboundDeleteRecipePacket packet = new ClientboundDeleteRecipePacket(msg.recipeId);
                             PacketHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(), packet);
 
