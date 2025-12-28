@@ -17,6 +17,7 @@ import java.util.Map;
 public class RecipeModifier {
 
     public static void apply(RecipeManager manager) {
+        // ... (Keep existing apply method as is)
         int lastErrorCount = 0;
         List<RecipeRule> rules = RecipeConfigIO.loadRules();
 
@@ -84,6 +85,31 @@ public class RecipeModifier {
         if (lastErrorCount > 0) {
             Constants.LOG.warn("RecipeModifier encountered {} errors during execution.", lastErrorCount);
         }
+    }
+
+    public static boolean removeRecipe(RecipeManager manager, ResourceLocation recipeId) {
+        RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
+
+        Map<ResourceLocation, Recipe<?>> recipesByName = new HashMap<>(managerAccessor.getByName());
+        Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> recipesByType = new HashMap<>(managerAccessor.getRecipes());
+
+        Recipe<?> recipe = recipesByName.remove(recipeId);
+
+        if (recipe != null) {
+            Map<ResourceLocation, Recipe<?>> typeMap = recipesByType.get(recipe.getType());
+            if (typeMap != null) {
+                typeMap = new HashMap<>(typeMap);
+                typeMap.remove(recipeId);
+                recipesByType.put(recipe.getType(), typeMap);
+            }
+
+            managerAccessor.setByName(recipesByName);
+            managerAccessor.setRecipes(recipesByType);
+
+            Constants.LOG.info("Runtime deletion of recipe: {}", recipeId);
+            return true;
+        }
+        return false;
     }
 
     private static ItemStack getResult(Recipe<?> recipe) {

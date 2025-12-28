@@ -2,6 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.evandev.reliable_recipes.mixin",
+  "plugin": "com.evandev.reliable_recipes.mixin.ReliableRecipesMixinPlugin",
   "refmap": "${mod_id}.refmap.json",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
@@ -16,7 +17,8 @@
     "minecraft.RecipeManagerMixin"
   ],
   "client": [
-    "emi.EmiRecipeScreenMixin"
+    "emi.EmiRecipeScreenMixin",
+    "emi.EmiReloadMixin"
   ],
   "server": [
   ],

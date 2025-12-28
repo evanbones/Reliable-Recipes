@@ -6,8 +6,6 @@ import com.evandev.reliable_recipes.recipe.TagModifier;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -42,12 +40,19 @@ public class ReliableRecipesMod implements ModInitializer {
                     server.execute(() -> {
                         if (player.hasPermissions(2)) {
                             RecipeConfigIO.addRemovalRule(id.toString());
-                            Minecraft.getInstance().getToasts().addToast(SystemToast.multiline(
-                                    Minecraft.getInstance(),
-                                    SystemToast.SystemToastIds.TUTORIAL_HINT,
-                                    Component.literal("Reliable Recipes"),
-                                    Component.literal("Recipe deleted. /reload to apply.")
-                            ));
+
+                            boolean removed = RecipeModifier.removeRecipe(server.getRecipeManager(), id);
+
+                            if (removed) {
+                                server.getPlayerList().getPlayers().forEach(p ->
+                                        p.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
+                                );
+                                player.sendSystemMessage(Component.literal("Reliable Recipes: Deleted " + id));
+                            } else {
+                                player.sendSystemMessage(Component.literal("Reliable Recipes: Could not find recipe " + id));
+                            }
+                        } else {
+                            player.sendSystemMessage(Component.literal("Reliable Recipes: You need OP to delete recipes."));
                         }
                     });
                 });
