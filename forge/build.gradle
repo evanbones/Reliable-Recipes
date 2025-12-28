@@ -53,6 +53,9 @@ dependencies {
     // EMI
     modImplementation "dev.emi:emi-forge:${emi_version}"
 
+    // Cloth Config
+    modImplementation "me.shedaniel.cloth:cloth-config-forge:${cloth_config_version}"
+
     compileOnly project(":common")
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
 }

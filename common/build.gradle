@@ -16,6 +16,7 @@ legacyForge {
 
 dependencies {
     compileOnly "dev.emi:emi-xplat-mojmap:${emi_version}"
+    compileOnly "me.shedaniel.cloth:cloth-config-forge:${cloth_config_version}"
 
     compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
     compileOnly group: 'org.ow2.asm', name: 'asm-tree', version: '9.6'

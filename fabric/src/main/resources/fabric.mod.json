@@ -1,6 +1,6 @@
 {
     "schemaVersion": 1,
-    "id": "mod_id",
+    "id": "${mod_id}",
     "version": "${version}",
     "name": "${mod_name}",
     "description": "${description}",
@@ -12,7 +12,7 @@
         "sources": "https://github.com/evanbones/Reliable-Recipes"
     },
     "license": "${license}",
-    "icon": "assets/modid/${mod_id}.png",
+    "icon": "${mod_id}.png",
     "environment": "*",
     "entrypoints": {
         "main": [
@@ -20,6 +20,9 @@
         ],
         "client": [
             "com.evandev.reliable_recipes.client.ReliableRecipesModClient"
+        ],
+        "modmenu": [
+            "com.evandev.reliable_recipes.compat.ModMenuIntegration"
         ]
     },
     "mixins": [

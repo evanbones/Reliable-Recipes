@@ -53,17 +53,13 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "TerraformersMC"
-                url = "https://maven.terraformersmc.com/"
-            }
-        }
-        filter {
-            includeGroup "dev.emi"
-
-        }
+    maven {
+        name = "TerraformersMC"
+        url = "https://maven.terraformersmc.com/"
+    }
+    maven {
+        name = "ClothConfig"
+        url "https://maven.shedaniel.me/"
     }
 }
 
