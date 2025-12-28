@@ -1,10 +1,11 @@
 package com.evandev.reliable_recipes;
 
+import com.evandev.reliable_recipes.command.UndoCommand;
 import com.evandev.reliable_recipes.network.PacketHandler;
-import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.recipe.TagModifier;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TagsUpdatedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -24,6 +25,11 @@ public class ReliableRecipesMod {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         PacketHandler.register();
+    }
+
+    @SubscribeEvent
+    public void registerCommands(RegisterCommandsEvent event) {
+        UndoCommand.register(event.getDispatcher());
     }
 
     @SubscribeEvent

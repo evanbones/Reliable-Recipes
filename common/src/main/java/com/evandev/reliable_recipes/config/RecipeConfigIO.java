@@ -12,6 +12,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class RecipeConfigIO {
@@ -147,7 +148,7 @@ public class RecipeConfigIO {
                         rule.has("filter") &&
                         rule.getAsJsonObject("filter").has("id") &&
                         rule.getAsJsonObject("filter").get("id").getAsString().equals(recipeId)) {
-                    return; // Rule exists
+                    return;
                 }
             }
         }
@@ -166,6 +167,44 @@ public class RecipeConfigIO {
             GSON.toJson(root, writer);
         } catch (IOException e) {
             Constants.LOG.error("Failed to save generated config", e);
+        }
+    }
+
+    public static void removeRemovalRule(String recipeId) {
+        Path generatedPath = CONFIG_DIR.resolve("generated_removals.json");
+        File file = generatedPath.toFile();
+        if (!file.exists()) return;
+
+        try (FileReader reader = new FileReader(file)) {
+            JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
+            boolean changed = false;
+
+            if (root.has("recipe_modifications")) {
+                JsonArray mods = root.getAsJsonArray("recipe_modifications");
+                Iterator<JsonElement> iterator = mods.iterator();
+
+                while (iterator.hasNext()) {
+                    JsonElement e = iterator.next();
+                    if (e.isJsonObject()) {
+                        JsonObject obj = e.getAsJsonObject();
+                        if ("remove".equals(obj.get("action").getAsString()) &&
+                                obj.has("filter") &&
+                                obj.getAsJsonObject("filter").has("id") &&
+                                obj.getAsJsonObject("filter").get("id").getAsString().equals(recipeId)) {
+                            iterator.remove();
+                            changed = true;
+                        }
+                    }
+                }
+            }
+
+            if (changed) {
+                try (FileWriter writer = new FileWriter(file)) {
+                    GSON.toJson(root, writer);
+                }
+            }
+        } catch (Exception e) {
+            Constants.LOG.error("Failed to update generated config", e);
         }
     }
 }

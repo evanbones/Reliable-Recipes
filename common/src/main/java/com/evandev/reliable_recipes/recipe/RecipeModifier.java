@@ -15,9 +15,9 @@ import java.util.List;
 import java.util.Map;
 
 public class RecipeModifier {
+    private static final Map<ResourceLocation, Recipe<?>> DELETED_RECIPES_CACHE = new HashMap<>();
 
     public static void apply(RecipeManager manager) {
-        // ... (Keep existing apply method as is)
         int lastErrorCount = 0;
         List<RecipeRule> rules = RecipeConfigIO.loadRules();
 
@@ -96,6 +96,8 @@ public class RecipeModifier {
         Recipe<?> recipe = recipesByName.remove(recipeId);
 
         if (recipe != null) {
+            DELETED_RECIPES_CACHE.put(recipeId, recipe);
+
             Map<ResourceLocation, Recipe<?>> typeMap = recipesByType.get(recipe.getType());
             if (typeMap != null) {
                 typeMap = new HashMap<>(typeMap);
@@ -110,6 +112,30 @@ public class RecipeModifier {
             return true;
         }
         return false;
+    }
+
+    public static boolean restoreRecipe(RecipeManager manager, ResourceLocation recipeId) {
+        Recipe<?> recipe = DELETED_RECIPES_CACHE.remove(recipeId);
+        if (recipe == null) return false;
+
+        RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
+        Map<ResourceLocation, Recipe<?>> recipesByName = new HashMap<>(managerAccessor.getByName());
+        Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> recipesByType = new HashMap<>(managerAccessor.getRecipes());
+
+        recipesByName.put(recipeId, recipe);
+
+        Map<ResourceLocation, Recipe<?>> typeMap = recipesByType.get(recipe.getType());
+        if (typeMap == null) typeMap = new HashMap<>();
+        else typeMap = new HashMap<>(typeMap);
+
+        typeMap.put(recipeId, recipe);
+        recipesByType.put(recipe.getType(), typeMap);
+
+        managerAccessor.setByName(recipesByName);
+        managerAccessor.setRecipes(recipesByType);
+
+        Constants.LOG.info("Restored recipe: {}", recipeId);
+        return true;
     }
 
     private static ItemStack getResult(Recipe<?> recipe) {
