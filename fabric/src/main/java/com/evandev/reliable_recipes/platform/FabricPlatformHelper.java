@@ -1,6 +1,6 @@
-package com.example.examplemod.platform;
+package com.evandev.reliable_recipes.platform;
 
-import com.example.examplemod.platform.services.IPlatformHelper;
+import com.evandev.reliable_recipes.platform.services.IPlatformHelper;
 import net.fabricmc.loader.api.FabricLoader;
 
 public class FabricPlatformHelper implements IPlatformHelper {

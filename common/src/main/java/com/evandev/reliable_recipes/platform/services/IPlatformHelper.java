@@ -1,4 +1,4 @@
-package com.example.examplemod.platform.services;
+package com.evandev.reliable_recipes.platform.services;
 
 public interface IPlatformHelper {
 

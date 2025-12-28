@@ -1,8 +1,8 @@
-package com.example.examplemod;
+package com.evandev.reliable_recipes;
 
 import net.fabricmc.api.ModInitializer;
 
-public class ExampleMod implements ModInitializer {
+public class ReliableRecipesMod implements ModInitializer {
     
     @Override
     public void onInitialize() {
