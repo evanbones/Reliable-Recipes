@@ -32,8 +32,6 @@ public class ReliableRecipesMod {
 
         var server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
-            RecipeModifier.apply(server.getRecipeManager());
-
             server.getPlayerList().getPlayers().forEach(player ->
                     player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
             );

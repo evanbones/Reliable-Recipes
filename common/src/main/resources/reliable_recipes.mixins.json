@@ -12,7 +12,8 @@
     "accessor.RecipeManagerAccessor",
     "accessor.ShapedRecipeAccessor",
     "accessor.ShapelessRecipeAccessor",
-    "accessor.SingleItemRecipeAccessor"
+    "accessor.SingleItemRecipeAccessor",
+    "minecraft.RecipeManagerMixin"
   ],
   "client": [
     "emi.EmiRecipeScreenMixin"

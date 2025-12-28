@@ -1,6 +1,8 @@
 package com.evandev.reliable_recipes.network;
 
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -30,7 +32,12 @@ public class DeleteRecipePacket {
             if (player != null && player.hasPermissions(2)) { // OP check
                 RecipeConfigIO.addRemovalRule(msg.recipeId.toString());
 
-                player.displayClientMessage(Component.literal("Reliable Recipes: Deleted " + msg.recipeId), true);
+                Minecraft.getInstance().getToasts().addToast(SystemToast.multiline(
+                        Minecraft.getInstance(),
+                        SystemToast.SystemToastIds.TUTORIAL_HINT,
+                        Component.literal("Reliable Recipes"),
+                        Component.literal("Recipe deleted. /reload to apply.")
+                ));
             }
         });
         ctx.get().setPacketHandled(true);

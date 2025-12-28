@@ -2,22 +2,23 @@
 
 A powerful, developer-friendly utility designed for manipulating recipes and tags through simple JSON configuration, or an in-game interface. This mod allows and modpack creators to effortlessly add, remove, or modify recipes and tags using standard JSON files, without the need for complex scripts (looking at you, KubeJS!)
 
-### Features
+## Features
 
-* **Multi-loader Support:** Built for Fabric, Forge, and NeoForge using a unified codebase.
+* **Multi-loader Support:** Built for Fabric (1.20.1+), Forge (1.20.1), and NeoForge (1.21+) using a unified codebase.
 * **Dynamic Recipe Control:** Remove hardcoded recipes or inject custom ones at runtime.
 * **Tag Manipulation:** Add or remove items/blocks from tags via config files.
 * **No Scripting Required:** Uses standard Minecraft-style JSON syntax for ease of use.
-* **Mod Compatibility:** Will automatically remove recipes from items in the Item Obliterator blacklist.
 
----
+## Mod Compatibility
+* Automatically removes recipes and tags from items in [https://modrinth.com/mod/item-obliterator](Item Obliterator)'s blacklist.
+* Press the delete key while hovering over a recipe output in EMI while in dev mode to automatically generate a removal JSON.
 
-### Usage
+## Usage
 
 The mod watches a specific folder in your instance (e.g., `./config/reliable_recipes`) for JSON files. Upon server startup or data reload, it injects these changes into the internal registries.
 
 
-## JSON Structure
+### JSON Structure
 
 The file contains two main sections: `recipe_modifications` for recipes and `tag_modifications` for item tags.
 
@@ -51,7 +52,7 @@ You can filter by simple strings, or use **arrays** to match multiple values (ac
 ### Advanced Filters (Regex & Logic)
 
 * **Regex:** Wrap strings in `/` to use Regular Expressions.
-*Example:* `"/minecraft:.*_log/"` matches all vanilla logs.
+  *Example:* `"/minecraft:.*_log/"` matches all vanilla logs.
 * **Logic:** Use `not`, `or`, and `and` for complex conditions.
 
 **Example:** Remove all recipes that output Gold items, *except* those from Minecraft.
@@ -62,7 +63,7 @@ You can filter by simple strings, or use **arrays** to match multiple values (ac
   "filter": {
     "output": "/.*gold.*/",
     "not": {
-        "mod": "minecraft"
+      "mod": "minecraft"
     }
   }
 }
@@ -112,7 +113,7 @@ Scans ingredients and replaces a target with a new one.
   "target": "minecraft:stick",
   "replacement": ["minecraft:bamboo", "minecraft:stick"],
   "filter": {
-    "mod": "minecraft" 
+    "mod": "minecraft"
   }
 }
 

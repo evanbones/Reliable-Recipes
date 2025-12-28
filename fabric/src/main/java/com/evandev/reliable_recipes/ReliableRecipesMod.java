@@ -6,6 +6,8 @@ import com.evandev.reliable_recipes.recipe.TagModifier;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -16,13 +18,8 @@ public class ReliableRecipesMod implements ModInitializer {
     public void onInitialize() {
         CommonClass.init();
 
-        ServerLifecycleEvents.SYNC_DATA_PACK_CONTENTS.register((player, joined) -> {
-            // TODO: Re-sync recipes to player? SERVER_STARTED should handle the modification though
-        });
-
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             TagModifier.apply();
-            RecipeModifier.apply(server.getRecipeManager());
 
             // Sync recipes to all players
             server.getPlayerList().getPlayers().forEach(player ->
@@ -33,7 +30,6 @@ public class ReliableRecipesMod implements ModInitializer {
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) -> {
             if (success) {
                 TagModifier.apply();
-                RecipeModifier.apply(server.getRecipeManager());
                 server.getPlayerList().getPlayers().forEach(player ->
                         player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
                 );
@@ -46,7 +42,12 @@ public class ReliableRecipesMod implements ModInitializer {
                     server.execute(() -> {
                         if (player.hasPermissions(2)) {
                             RecipeConfigIO.addRemovalRule(id.toString());
-                            player.displayClientMessage(Component.literal("Reliable Recipes: Deleted " + id), true);
+                            Minecraft.getInstance().getToasts().addToast(SystemToast.multiline(
+                                    Minecraft.getInstance(),
+                                    SystemToast.SystemToastIds.TUTORIAL_HINT,
+                                    Component.literal("Reliable Recipes"),
+                                    Component.literal("Recipe deleted. /reload to apply.")
+                            ));
                         }
                     });
                 });
