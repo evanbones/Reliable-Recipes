@@ -1,18 +1,39 @@
 package com.evandev.reliable_recipes;
 
+import com.evandev.reliable_recipes.recipe.RecipeModifier;
+import com.evandev.reliable_recipes.recipe.TagModifier;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 
 public class ReliableRecipesMod implements ModInitializer {
-    
+
     @Override
     public void onInitialize() {
-        
-        // This method is invoked by the Fabric mod loader when it is ready
-        // to load your mod. You can access Fabric and Common code in this
-        // project.
-
-        // Use Fabric to bootstrap the Common mod.
-        Constants.LOG.info("Hello Fabric world!");
         CommonClass.init();
+
+        ServerLifecycleEvents.SYNC_DATA_PACK_CONTENTS.register((player, joined) -> {
+            // Re-sync recipes to player if needed, though SERVER_STARTED below handles the modification
+        });
+
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            TagModifier.apply();
+            RecipeModifier.apply(server.getRecipeManager());
+
+            // Sync recipes to all players (important for recipe viewers and clientside crafting)
+            server.getPlayerList().getPlayers().forEach(player ->
+                    player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
+            );
+        });
+
+        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) -> {
+            if (success) {
+                TagModifier.apply();
+                RecipeModifier.apply(server.getRecipeManager());
+                server.getPlayerList().getPlayers().forEach(player ->
+                        player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
+                );
+            }
+        });
     }
 }

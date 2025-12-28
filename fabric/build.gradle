@@ -10,6 +10,10 @@ dependencies {
     }
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+    modImplementation "maven.modrinth:item-obliterator:${fabric_item_obliterator_version}"
+    modImplementation "maven.modrinth:necronomicon:${fabric_necronomicon_version}"
+
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'
     implementation project(":common")
 }

@@ -8,8 +8,8 @@
         "${mod_author}"
     ],
     "contact": {
-        "homepage": "https://fabricmc.net/",
-        "sources": "https://github.com/FabricMC/fabric-example-mod"
+        "homepage": "https://github.com/evanbones/Reliable-Recipes",
+        "sources": "https://github.com/evanbones/Reliable-Recipes"
     },
     "license": "${license}",
     "icon": "assets/modid/${mod_id}.png",
@@ -30,7 +30,7 @@
         "java": ">=17"
     },
     "suggests": {
-        "another-mod": "*"
+        "item_obliterator": "*"
     }
 }
   

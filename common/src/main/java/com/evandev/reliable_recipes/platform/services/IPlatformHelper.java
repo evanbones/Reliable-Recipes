@@ -1,5 +1,8 @@
 package com.evandev.reliable_recipes.platform.services;
 
+import net.minecraft.world.item.ItemStack;
+import java.nio.file.Path;
+
 public interface IPlatformHelper {
 
     /**
@@ -30,7 +33,23 @@ public interface IPlatformHelper {
      * @return The name of the environment type.
      */
     default String getEnvironmentName() {
-
         return isDevelopmentEnvironment() ? "development" : "production";
+    }
+
+    /**
+     * Gets the configuration directory for the current platform.
+     *
+     * @return The path to the config directory.
+     */
+    Path getConfigDirectory();
+
+    /**
+     * Checks if an item should be hidden (via Item Obliterator).
+     *
+     * @param stack The item stack to check.
+     * @return True if the item is hidden/disabled, false otherwise.
+     */
+    default boolean isItemHidden(ItemStack stack) {
+        return false;
     }
 }

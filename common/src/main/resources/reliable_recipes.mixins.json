@@ -1,18 +1,27 @@
 {
-    "required": true,
-    "minVersion": "0.8",
-    "package": "com.evandev.reliable_recipes.mixin",
-    "refmap": "${mod_id}.refmap.json",
-    "compatibilityLevel": "JAVA_17",
-    "mixins": [
-    ],
-    "client": [
-        "MixinMinecraft"
-    ],
-    "server": [
-    ],
-    "injectors": {
-        "defaultRequire": 1
-    }
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.evandev.reliable_recipes.mixin",
+  "refmap": "${mod_id}.refmap.json",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "accessor.AbstractCookingRecipeAccessor",
+    "accessor.HolderSetNamedAccessor",
+    "accessor.IngredientAccessor",
+    "accessor.IngredientItemValueAccessor",
+    "accessor.IngredientTagValueAccessor",
+    "accessor.RecipeManagerAccessor",
+    "accessor.ShapedRecipeAccessor",
+    "accessor.ShapelessRecipeAccessor",
+    "accessor.SingleItemRecipeAccessor"
+  ],
+  "client": [
+    "MixinMinecraft"
+  ],
+  "server": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }
 
