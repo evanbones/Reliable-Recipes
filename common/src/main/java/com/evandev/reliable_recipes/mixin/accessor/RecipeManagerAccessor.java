@@ -2,6 +2,7 @@ package com.evandev.reliable_recipes.mixin.accessor;
 
 import com.google.common.collect.Multimap;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -13,10 +14,10 @@ import java.util.Map;
 @Mixin(RecipeManager.class)
 public interface RecipeManagerAccessor {
     @Accessor("byType")
-    Multimap<RecipeType<?>, RecipeHolder<?>> getByType();
+    Multimap<RecipeType<?>, RecipeHolder<?>> getRecipes();
 
     @Accessor("byType")
-    void setByType(Multimap<RecipeType<?>, RecipeHolder<?>> byType);
+    void setRecipes(Multimap<RecipeType<?>, RecipeHolder<?>> recipes);
 
     @Accessor("byName")
     Map<ResourceLocation, RecipeHolder<?>> getByName();

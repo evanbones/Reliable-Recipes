@@ -1,6 +1,7 @@
 package com.evandev.reliable_recipes.client;
 
 import com.evandev.reliable_recipes.config.ModConfig;
+import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import dev.emi.emi.runtime.EmiReloadManager;
 import net.fabricmc.api.ClientModInitializer;
@@ -16,9 +17,10 @@ public class ReliableRecipesModClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        ClientPlayNetworking.registerGlobalReceiver(new ResourceLocation("reliable_recipes", "client_delete_recipe"),
-                (client, handler, buf, responseSender) -> {
-                    ResourceLocation recipeId = buf.readResourceLocation();
+        ClientPlayNetworking.registerGlobalReceiver(DeleteRecipePayload.TYPE,
+                (payload, context) -> {
+                    ResourceLocation recipeId = payload.recipeId();
+                    var client = context.client();
 
                     client.execute(() -> {
                         if (client.getConnection() != null) {
@@ -50,11 +52,11 @@ public class ReliableRecipesModClient implements ClientModInitializer {
             }
         }
 
-        if (config.showToast) {
-            SystemToast.add(Minecraft.getInstance().getToasts(),
-                    SystemToast.SystemToastIds.TUTORIAL_HINT,
-                    Component.literal("Recipe Deleted"),
-                    Component.literal(recipeId.toString()));
-        }
+//        if (config.showToast) {
+//            SystemToast.add(Minecraft.getInstance().getToasts(),
+//                    SystemToast.SystemToastIds.TUTORIAL_HINT,
+//                    Component.literal("Recipe Deleted"),
+//                    Component.literal(recipeId.toString()));
+//        }
     }
 }
