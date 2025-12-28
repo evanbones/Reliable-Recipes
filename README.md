@@ -8,6 +8,7 @@ A powerful, developer-friendly utility designed for manipulating recipes and tag
 * **Dynamic Recipe Control:** Remove hardcoded recipes or inject custom ones at runtime.
 * **Tag Manipulation:** Add or remove items/blocks from tags via config files.
 * **No Scripting Required:** Uses standard Minecraft-style JSON syntax for ease of use.
+* **Mod Compatibility:** Will automatically remove recipes from items in the Item Obliterator blacklist.
 
 ---
 
