@@ -55,8 +55,8 @@ public class ReliableRecipesModClient implements ClientModInitializer {
 
         if (config.showChatMessages) {
             if (Minecraft.getInstance().player != null) {
-                Minecraft.getInstance().player.sendSystemMessage(Component.literal("Reliable Recipes: Deleted " + recipeId + " ")
-                        .append(Component.literal("[UNDO]")
+                Minecraft.getInstance().player.sendSystemMessage(Component.translatable("toast.reliable_recipes.deleted", recipeId)
+                        .append(Component.translatable("toast.reliable_recipes.undo")
                                 .withStyle(style -> style
                                         .withColor(ChatFormatting.RED)
                                         .withBold(true)

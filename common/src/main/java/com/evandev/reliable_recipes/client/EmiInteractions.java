@@ -14,12 +14,12 @@ public class EmiInteractions {
         if (mc.player == null) return false;
 
         if (!mc.player.hasPermissions(2)) {
-            mc.player.sendSystemMessage(Component.literal("Reliable Recipes: Deleting recipes requires OP."));
+            mc.player.sendSystemMessage(Component.translatable("toast.reliable_recipes.permission_denied"));
             return false;
         }
 
         if (!EmiConfig.devMode) {
-            mc.player.sendSystemMessage(Component.literal("Reliable Recipes: Enable EMI dev mode to delete recipes."));
+            mc.player.sendSystemMessage(Component.translatable("toast.reliable_recipes.emi_dev_mode"));
             return false;
         }
 

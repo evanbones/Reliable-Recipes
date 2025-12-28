@@ -9,9 +9,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -52,7 +50,7 @@ public class ReliableRecipesMod implements ModInitializer {
                             boolean removed = RecipeModifier.removeRecipe(server.getRecipeManager(), id);
 
                             if (removed) {
-                                Constants.LOG.info("Runtime deletion of recipe: {}", id);
+                                Constants.LOG.info(String.valueOf(Component.translatable("toast.reliable_recipes.deleted", id)));
 
                                 FriendlyByteBuf packetBuf = PacketByteBufs.create();
                                 packetBuf.writeResourceLocation(id);
@@ -63,10 +61,10 @@ public class ReliableRecipesMod implements ModInitializer {
                                         ServerPlayNetworking.send(p, packetId, packetBuf)
                                 );
                             } else {
-                                player.sendSystemMessage(Component.literal("Reliable Recipes: Could not find recipe " + id));
+                                player.sendSystemMessage(Component.translatable("toast.reliable_recipes.could_not_find_recipe", id));
                             }
                         } else {
-                            player.sendSystemMessage(Component.literal("Reliable Recipes: You need OP to delete recipes."));
+                            player.sendSystemMessage(Component.translatable("toast.reliable_recipes.permission_denied"));
                         }
                     });
                 });

@@ -50,8 +50,8 @@ public class ClientboundDeleteRecipePacket {
                     }
 
                     if (config.showChatMessages && mc.player != null) {
-                        mc.player.sendSystemMessage(Component.literal("Reliable Recipes: Deleted " + msg.recipeId + " ")
-                                .append(Component.literal("[UNDO]")
+                        mc.player.sendSystemMessage(Component.translatable("toast.reliable_recipes.deleted", msg.recipeId)
+                                .append(Component.translatable("toast.reliable_recipes.undo")
                                         .withStyle(style -> style
                                                 .withColor(ChatFormatting.RED)
                                                 .withBold(true)
