@@ -53,6 +53,18 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "TerraformersMC"
+                url = "https://maven.terraformersmc.com/"
+            }
+        }
+        filter {
+            includeGroup "dev.emi"
+
+        }
+    }
 }
 
 // Declare capabilities on the outgoing configurations.

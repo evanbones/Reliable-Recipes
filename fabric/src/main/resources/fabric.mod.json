@@ -30,7 +30,9 @@
         "java": ">=17"
     },
     "suggests": {
-        "item_obliterator": "*"
+        "item_obliterator": "*",
+        "necronomicon": "*",
+        "emi": "*"
     }
 }
   
