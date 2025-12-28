@@ -1,15 +1,16 @@
 package com.evandev.reliable_recipes.network;
 
+import com.evandev.reliable_recipes.client.DeletionToastOverlay;
 import com.evandev.reliable_recipes.config.ModConfig;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import dev.emi.emi.runtime.EmiReloadManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -33,6 +34,12 @@ public class ClientboundDeleteRecipePacket {
         ctx.get().enqueueWork(() -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.getConnection() != null) {
+                ItemStack outputIcon = ItemStack.EMPTY;
+                var recipe = mc.getConnection().getRecipeManager().byKey(msg.recipeId).orElse(null);
+                if (recipe != null && mc.level != null) {
+                    outputIcon = recipe.getResultItem(mc.level.registryAccess());
+                }
+
                 boolean removed = RecipeModifier.removeRecipe(mc.getConnection().getRecipeManager(), msg.recipeId);
 
                 if (removed) {
@@ -53,10 +60,7 @@ public class ClientboundDeleteRecipePacket {
                     }
 
                     if (config.showToast) {
-                        SystemToast.add(mc.getToasts(),
-                                SystemToast.SystemToastIds.TUTORIAL_HINT,
-                                Component.literal("Recipe Deleted"),
-                                Component.literal(msg.recipeId.toString()));
+                        DeletionToastOverlay.show(Component.literal(msg.recipeId.getPath()), outputIcon);
                     }
                 }
             }

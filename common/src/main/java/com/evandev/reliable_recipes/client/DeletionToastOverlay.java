@@ -11,7 +11,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
 public class DeletionToastOverlay {
-    private static final ResourceLocation BACKGROUND_SPRITE = new ResourceLocation("toast/recipe");
+    private static final ResourceLocation BACKGROUND_SPRITE = new ResourceLocation("minecraft", "textures/gui/toasts.png");
 
     private static final long DISPLAY_DURATION = 5000L;
     private static final long FADE_DURATION = 600L;
@@ -56,7 +56,7 @@ public class DeletionToastOverlay {
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(xPos, yPos, 1000);
 
-        guiGraphics.blit(BACKGROUND_SPRITE, 0, 0, 0, 32, 160, 32);
+        guiGraphics.blit(BACKGROUND_SPRITE, 0, 0, 0, 32, 160, 32, 256, 256);
 
         if (!iconStack.isEmpty()) {
             guiGraphics.renderFakeItem(iconStack, 8, 8);
