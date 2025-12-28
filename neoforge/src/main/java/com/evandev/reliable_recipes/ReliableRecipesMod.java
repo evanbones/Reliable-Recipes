@@ -4,6 +4,7 @@ import com.evandev.reliable_recipes.command.UndoCommand;
 import com.evandev.reliable_recipes.config.ClothConfigIntegration;
 import com.evandev.reliable_recipes.networking.ClientboundDeleteRecipePayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
+import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.recipe.TagModifier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,14 +17,15 @@ import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.TagsUpdatedEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import org.jetbrains.annotations.NotNull;
 
 @Mod(Constants.MOD_ID)
 @EventBusSubscriber(modid = Constants.MOD_ID)
@@ -40,7 +42,7 @@ public class ReliableRecipesMod {
                             IConfigScreenFactory.class,
                             () -> new IConfigScreenFactory() {
                                 @Override
-                                public Screen createScreen(ModContainer modContainer, Screen parent) {
+                                public @NotNull Screen createScreen(@NotNull ModContainer modContainer, @NotNull Screen parent) {
                                     return ClothConfigIntegration.createScreen(parent);
                                 }
                             }
@@ -48,6 +50,12 @@ public class ReliableRecipesMod {
                 }
             });
         }
+    }
+
+    @SubscribeEvent
+    public static void onServerStarted(ServerStartedEvent event) {
+        TagModifier.apply();
+        RecipeModifier.apply(event.getServer().getRecipeManager());
     }
 
     @SubscribeEvent
@@ -76,6 +84,8 @@ public class ReliableRecipesMod {
 
         var server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
+            RecipeModifier.apply(server.getRecipeManager());
+
             server.getPlayerList().getPlayers().forEach(player ->
                     player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
             );

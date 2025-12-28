@@ -6,12 +6,14 @@ import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import dev.emi.emi.runtime.EmiReloadManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.NotNull;
 
 public record ClientboundDeleteRecipePayload(ResourceLocation recipeId) implements CustomPacketPayload {
 	public static final Type<ClientboundDeleteRecipePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "client_delete_recipe"));
@@ -52,17 +54,17 @@ public record ClientboundDeleteRecipePayload(ResourceLocation recipeId) implemen
 			}
 		}
 
-//        if (config.showToast) {
-//            SystemToast.add(Minecraft.getInstance().getToasts(),
-//                    SystemToast.SystemToastIds.TUTORIAL_HINT,
-//                    Component.literal("Recipe Deleted"),
-//                    Component.literal(recipeId.toString()));
-//        }
+		if (config.showToast) {
+			SystemToast.add(Minecraft.getInstance().getToasts(),
+					SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+					Component.literal("Recipe Deleted"),
+					Component.literal(recipeId.toString()));
+		}
 	}
 
 
 	@Override
-	public Type<? extends CustomPacketPayload> type() {
+	public @NotNull Type<? extends CustomPacketPayload> type() {
 		return TYPE;
 	}
 }

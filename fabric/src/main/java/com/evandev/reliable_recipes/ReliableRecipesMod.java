@@ -29,6 +29,7 @@ public class ReliableRecipesMod implements ModInitializer {
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             TagModifier.apply();
+            RecipeModifier.apply(server.getRecipeManager());
 
             // Sync recipes to all players
             server.getPlayerList().getPlayers().forEach(player ->
@@ -39,6 +40,7 @@ public class ReliableRecipesMod implements ModInitializer {
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) -> {
             if (success) {
                 TagModifier.apply();
+                RecipeModifier.apply(server.getRecipeManager());
                 server.getPlayerList().getPlayers().forEach(player ->
                         player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
                 );
