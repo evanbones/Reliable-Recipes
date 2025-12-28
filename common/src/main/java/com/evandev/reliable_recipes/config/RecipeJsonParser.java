@@ -15,7 +15,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 
 /**
  * Handles the logic of converting JSON elements into Recipe Rules and Filters.
- * Pure logic, no file I/O.
  */
 public class RecipeJsonParser {
 
@@ -32,7 +31,7 @@ public class RecipeJsonParser {
         String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
         if (!mod.has("filter")) throw new IllegalArgumentException("Missing filter");
 
-        Predicate<Recipe<?>> filter = parseFilter(mod.get("filter"));
+        Predicate<RecipeHolder<?>> filter = parseFilter(mod.get("filter"));
 
         return switch (actionStr) {
             case "remove" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
@@ -43,7 +42,7 @@ public class RecipeJsonParser {
             }
             case "replace_output" -> {
                 String idStr = mod.get("replacement").getAsString();
-                Item item = BuiltInRegistries.ITEM.get(new ResourceLocation(idStr));
+                Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(idStr));
                 if (item == Items.AIR) {
                     Constants.LOG.warn("Skipping rule: Invalid replacement item '{}'.", idStr);
                     yield null;
@@ -60,15 +59,15 @@ public class RecipeJsonParser {
         List<ResourceLocation> items = new ArrayList<>();
         if (mod.has("items")) {
             JsonElement el = mod.get("items");
-            if (el.isJsonArray()) el.getAsJsonArray().forEach(e -> items.add(new ResourceLocation(e.getAsString())));
-            else items.add(new ResourceLocation(el.getAsString()));
+            if (el.isJsonArray()) el.getAsJsonArray().forEach(e -> items.add(ResourceLocation.parse(e.getAsString())));
+            else items.add(ResourceLocation.parse(el.getAsString()));
         }
 
         List<ResourceLocation> tags = new ArrayList<>();
         if (mod.has("tags")) {
-            mod.get("tags").getAsJsonArray().forEach(e -> tags.add(new ResourceLocation(e.getAsString())));
+            mod.get("tags").getAsJsonArray().forEach(e -> tags.add(ResourceLocation.parse(e.getAsString())));
         } else if (mod.has("tag")) {
-            tags.add(new ResourceLocation(mod.get("tag").getAsString()));
+            tags.add(ResourceLocation.parse(mod.get("tag").getAsString()));
         }
 
         return switch (actionStr) {
@@ -79,41 +78,44 @@ public class RecipeJsonParser {
         };
     }
 
-    private static Predicate<Recipe<?>> parseFilter(JsonElement json) {
+    private static Predicate<RecipeHolder<?>> parseFilter(JsonElement json) {
         if (json.isJsonObject()) {
             JsonObject obj = json.getAsJsonObject();
 
             if (obj.has("not")) return parseFilter(obj.get("not")).negate();
             if (obj.has("or")) {
-                Predicate<Recipe<?>> p = r -> false;
+                Predicate<RecipeHolder<?>> p = r -> false;
                 for (JsonElement e : obj.getAsJsonArray("or")) p = p.or(parseFilter(e));
                 return p;
             }
             if (obj.has("and")) {
-                Predicate<Recipe<?>> p = r -> true;
+                Predicate<RecipeHolder<?>> p = r -> true;
                 for (JsonElement e : obj.getAsJsonArray("and")) p = p.and(parseFilter(e));
                 return p;
             }
 
-            Predicate<Recipe<?>> combined = r -> true;
+            Predicate<RecipeHolder<?>> combined = r -> true;
             for (String key : obj.keySet()) {
                 JsonElement criterion = obj.get(key);
-                Predicate<Recipe<?>> check = switch (key) {
+                Predicate<RecipeHolder<?>> check = switch (key) {
                     case "type" -> {
                         Predicate<String> m = getStringMatcher(criterion);
-                        yield r -> m.test(r.getType().toString());
+                        // Access type via the Recipe object
+                        yield r -> m.test(r.value().getType().toString());
                     }
                     case "mod" -> {
                         Predicate<String> m = getStringMatcher(criterion);
-                        yield r -> m.test(r.getId().getNamespace());
+                        // Access namespace via the Holder ID
+                        yield r -> m.test(r.id().getNamespace());
                     }
                     case "id" -> {
                         Predicate<String> m = getStringMatcher(criterion);
-                        yield r -> m.test(r.getId().toString());
+                        // Access full ID via the Holder ID
+                        yield r -> m.test(r.id().toString());
                     }
                     case "input" -> {
                         Predicate<String> matcher = getStringMatcher(criterion);
-                        yield r -> r.getIngredients().stream().anyMatch(ing -> {
+                        yield r -> r.value().getIngredients().stream().anyMatch(ing -> {
                             for (ItemStack stack : ing.getItems()) {
                                 ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
                                 if (matcher.test(id.toString())) return true;
@@ -124,7 +126,8 @@ public class RecipeJsonParser {
                     case "output" -> {
                         Predicate<String> m = getStringMatcher(criterion);
                         yield r -> {
-                            ItemStack out = r.getResultItem(RegistryAccess.EMPTY);
+                            // 1.21 requires RegistryAccess, EMPTY is usually safe for simple item checks
+                            ItemStack out = r.value().getResultItem(RegistryAccess.EMPTY);
                             if (out.isEmpty()) return false;
                             ResourceLocation id = BuiltInRegistries.ITEM.getKey(out.getItem());
                             return m.test(id.toString());
@@ -192,9 +195,9 @@ public class RecipeJsonParser {
 
     private static Ingredient parseIngredientString(String str) {
         if (str.startsWith("#")) {
-            return Ingredient.of(TagKey.create(Registries.ITEM, new ResourceLocation(str.substring(1))));
+            return Ingredient.of(TagKey.create(Registries.ITEM, ResourceLocation.parse(str.substring(1))));
         }
-        Item item = BuiltInRegistries.ITEM.get(new ResourceLocation(str));
+        Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(str));
         return item != Items.AIR ? Ingredient.of(item) : Ingredient.EMPTY;
     }
 }

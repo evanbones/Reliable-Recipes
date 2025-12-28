@@ -1,14 +1,14 @@
 package com.evandev.reliable_recipes.platform;
 
 import com.evandev.reliable_recipes.compat.ItemObliteratorCompat;
-import com.evandev.reliable_recipes.network.DeleteRecipePacket;
-import com.evandev.reliable_recipes.network.PacketHandler;
+import com.evandev.reliable_recipes.network.DeleteRecipePayload;
 import com.evandev.reliable_recipes.platform.services.IPlatformHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.FMLLoader;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.nio.file.Path;
 
@@ -17,7 +17,7 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
 
     @Override
     public String getPlatformName() {
-        return "Forge";
+        return "NeoForge";
     }
 
     @Override
@@ -50,6 +50,6 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
 
     @Override
     public void sendDeleteRecipePacket(ResourceLocation recipeId) {
-        PacketHandler.INSTANCE.sendToServer(new DeleteRecipePacket(recipeId));
+        PacketDistributor.sendToServer(new DeleteRecipePayload(recipeId));
     }
 }
