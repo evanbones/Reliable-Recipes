@@ -5,12 +5,13 @@ import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import dev.emi.emi.runtime.EmiReloadManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 
 public class ReliableRecipesModClient implements ClientModInitializer {
 
@@ -22,16 +23,30 @@ public class ReliableRecipesModClient implements ClientModInitializer {
 
                     client.execute(() -> {
                         if (client.getConnection() != null) {
+                            ItemStack outputIcon = ItemStack.EMPTY;
+
+                            var recipe = client.getConnection().getRecipeManager().byKey(recipeId).orElse(null);
+                            if (recipe != null && client.level != null) {
+                                outputIcon = recipe.getResultItem(client.level.registryAccess());
+                            }
+
                             boolean removed = RecipeModifier.removeRecipe(client.getConnection().getRecipeManager(), recipeId);
                             if (removed) {
-                                handleFeedback(recipeId);
+                                handleFeedback(recipeId, outputIcon);
                             }
                         }
                     });
                 });
+
+        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+            ScreenEvents.afterRender(screen).register((sharedScreen, guiGraphics, mouseX, mouseY, tickDelta) -> {
+                DeletionToastOverlay.render(guiGraphics);
+            });
+        });
+
     }
 
-    private void handleFeedback(ResourceLocation recipeId) {
+    private static void handleFeedback(ResourceLocation recipeId, ItemStack outputIcon) {
         ModConfig config = ModConfig.get();
 
         if (config.reloadEmi) {
@@ -51,10 +66,7 @@ public class ReliableRecipesModClient implements ClientModInitializer {
         }
 
         if (config.showToast) {
-            SystemToast.add(Minecraft.getInstance().getToasts(),
-                    SystemToast.SystemToastIds.TUTORIAL_HINT,
-                    Component.literal("Recipe Deleted"),
-                    Component.literal(recipeId.toString()));
+            DeletionToastOverlay.show(Component.literal(recipeId.getPath()), outputIcon);
         }
     }
 }
