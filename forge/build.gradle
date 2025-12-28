@@ -46,9 +46,8 @@ legacyForge {
 sourceSets.main.resources.srcDir 'src/generated/resources'
 
 dependencies {
+    // Item Obliterator
     modImplementation "maven.modrinth:item-obliterator:${forge_item_obliterator_version}"
-
-    // Item Obliterator dependency
     modImplementation "maven.modrinth:necronomicon:${forge_necronomicon_version}"
 
     // EMI

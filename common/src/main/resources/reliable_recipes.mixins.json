@@ -15,6 +15,7 @@
     "accessor.SingleItemRecipeAccessor"
   ],
   "client": [
+    "emi.EmiRecipeScreenMixin"
   ],
   "server": [
   ],

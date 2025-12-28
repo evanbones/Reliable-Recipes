@@ -4,11 +4,7 @@ import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.recipe.TagRule;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 
 import java.io.File;
 import java.io.FileReader;
@@ -117,6 +113,59 @@ public class RecipeConfigIO {
             GSON.toJson(root, writer);
         } catch (IOException e) {
             Constants.LOG.error("Failed to create default recipe config: {}", path, e);
+        }
+    }
+
+    public static void addRemovalRule(String recipeId) {
+        Path generatedPath = CONFIG_DIR.resolve("generated_removals.json");
+        File file = generatedPath.toFile();
+        JsonObject root;
+        JsonArray modifications;
+
+        // Load existing or create new
+        if (file.exists()) {
+            try (FileReader reader = new FileReader(file)) {
+                root = JsonParser.parseReader(reader).getAsJsonObject();
+            } catch (Exception e) {
+                Constants.LOG.error("Failed to read generated config", e);
+                root = new JsonObject();
+            }
+        } else {
+            root = new JsonObject();
+        }
+
+        if (!root.has("recipe_modifications")) {
+            root.add("recipe_modifications", new JsonArray());
+        }
+        modifications = root.getAsJsonArray("recipe_modifications");
+
+        // Check if rule already exists to avoid duplicates
+        for (JsonElement e : modifications) {
+            if (e.isJsonObject()) {
+                JsonObject rule = e.getAsJsonObject();
+                if ("remove".equals(rule.get("action").getAsString()) &&
+                        rule.has("filter") &&
+                        rule.getAsJsonObject("filter").has("id") &&
+                        rule.getAsJsonObject("filter").get("id").getAsString().equals(recipeId)) {
+                    return; // Rule exists
+                }
+            }
+        }
+
+        // Create new removal rule
+        JsonObject newRule = new JsonObject();
+        newRule.addProperty("action", "remove");
+        JsonObject filter = new JsonObject();
+        filter.addProperty("id", recipeId);
+        newRule.add("filter", filter);
+
+        modifications.add(newRule);
+
+        // Save back to file
+        try (FileWriter writer = new FileWriter(file)) {
+            GSON.toJson(root, writer);
+        } catch (IOException e) {
+            Constants.LOG.error("Failed to save generated config", e);
         }
     }
 }

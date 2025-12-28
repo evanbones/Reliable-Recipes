@@ -1,5 +1,6 @@
 package com.evandev.reliable_recipes.platform.services;
 
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import java.nio.file.Path;
 
@@ -59,5 +60,14 @@ public interface IPlatformHelper {
      */
     default boolean isItemHidden(ItemStack stack) {
         return false;
+    }
+
+    /**
+     * Sends a request to the server to generate a recipe removal.
+     *
+     * @param recipeId The ID of the recipe to be removed.
+     *
+     */
+    default void sendDeleteRecipePacket(ResourceLocation recipeId) {
     }
 }

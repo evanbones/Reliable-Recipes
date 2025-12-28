@@ -1,7 +1,10 @@
 package com.evandev.reliable_recipes.platform;
 
 import com.evandev.reliable_recipes.compat.ItemObliteratorCompat;
+import com.evandev.reliable_recipes.network.DeleteRecipePacket;
+import com.evandev.reliable_recipes.network.PacketHandler;
 import com.evandev.reliable_recipes.platform.services.IPlatformHelper;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLLoader;
@@ -43,5 +46,10 @@ public class ForgePlatformHelper implements IPlatformHelper {
             return ItemObliteratorCompat.shouldHide(stack);
         }
         return false;
+    }
+
+    @Override
+    public void sendDeleteRecipePacket(ResourceLocation recipeId) {
+        PacketHandler.INSTANCE.sendToServer(new DeleteRecipePacket(recipeId));
     }
 }
