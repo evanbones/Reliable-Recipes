@@ -8,12 +8,13 @@ A powerful, developer-friendly utility designed for manipulating recipes and tag
 * **Dynamic Recipe Control:** Remove hardcoded recipes or inject custom ones at runtime.
 * **Tag Manipulation:** Add or remove items/blocks from tags via config files.
 * **No Scripting Required:** Uses standard Minecraft-style JSON syntax for ease of use.
+* **Mod Compatibility:** Will automatically remove recipes from items in the Item Obliterator blacklist.
 
 ---
 
 ### Usage
 
-The mod watches a specific folder in your instance (e.g., `./config/reliable_recipes`) for JSON files. Upon game startup or data reload, it injects these changes into the internal registries.
+The mod watches a specific folder in your instance (e.g., `./config/reliable_recipes`) for JSON files. Upon server startup or data reload, it injects these changes into the internal registries.
 
 
 ## JSON Structure
