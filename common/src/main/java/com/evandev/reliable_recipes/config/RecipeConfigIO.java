@@ -10,6 +10,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -19,21 +20,23 @@ import java.util.List;
 
 public class RecipeConfigIO {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path CONFIG_PATH = Services.PLATFORM.getConfigDirectory().resolve("reliable-recipes.json");
+    private static final Path CONFIG_DIR = Services.PLATFORM.getConfigDirectory().resolve("reliable_recipes");
 
     public static List<RecipeRule> loadRules() {
         List<RecipeRule> rules = new ArrayList<>();
-        JsonObject config = loadJson();
+        List<JsonObject> configs = loadAllConfigs();
 
-        if (config == null || !config.has("modifications")) return rules;
+        for (JsonObject config : configs) {
+            if (!config.has("recipe_modifications")) continue;
 
-        for (JsonElement element : config.getAsJsonArray("modifications")) {
-            try {
-                if (!element.isJsonObject()) continue;
-                RecipeRule rule = RecipeJsonParser.parseRule(element.getAsJsonObject());
-                if (rule != null) rules.add(rule);
-            } catch (Exception e) {
-                Constants.LOG.error("Failed to parse recipe rule: {}", element, e);
+            for (JsonElement element : config.getAsJsonArray("recipe_modifications")) {
+                try {
+                    if (!element.isJsonObject()) continue;
+                    RecipeRule rule = RecipeJsonParser.parseRule(element.getAsJsonObject());
+                    if (rule != null) rules.add(rule);
+                } catch (Exception e) {
+                    Constants.LOG.error("Failed to parse recipe rule: {}", element, e);
+                }
             }
         }
         return rules;
@@ -41,55 +44,79 @@ public class RecipeConfigIO {
 
     public static List<TagRule> loadTagRules() {
         List<TagRule> rules = new ArrayList<>();
-        JsonObject config = loadJson();
+        List<JsonObject> configs = loadAllConfigs();
 
-        if (config == null || !config.has("tag_modifications")) return rules;
+        for (JsonObject config : configs) {
+            if (!config.has("tag_modifications")) continue;
 
-        for (JsonElement element : config.getAsJsonArray("tag_modifications")) {
-            try {
-                if (!element.isJsonObject()) continue;
-                rules.add(RecipeJsonParser.parseTagRule(element.getAsJsonObject()));
-            } catch (Exception e) {
-                Constants.LOG.error("Failed to parse tag rule: {}", element, e);
+            for (JsonElement element : config.getAsJsonArray("tag_modifications")) {
+                try {
+                    if (!element.isJsonObject()) continue;
+                    rules.add(RecipeJsonParser.parseTagRule(element.getAsJsonObject()));
+                } catch (Exception e) {
+                    Constants.LOG.error("Failed to parse tag rule: {}", element, e);
+                }
             }
         }
         return rules;
     }
 
-    private static JsonObject loadJson() {
-        if (!CONFIG_PATH.toFile().exists()) createDefault();
-        try (FileReader reader = new FileReader(CONFIG_PATH.toFile())) {
-            return GSON.fromJson(reader, JsonObject.class);
-        } catch (Exception e) {
-            Constants.LOG.error("Failed to load recipe config JSON", e);
-            return null;
+    private static List<JsonObject> loadAllConfigs() {
+        List<JsonObject> loadedConfigs = new ArrayList<>();
+        File dir = CONFIG_DIR.toFile();
+
+        if (!dir.exists()) {
+            if (dir.mkdirs()) {
+                createDefault(CONFIG_DIR.resolve("example.json"));
+            } else {
+                Constants.LOG.error("Could not create config directory: {}", CONFIG_DIR);
+            }
         }
+
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+        if (files == null) return loadedConfigs;
+
+        for (File file : files) {
+            try (FileReader reader = new FileReader(file)) {
+                JsonObject json = GSON.fromJson(reader, JsonObject.class);
+                if (json != null) {
+                    loadedConfigs.add(json);
+                }
+            } catch (Exception e) {
+                Constants.LOG.error("Failed to load recipe config file: {}", file.getName(), e);
+            }
+        }
+
+        return loadedConfigs;
     }
 
-    private static void createDefault() {
+    private static void createDefault(Path path) {
         JsonObject root = new JsonObject();
-        JsonArray modifications = new JsonArray();
+
+        // Recipe Modifications
+        JsonArray recipeMods = new JsonArray();
         JsonObject removeExample = new JsonObject();
         removeExample.addProperty("action", "remove");
         JsonObject filter = new JsonObject();
         filter.addProperty("output", "minecraft:stone_pickaxe");
         removeExample.add("filter", filter);
-        modifications.add(removeExample);
-        root.add("modifications", modifications);
+        recipeMods.add(removeExample);
+        root.add("recipe_modifications", recipeMods);
 
-        JsonArray tagModifications = new JsonArray();
+        // Tag Modifications
+        JsonArray tagMods = new JsonArray();
         JsonObject tagRemoveExample = new JsonObject();
         tagRemoveExample.addProperty("action", "remove_all_tags");
         JsonArray items = new JsonArray();
         items.add("minecraft:wooden_hoe");
         tagRemoveExample.add("items", items);
-        tagModifications.add(tagRemoveExample);
-        root.add("tag_modifications", tagModifications);
+        tagMods.add(tagRemoveExample);
+        root.add("tag_modifications", tagMods);
 
-        try (FileWriter writer = new FileWriter(CONFIG_PATH.toFile())) {
+        try (FileWriter writer = new FileWriter(path.toFile())) {
             GSON.toJson(root, writer);
         } catch (IOException e) {
-            Constants.LOG.error("Failed to create default recipe config: {}", CONFIG_PATH, e);
+            Constants.LOG.error("Failed to create default recipe config: {}", path, e);
         }
     }
 }

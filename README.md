@@ -18,11 +18,11 @@ The mod watches a specific folder in your instance (e.g., `./config/reliable_rec
 
 ## JSON Structure
 
-The file contains two main sections: `modifications` for recipes and `tag_modifications` for item tags.
+The file contains two main sections: `recipe_modifications` for recipes and `tag_modifications` for item tags.
 
 ```json
 {
-  "modifications": [ ... ],
+  "recipe_modifications": [ ... ],
   "tag_modifications": [ ... ]
 }
 
