@@ -3,6 +3,7 @@ package com.evandev.reliable_recipes;
 import com.evandev.reliable_recipes.command.UndoCommand;
 import com.evandev.reliable_recipes.config.ClothConfigIntegration;
 import com.evandev.reliable_recipes.network.PacketHandler;
+import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.recipe.TagModifier;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import net.minecraftforge.client.ConfigScreenHandler;
@@ -55,6 +56,9 @@ public class ReliableRecipesMod {
 
         var server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
+            RecipeModifier.apply(server.getRecipeManager());
+
+            // Sync to clients
             server.getPlayerList().getPlayers().forEach(player ->
                     player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
             );
