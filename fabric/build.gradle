@@ -1,6 +1,7 @@
 plugins {
     id 'multiloader-loader'
     id 'fabric-loom'
+    id "com.matthewprenger.cursegradle" version "1.4.0"
 }
 
 dependencies {
@@ -50,5 +51,33 @@ loom {
             ideConfigGenerated(true)
             runDir("run")
         }
+    }
+}
+
+curseforge {
+    apiKey = System.getenv("CURSEFORGE_TOKEN") ?: "0"
+    project {
+        id = "1414959"
+        releaseType = "release"
+        changelog = file('../CHANGELOG.md')
+        changelogType = 'markdown'
+
+        addGameVersion "1.20.1"
+        addGameVersion "Java 17"
+        addGameVersion "Fabric"
+
+        mainArtifact(remapJar) {
+            displayName = "Reliable Recipes Fabric ${project.minecraft_version} - ${project.version}"
+        }
+
+        relations {
+            requiredDependency "fabric-api"
+            optionalDependency "reliable-remover"
+            optionalDependency "item-obliterator"
+            optionalDependency "cloth-config"
+        }
+    }
+    options {
+        forgeGradleIntegration = false
     }
 }
