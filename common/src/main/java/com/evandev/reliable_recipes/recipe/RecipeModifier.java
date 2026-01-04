@@ -1,6 +1,7 @@
 package com.evandev.reliable_recipes.recipe;
 
 import com.evandev.reliable_recipes.Constants;
+import com.evandev.reliable_recipes.compat.ReliableRemoverCompat;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.*;
 import com.evandev.reliable_recipes.platform.Services;
@@ -21,7 +22,7 @@ public class RecipeModifier {
         int lastErrorCount = 0;
         List<RecipeRule> rules = RecipeConfigIO.loadRules();
 
-        if (rules.isEmpty() && !Services.PLATFORM.hasItemHidingCapabilities()) return;
+        if (rules.isEmpty() && !Services.PLATFORM.hasItemHidingCapabilities() && !ReliableRemoverCompat.isLoaded()) return;
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
         Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> recipesByType = new HashMap<>(managerAccessor.getRecipes());
@@ -34,7 +35,7 @@ public class RecipeModifier {
                 boolean shouldRemove = false;
 
                 ItemStack result = getResult(recipe);
-                if (!result.isEmpty() && Services.PLATFORM.isItemHidden(result)) {
+                if (!result.isEmpty() && (Services.PLATFORM.isItemHidden(result) || ReliableRemoverCompat.isHidden(result))) {
                     shouldRemove = true;
                 }
 

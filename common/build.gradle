@@ -15,8 +15,14 @@ legacyForge {
 }
 
 dependencies {
+    // EMI
     compileOnly "dev.emi:emi-xplat-mojmap:${emi_version}"
+
+    // Cloth Config
     compileOnly "me.shedaniel.cloth:cloth-config-forge:${cloth_config_version}"
+
+    // Reliable Remover
+    compileOnly "curse.maven:reliable-remover-1420447:7415739"
 
     compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
     compileOnly group: 'org.ow2.asm', name: 'asm-tree', version: '9.6'

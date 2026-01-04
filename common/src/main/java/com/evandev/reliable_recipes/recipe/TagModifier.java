@@ -4,6 +4,7 @@ import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.HolderSetNamedAccessor;
 import com.evandev.reliable_recipes.platform.Services;
+import com.evandev.reliable_recipes.compat.ReliableRemoverCompat;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -20,14 +21,11 @@ public class TagModifier {
         applyToRegistry(BuiltInRegistries.ITEM, "Item");
         applyToRegistry(BuiltInRegistries.BLOCK, "Block");
 
-        if (Services.PLATFORM.hasItemHidingCapabilities()) {
+        if (Services.PLATFORM.hasItemHidingCapabilities() || ReliableRemoverCompat.isLoaded()) {
             applyHiddenItemRules();
         }
     }
 
-    /**
-     * Generic method to apply tag rules to any registry (Items, Blocks, etc.)
-     */
     private static <T> void applyToRegistry(Registry<T> registry, String debugName) {
         int removalCount = 0;
         List<TagRule> rules = RecipeConfigIO.loadTagRules();
@@ -87,12 +85,9 @@ public class TagModifier {
         int removalCount = 0;
         try {
             for (Item item : BuiltInRegistries.ITEM) {
-                if (item != null && Services.PLATFORM.isItemHidden(item.getDefaultInstance())) {
-
-                    // Remove tags from the item itself
+                if (item != null && (Services.PLATFORM.isItemHidden(item.getDefaultInstance()) || ReliableRemoverCompat.isHidden(item.getDefaultInstance()))) {
                     removalCount += removeAllTagsFrom(BuiltInRegistries.ITEM, item);
 
-                    // Check if it's a BlockItem and remove tags from the Block as well
                     var block = net.minecraft.world.level.block.Block.byItem(item);
                     if (block != net.minecraft.world.level.block.Blocks.AIR) {
                         removalCount += removeAllTagsFrom(BuiltInRegistries.BLOCK, block);

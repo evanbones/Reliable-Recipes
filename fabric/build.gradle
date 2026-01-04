@@ -12,6 +12,9 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 
+    // Reliable Remover
+    modImplementation "curse.maven:reliable-remover-1420447:7415737"
+
     // Item Obliterator
     modImplementation "maven.modrinth:item-obliterator:${fabric_item_obliterator_version}"
     modImplementation "maven.modrinth:necronomicon:${fabric_necronomicon_version}"
