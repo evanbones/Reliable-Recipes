@@ -1,3 +1,3 @@
-## Changelog - 1.2.2
+## Changelog - 1.2.3
 
-* Added integration with Reliable Remover.
+* Fixed toast related crash.

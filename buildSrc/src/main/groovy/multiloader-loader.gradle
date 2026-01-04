@@ -21,9 +21,10 @@ dependencies {
     commonResources project(path: ':common', configuration: 'commonResources')
 }
 
+sourceSets.main.java.srcDir configurations.commonJava
+
 tasks.named('compileJava', JavaCompile) {
     dependsOn(configurations.commonJava)
-    source(configurations.commonJava)
 }
 
 processResources {
@@ -37,8 +38,6 @@ tasks.named('javadoc', Javadoc).configure {
 }
 
 tasks.named('sourcesJar', Jar) {
-    dependsOn(configurations.commonJava)
-    from(configurations.commonJava)
     dependsOn(configurations.commonResources)
     from(configurations.commonResources)
 }
