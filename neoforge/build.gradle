@@ -1,11 +1,11 @@
 plugins {
     id 'multiloader-loader'
     id 'net.neoforged.moddev'
+    id "com.matthewprenger.cursegradle" version "1.4.0"
 }
 
 neoForge {
     version = neoforge_version
-    // Automatically enable neoforge AccessTransformers if the file exists
     def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
     if (at.exists()) {
         accessTransformers.from(at.absolutePath)
@@ -21,14 +21,6 @@ neoForge {
         }
         client {
             client()
-        }
-        data {
-            data()
-
-            // DataGen can be run by - "./gradlew :neoforge:runData" in Terminal.
-            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-
         }
         server {
             server()
@@ -58,3 +50,27 @@ dependencies {
     implementation "me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}"
 }
 
+
+curseforge {
+    apiKey = System.getenv("CURSEFORGE_TOKEN") ?: "0"
+    project {
+        id = "1414959"
+        releaseType = "release"
+        changelog = file('../CHANGELOG.md')
+        changelogType = 'markdown'
+
+        addGameVersion "1.21.1"
+        addGameVersion "Java 21"
+        addGameVersion "NeoForge"
+
+        mainArtifact(jar.archiveFile) {
+            displayName = "Reliable Recipes NeoForge ${project.minecraft_version} - ${project.version}"
+        }
+
+        relations {
+            optionalDependency "reliable-remover"
+            optionalDependency "item-obliterator"
+            optionalDependency "cloth-config"
+        }
+    }
+}
