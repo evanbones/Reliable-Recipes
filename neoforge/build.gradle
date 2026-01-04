@@ -48,6 +48,9 @@ dependencies {
     implementation "maven.modrinth:item-obliterator:${forge_item_obliterator_version}"
     implementation "maven.modrinth:necronomicon:${forge_necronomicon_version}"
 
+    // Reliable Remover
+    implementation "curse.maven:reliable-remover-1420447:7415736"
+
     // EMI
     implementation "dev.emi:emi-neoforge:${emi_version}"
 

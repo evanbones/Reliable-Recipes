@@ -9,6 +9,9 @@ dependencies {
         parchment("org.parchmentmc.data:parchment-${parchment_minecraft}:${parchment_version}@zip")
     }
 
+    // Reliable Remover
+    modImplementation "curse.maven:reliable-remover-1420447:7415734"
+
     // Item Obliterator
     modImplementation "maven.modrinth:item-obliterator:${fabric_item_obliterator_version}"
     modImplementation "maven.modrinth:necronomicon:${fabric_necronomicon_version}"
