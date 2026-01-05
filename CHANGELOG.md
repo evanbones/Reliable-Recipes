@@ -1,3 +1,3 @@
-## Changelog - 1.2.3
+## Changelog - 1.2.4
 
-* Fixed toast related crash.
+* Fixed crash on Forge.

@@ -83,7 +83,7 @@ curseforge {
         addGameVersion "Java 17"
         addGameVersion "Forge"
 
-        mainArtifact(jar) {
+        mainArtifact(file("build/libs/${project.archivesBaseName}-${project.version}.jar")) {
             displayName = "Reliable Recipes Forge ${project.minecraft_version} - ${project.version}"
         }
 
@@ -93,4 +93,8 @@ curseforge {
             optionalDependency "cloth-config"
         }
     }
+}
+
+tasks.named('curseforge') {
+    dependsOn tasks.named('reobfJar')
 }
