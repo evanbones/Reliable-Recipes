@@ -1,7 +1,7 @@
 plugins {
     id 'multiloader-loader'
     id 'net.neoforged.moddev.legacyforge'
-    id "com.matthewprenger.cursegradle" version "1.4.0"
+    id "me.modmuss50.mod-publish-plugin" version "1.1.0"
 }
 
 mixin {
@@ -28,10 +28,6 @@ legacyForge {
         client {
             client()
         }
-        data {
-            data()
-            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-        }
         server {
             server()
         }
@@ -48,7 +44,7 @@ sourceSets.main.resources.srcDir 'src/generated/resources'
 
 dependencies {
     // Reliable Remover
-    modImplementation "curse.maven:reliable-remover-1420447:7415739"
+    modImplementation "maven.modrinth:reliable-remover:${forge_reliable_remover_version}"
 
     // Item Obliterator
     modImplementation "maven.modrinth:item-obliterator:${forge_item_obliterator_version}"
@@ -71,30 +67,30 @@ jar {
     ])
 }
 
-curseforge {
-    apiKey = System.getenv("CURSEFORGE_TOKEN") ?: "0"
-    project {
-        id = "1414959"
-        releaseType = "release"
-        changelog = file('../CHANGELOG.md')
-        changelogType = 'markdown'
+publishMods {
+    file = tasks.named("reobfJar").flatMap { it.archiveFile }
+    changelog = rootProject.file("CHANGELOG.md").text
+    type = STABLE
+    displayName = "${mod_name} Forge ${minecraft_version} - ${project.version}"
+    modLoaders.add("forge")
 
-        addGameVersion "1.20.1"
-        addGameVersion "Java 17"
-        addGameVersion "Forge"
+    curseforge {
+        accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
+        projectId = "1414959"
+        minecraftVersions.add("1.20.1")
 
-        mainArtifact(file("build/libs/${project.archivesBaseName}-${project.version}.jar")) {
-            displayName = "Reliable Recipes Forge ${project.minecraft_version} - ${project.version}"
-        }
-
-        relations {
-            optionalDependency "reliable-remover"
-            optionalDependency "item-obliterator"
-            optionalDependency "cloth-config"
-        }
+        optional { slug = "reliable-remover" }
+        optional { slug = "item-obliterator" }
+        optional { slug = "cloth-config" }
     }
-}
 
-tasks.named('curseforge') {
-    dependsOn tasks.named('reobfJar')
+    modrinth {
+        accessToken = providers.environmentVariable("MODRINTH_TOKEN")
+        projectId = "Hl4ARA1z"
+        minecraftVersions.add("1.20.1")
+
+        optional { slug = "reliable-remover" }
+        optional { slug = "item-obliterator" }
+        optional { slug = "cloth-config" }
+    }
 }
