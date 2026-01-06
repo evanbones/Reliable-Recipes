@@ -4,14 +4,11 @@
     "package": "com.evandev.reliable_recipes.mixin",
     "refmap": "${mod_id}.refmap.json",
     "compatibilityLevel": "JAVA_21",
-    "mixins": [
-    ],
-    "client": [
-    ],
-    "server": [
-    ],
+    "mixins": [],
+    "client": [],
+    "server": [],
     "injectors": {
-      "defaultRequire": 1
+        "defaultRequire": 1
     }
-  }
+}
   

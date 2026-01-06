@@ -5,7 +5,6 @@ plugins {
 
 neoForge {
     neoFormVersion = neo_form_version
-    // Automatically enable AccessTransformers if the file exists
     def at = file('src/main/resources/META-INF/accesstransformer.cfg')
     if (at.exists()) {
         accessTransformers.from(at.absolutePath)
@@ -24,7 +23,7 @@ dependencies {
     compileOnly "me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}"
 
     // Reliable Remover
-    compileOnly "curse.maven:reliable-remover-1420447:7415736"
+    compileOnly "maven.modrinth:reliable-remover:${forge_reliable_remover_version}"
 
     compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
     compileOnly group: 'org.ow2.asm', name: 'asm-tree', version: '9.6'

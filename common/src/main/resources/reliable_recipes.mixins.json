@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "com.evandev.reliable_recipes.mixin",
   "plugin": "com.evandev.reliable_recipes.mixin.ReliableRecipesMixinPlugin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_18",
   "mixins": [
     "accessor.AbstractCookingRecipeAccessor",
     "accessor.HolderSetNamedAccessor",
@@ -19,8 +19,7 @@
     "emi.EmiRecipeScreenMixin",
     "emi.EmiReloadMixin"
   ],
-  "server": [
-  ],
+  "server": [],
   "injectors": {
     "defaultRequire": 1
   }

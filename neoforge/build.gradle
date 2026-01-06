@@ -1,7 +1,7 @@
 plugins {
     id 'multiloader-loader'
     id 'net.neoforged.moddev'
-    id "com.matthewprenger.cursegradle" version "1.4.0"
+    id "me.modmuss50.mod-publish-plugin" version "1.1.0"
 }
 
 neoForge {
@@ -17,7 +17,7 @@ neoForge {
     runs {
         configureEach {
             systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
-            ideName = "NeoForge ${it.name.capitalize()} (${project.path})" // Unify the run config names with fabric
+            ideName = "NeoForge ${it.name.capitalize()} (${project.path})"
         }
         client {
             client()
@@ -41,7 +41,7 @@ dependencies {
     implementation "maven.modrinth:necronomicon:${forge_necronomicon_version}"
 
     // Reliable Remover
-    implementation "curse.maven:reliable-remover-1420447:7415736"
+    implementation "maven.modrinth:reliable-remover:${forge_reliable_remover_version}"
 
     // EMI
     implementation "dev.emi:emi-neoforge:${emi_version}"
@@ -50,27 +50,30 @@ dependencies {
     implementation "me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}"
 }
 
+publishMods {
+    file = tasks.named("jar").flatMap { it.archiveFile }
+    changelog = rootProject.file("CHANGELOG.md").text
+    type = STABLE
+    displayName = "${mod_name} NeoForge ${minecraft_version} - ${project.version}"
+    modLoaders.add("neoforge")
 
-curseforge {
-    apiKey = System.getenv("CURSEFORGE_TOKEN") ?: "0"
-    project {
-        id = "1414959"
-        releaseType = "release"
-        changelog = file('../CHANGELOG.md')
-        changelogType = 'markdown'
+    curseforge {
+        accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
+        projectId = "1414959"
+        minecraftVersions.add("1.21.1")
 
-        addGameVersion "1.21.1"
-        addGameVersion "Java 21"
-        addGameVersion "NeoForge"
+        optional { slug = "reliable-remover" }
+        optional { slug = "item-obliterator" }
+        optional { slug = "cloth-config" }
+    }
 
-        mainArtifact(jar.archiveFile) {
-            displayName = "Reliable Recipes NeoForge ${project.minecraft_version} - ${project.version}"
-        }
+    modrinth {
+        accessToken = providers.environmentVariable("MODRINTH_TOKEN")
+        projectId = "Hl4ARA1z"
+        minecraftVersions.add("1.21.1")
 
-        relations {
-            optionalDependency "reliable-remover"
-            optionalDependency "item-obliterator"
-            optionalDependency "cloth-config"
-        }
+        optional { slug = "reliable-remover" }
+        optional { slug = "item-obliterator" }
+        optional { slug = "cloth-config" }
     }
 }
