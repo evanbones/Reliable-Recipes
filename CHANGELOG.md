@@ -1,2 +1,1 @@
-* Updated dependencies.
-* Cleaned up backend code.
+* Update default removal script.
