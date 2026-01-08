@@ -92,21 +92,45 @@ public class RecipeConfigIO {
 
         // Recipe Modifications
         JsonArray recipeMods = new JsonArray();
+
+        // Example 1: Remove all shaped crafting recipes from 'examplemod'
         JsonObject removeExample = new JsonObject();
         removeExample.addProperty("action", "remove");
-        JsonObject filter = new JsonObject();
-        filter.addProperty("output", "minecraft:stone_pickaxe");
-        removeExample.add("filter", filter);
+        JsonObject removeFilter = new JsonObject();
+        removeFilter.addProperty("mod", "examplemod");
+        removeFilter.addProperty("type", "minecraft:crafting_shaped");
+        removeExample.add("filter", removeFilter);
         recipeMods.add(removeExample);
+
+        // Example 2: Replace sticks with sticks OR reinforced sticks in a specific recipe
+        JsonObject replaceExample = new JsonObject();
+        replaceExample.addProperty("action", "replace_input");
+        replaceExample.addProperty("target", "minecraft:stick");
+
+        JsonArray replacement = new JsonArray();
+        replacement.add("minecraft:stick");
+        replacement.add("examplemod:reinforced_stick");
+        replaceExample.add("replacement", replacement);
+
+        JsonObject replaceFilter = new JsonObject();
+        replaceFilter.addProperty("id", "examplemod:reinforced_sword");
+        replaceExample.add("filter", replaceFilter);
+
+        recipeMods.add(replaceExample);
         root.add("recipe_modifications", recipeMods);
 
         // Tag Modifications
         JsonArray tagMods = new JsonArray();
+
+        // Example 3: Remove an item from a specific tag
         JsonObject tagRemoveExample = new JsonObject();
-        tagRemoveExample.addProperty("action", "remove_all_tags");
-        JsonArray items = new JsonArray();
-        items.add("minecraft:wooden_hoe");
-        tagRemoveExample.add("items", items);
+        tagRemoveExample.addProperty("action", "remove_from_tag");
+        tagRemoveExample.addProperty("tag", "c:foods");
+
+        JsonArray tagItems = new JsonArray();
+        tagItems.add("examplemod:inedible_food");
+        tagRemoveExample.add("items", tagItems);
+
         tagMods.add(tagRemoveExample);
         root.add("tag_modifications", tagMods);
 
