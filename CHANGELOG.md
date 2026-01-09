@@ -1,1 +1,1 @@
-* Explicit handling for synthetic recipes in EMI.
+* Remove recipes with blacklisted items as inputs.

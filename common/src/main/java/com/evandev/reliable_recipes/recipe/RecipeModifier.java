@@ -40,6 +40,21 @@ public class RecipeModifier {
                 }
 
                 if (!shouldRemove) {
+                    try {
+                        for (Ingredient ingredient : recipe.value().getIngredients()) {
+                            for (ItemStack item : ingredient.getItems()) {
+                                if (Services.PLATFORM.isItemHidden(item) || ReliableRemoverCompat.isHidden(item)) {
+                                    shouldRemove = true;
+                                    break;
+                                }
+                            }
+                            if (shouldRemove) break;
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                if (!shouldRemove) {
                     for (RecipeRule rule : rules) {
                         if (rule.test(recipe)) {
                             if (rule.getAction() == RecipeRule.Action.REMOVE) {
