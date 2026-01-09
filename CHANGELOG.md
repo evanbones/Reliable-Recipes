@@ -1,1 +1,1 @@
-* Update default removal script.
+* Explicit handling for synthetic recipes in EMI.
