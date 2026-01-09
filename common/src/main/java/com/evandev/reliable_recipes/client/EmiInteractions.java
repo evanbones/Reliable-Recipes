@@ -45,7 +45,7 @@ public class EmiInteractions {
                 String realNamespace = path.substring(0, splitIndex);
                 String realPath = path.substring(splitIndex + 1);
                 try {
-                    id = new ResourceLocation(realNamespace, realPath);
+                    id = ResourceLocation.fromNamespaceAndPath(realNamespace, realPath);
                 } catch (Exception ignored) {
                 }
             }
