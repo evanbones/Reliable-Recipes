@@ -1,2 +1,2 @@
 * Fix recipe removal running twice.
-* Fixed issue where tags weren't updating until a reload.
+* Fixed issue where tags weren't updating in EMI until a reload.
