@@ -28,7 +28,6 @@ public class ReliableRecipesMixinPlugin implements IMixinConfigPlugin {
         return true;
     }
 
-    // Boilerplate methods required by the interface
     @Override
     public String getRefMapperConfig() { return null; }
     @Override

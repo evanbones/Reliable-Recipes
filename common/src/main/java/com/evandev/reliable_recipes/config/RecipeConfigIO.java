@@ -64,7 +64,7 @@ public class RecipeConfigIO {
 
         if (!dir.exists()) {
             if (dir.mkdirs()) {
-                createDefault(CONFIG_DIR.resolve("example.json"));
+                createDefault(CONFIG_DIR.resolve("recipe_example.json.disabled"));
             } else {
                 Constants.LOG.error("Could not create config directory: {}", CONFIG_DIR);
             }
@@ -146,7 +146,6 @@ public class RecipeConfigIO {
         File file = generatedPath.toFile();
         JsonObject root;
 
-        // Load existing or create new root
         if (file.exists()) {
             try (FileReader reader = new FileReader(file)) {
                 root = JsonParser.parseReader(reader).getAsJsonObject();
@@ -163,7 +162,6 @@ public class RecipeConfigIO {
         }
         JsonArray modifications = root.getAsJsonArray("recipe_modifications");
 
-        // Find an existing bulk remove rule or create one
         JsonObject bulkRemoveRule = null;
         for (JsonElement e : modifications) {
             if (e.isJsonObject()) {
@@ -185,7 +183,6 @@ public class RecipeConfigIO {
         JsonObject filter = bulkRemoveRule.getAsJsonObject("filter");
         JsonArray ids;
 
-        // Convert single "id" to array if necessary, or get existing array
         if (filter.has("id")) {
             JsonElement existingId = filter.get("id");
             if (existingId.isJsonArray()) {
@@ -200,7 +197,6 @@ public class RecipeConfigIO {
             filter.add("id", ids);
         }
 
-        // Add the new ID if it's not already there
         boolean exists = false;
         for (JsonElement e : ids) {
             if (e.getAsString().equals(recipeId)) {
@@ -243,7 +239,6 @@ public class RecipeConfigIO {
                             JsonElement idEl = filter.get("id");
 
                             if (idEl.isJsonArray()) {
-                                // Handle array removal
                                 JsonArray ids = idEl.getAsJsonArray();
                                 Iterator<JsonElement> idIterator = ids.iterator();
                                 while (idIterator.hasNext()) {
@@ -252,12 +247,10 @@ public class RecipeConfigIO {
                                         changed = true;
                                     }
                                 }
-                                // Clean up empty rules
                                 if (ids.isEmpty()) {
                                     modIterator.remove();
                                 }
                             } else if (idEl.getAsString().equals(recipeId)) {
-                                // Handle single string removal
                                 modIterator.remove();
                                 changed = true;
                             }

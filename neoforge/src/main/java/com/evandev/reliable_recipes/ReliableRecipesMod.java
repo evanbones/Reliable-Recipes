@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -54,8 +55,14 @@ public class ReliableRecipesMod {
 
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
+        var server = event.getServer();
+        RecipeModifier.reset();
         TagModifier.apply();
-        RecipeModifier.apply(event.getServer().getRecipeManager());
+        RecipeModifier.apply(server.getRecipeManager());
+
+        server.getPlayerList().getPlayers().forEach(player ->
+                player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
+        );
     }
 
     @SubscribeEvent
@@ -78,17 +85,26 @@ public class ReliableRecipesMod {
         );
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onTagsUpdated(TagsUpdatedEvent event) {
-        TagModifier.apply();
+        if (event.getUpdateCause() == TagsUpdatedEvent.UpdateCause.CLIENT_PACKET_RECEIVED) {
+            TagModifier.apply();
+        }
+        else if (event.getUpdateCause() == TagsUpdatedEvent.UpdateCause.SERVER_DATA_LOAD) {
+            if (!Thread.currentThread().getName().equals("Server thread")) {
+                return;
+            }
 
-        var server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null) {
-            RecipeModifier.apply(server.getRecipeManager());
+            var server = ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                RecipeModifier.reset();
+                TagModifier.apply();
+                RecipeModifier.apply(server.getRecipeManager());
 
-            server.getPlayerList().getPlayers().forEach(player ->
-                    player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
-            );
+                server.getPlayerList().getPlayers().forEach(player ->
+                        player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
+                );
+            }
         }
     }
 }
