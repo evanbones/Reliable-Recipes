@@ -52,16 +52,6 @@ public class ReliableRecipesMod {
     }
 
     @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event) {
-        TagModifier.apply();
-        RecipeModifier.apply(event.getServer().getRecipeManager());
-
-        event.getServer().getPlayerList().getPlayers().forEach(player ->
-                player.connection.send(new ClientboundUpdateRecipesPacket(event.getServer().getRecipeManager().getRecipes()))
-        );
-    }
-
-    @SubscribeEvent
     public void onTagsUpdated(TagsUpdatedEvent event) {
         TagModifier.apply();
 

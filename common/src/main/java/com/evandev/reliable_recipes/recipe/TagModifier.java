@@ -11,9 +11,12 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class TagModifier {
 
@@ -84,16 +87,27 @@ public class TagModifier {
     private static void applyHiddenItemRules() {
         int removalCount = 0;
         try {
+            Set<Item> hiddenItems = new HashSet<>();
+            Set<Block> hiddenBlocks = new HashSet<>();
+
             for (Item item : BuiltInRegistries.ITEM) {
                 if (item != null && (Services.PLATFORM.isItemHidden(item.getDefaultInstance()) || ReliableRemoverCompat.isHidden(item.getDefaultInstance()))) {
-                    removalCount += removeAllTagsFrom(BuiltInRegistries.ITEM, item);
+                    hiddenItems.add(item);
 
-                    var block = net.minecraft.world.level.block.Block.byItem(item);
+                    var block = Block.byItem(item);
                     if (block != net.minecraft.world.level.block.Blocks.AIR) {
-                        removalCount += removeAllTagsFrom(BuiltInRegistries.BLOCK, block);
+                        hiddenBlocks.add(block);
                     }
                 }
             }
+
+            if (!hiddenItems.isEmpty()) {
+                removalCount += removeHiddenValuesFromTags(BuiltInRegistries.ITEM, hiddenItems);
+            }
+            if (!hiddenBlocks.isEmpty()) {
+                removalCount += removeHiddenValuesFromTags(BuiltInRegistries.BLOCK, hiddenBlocks);
+            }
+
         } catch (Exception e) {
             Constants.LOG.error("Error processing hidden items integration", e);
         }
@@ -101,6 +115,29 @@ public class TagModifier {
         if (removalCount > 0) {
             Constants.LOG.info("Hidden items integration removed {} item-tag associations.", removalCount);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> int removeHiddenValuesFromTags(Registry<T> registry, Set<T> hiddenValues) {
+        int count = 0;
+        for (var pair : registry.getTags().toList()) {
+            var tagSet = pair.getSecond();
+
+            if (tagSet instanceof HolderSetNamedAccessor accessor) {
+                List<Holder<T>> currentContents = (List<Holder<T>>) (Object) accessor.getContents();
+
+                if (currentContents != null && !currentContents.isEmpty()) {
+                    List<Holder<T>> mutableContents = new ArrayList<>(currentContents);
+                    int initialSize = mutableContents.size();
+
+                    if (mutableContents.removeIf(h -> hiddenValues.contains(h.value()))) {
+                        accessor.setContents((List<Holder<?>>) (Object) mutableContents);
+                        count += (initialSize - mutableContents.size());
+                    }
+                }
+            }
+        }
+        return count;
     }
 
     private static void clearTag(Object tag) {
@@ -111,13 +148,14 @@ public class TagModifier {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static <T> void removeFromTag(Object tag, T value) {
         if (tag instanceof HolderSetNamedAccessor accessor) {
-            List<Holder<?>> currentContents = accessor.getContents();
+            List<Holder<T>> currentContents = (List<Holder<T>>) (Object) accessor.getContents();
             if (currentContents != null) {
-                List<Holder<?>> mutableContents = new ArrayList<>(currentContents);
+                List<Holder<T>> mutableContents = new ArrayList<>(currentContents);
                 if (mutableContents.removeIf(holder -> holder.value() == value)) {
-                    accessor.setContents(mutableContents);
+                    accessor.setContents((List<Holder<?>>) (Object) mutableContents);
                 }
             }
         }
