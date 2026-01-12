@@ -23,9 +23,10 @@ public class ReliableRecipesMod implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> UndoCommand.register(dispatcher));
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            RecipeModifier.reset();
             TagModifier.apply();
+            RecipeModifier.apply(server.getRecipeManager());
 
-            // Sync recipes to all players
             server.getPlayerList().getPlayers().forEach(player ->
                     player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
             );
@@ -33,7 +34,10 @@ public class ReliableRecipesMod implements ModInitializer {
 
         ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) -> {
             if (success) {
+                RecipeModifier.reset();
                 TagModifier.apply();
+                RecipeModifier.apply(server.getRecipeManager());
+
                 server.getPlayerList().getPlayers().forEach(player ->
                         player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
                 );
@@ -46,7 +50,6 @@ public class ReliableRecipesMod implements ModInitializer {
                     server.execute(() -> {
                         if (player.hasPermissions(2)) {
                             RecipeConfigIO.addRemovalRule(id.toString());
-
                             boolean removed = RecipeModifier.removeRecipe(server.getRecipeManager(), id);
 
                             if (removed) {
@@ -54,7 +57,6 @@ public class ReliableRecipesMod implements ModInitializer {
 
                                 FriendlyByteBuf packetBuf = PacketByteBufs.create();
                                 packetBuf.writeResourceLocation(id);
-
                                 ResourceLocation packetId = new ResourceLocation("reliable_recipes", "client_delete_recipe");
 
                                 server.getPlayerList().getPlayers().forEach(p ->

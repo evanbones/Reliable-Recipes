@@ -20,10 +20,8 @@
     "emi.EmiRecipeScreenMixin",
     "emi.EmiReloadMixin"
   ],
-  "server": [
-  ],
+  "server": [],
   "injectors": {
     "defaultRequire": 1
   }
 }
-

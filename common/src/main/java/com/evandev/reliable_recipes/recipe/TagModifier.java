@@ -1,3 +1,4 @@
+// common/src/main/java/com/evandev/reliable_recipes/recipe/TagModifier.java
 package com.evandev.reliable_recipes.recipe;
 
 import com.evandev.reliable_recipes.Constants;
@@ -143,8 +144,6 @@ public class TagModifier {
     private static void clearTag(Object tag) {
         if (tag instanceof HolderSetNamedAccessor accessor) {
             accessor.setContents(new ArrayList<>());
-        } else {
-            Constants.LOG.debug("TagModifier: Tag object {} is not HolderSet.Named", tag.getClass().getSimpleName());
         }
     }
 

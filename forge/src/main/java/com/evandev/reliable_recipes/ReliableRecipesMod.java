@@ -10,7 +10,8 @@ import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TagsUpdatedEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
@@ -24,7 +25,6 @@ public class ReliableRecipesMod {
     public ReliableRecipesMod() {
         CommonClass.init();
         MinecraftForge.EVENT_BUS.register(this);
-
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::commonSetup);
 
         if (ModList.get().isLoaded("cloth_config")) {
@@ -52,16 +52,39 @@ public class ReliableRecipesMod {
     }
 
     @SubscribeEvent
-    public void onTagsUpdated(TagsUpdatedEvent event) {
-        TagModifier.apply();
-
-        var server = ServerLifecycleHooks.getCurrentServer();
+    public void onServerStarted(ServerStartedEvent event) {
+        var server = event.getServer();
         if (server != null) {
+            RecipeModifier.reset();
+            TagModifier.apply();
             RecipeModifier.apply(server.getRecipeManager());
 
             server.getPlayerList().getPlayers().forEach(player ->
                     player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
             );
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onTagsUpdated(TagsUpdatedEvent event) {
+        if (event.getUpdateCause() == TagsUpdatedEvent.UpdateCause.CLIENT_PACKET_RECEIVED) {
+            TagModifier.apply();
+        }
+        else if (event.getUpdateCause() == TagsUpdatedEvent.UpdateCause.SERVER_DATA_LOAD) {
+            if (!Thread.currentThread().getName().equals("Server thread")) {
+                return;
+            }
+
+            var server = ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                RecipeModifier.reset();
+                TagModifier.apply();
+                RecipeModifier.apply(server.getRecipeManager());
+
+                server.getPlayerList().getPlayers().forEach(player ->
+                        player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
+                );
+            }
         }
     }
 }
