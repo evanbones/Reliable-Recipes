@@ -1,1 +1,2 @@
-* Remove recipes with blacklisted items as inputs.
+* Fix recipe removal running twice.
+* Fixed issue where tags weren't updating until a reload.

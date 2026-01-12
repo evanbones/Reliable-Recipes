@@ -16,6 +16,11 @@ import java.util.Map;
 @Mixin(RecipeManager.class)
 public class RecipeManagerMixin {
 
+    @Inject(method = "apply", at = @At("HEAD"))
+    private void reliableRecipes$resetModifier(Map<ResourceLocation, JsonElement> map, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
+        RecipeModifier.reset();
+    }
+
     @Inject(method = "apply", at = @At("RETURN"))
     private void reliableRecipes$modifyRecipes(Map<ResourceLocation, JsonElement> map, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
         RecipeModifier.apply((RecipeManager) (Object) this);

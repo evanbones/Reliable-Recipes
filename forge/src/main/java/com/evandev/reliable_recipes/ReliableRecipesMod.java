@@ -10,6 +10,7 @@ import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TagsUpdatedEvent;
+import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
@@ -51,6 +52,16 @@ public class ReliableRecipesMod {
     }
 
     @SubscribeEvent
+    public void onServerStarting(ServerStartingEvent event) {
+        TagModifier.apply();
+        RecipeModifier.apply(event.getServer().getRecipeManager());
+
+        event.getServer().getPlayerList().getPlayers().forEach(player ->
+                player.connection.send(new ClientboundUpdateRecipesPacket(event.getServer().getRecipeManager().getRecipes()))
+        );
+    }
+
+    @SubscribeEvent
     public void onTagsUpdated(TagsUpdatedEvent event) {
         TagModifier.apply();
 
@@ -58,7 +69,6 @@ public class ReliableRecipesMod {
         if (server != null) {
             RecipeModifier.apply(server.getRecipeManager());
 
-            // Sync to clients
             server.getPlayerList().getPlayers().forEach(player ->
                     player.connection.send(new ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes()))
             );

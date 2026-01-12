@@ -17,8 +17,15 @@ import java.util.Map;
 
 public class RecipeModifier {
     private static final Map<ResourceLocation, Recipe<?>> DELETED_RECIPES_CACHE = new HashMap<>();
+    private static boolean hasBeenApplied = false;
 
     public static void apply(RecipeManager manager) {
+        if (hasBeenApplied) {
+            Constants.LOG.debug("RecipeModifier already applied, skipping duplicate call");
+            return;
+        }
+        hasBeenApplied = true;
+
         int lastErrorCount = 0;
         List<RecipeRule> rules = RecipeConfigIO.loadRules();
 
@@ -194,5 +201,10 @@ public class RecipeModifier {
         } catch (Exception ignored) {
         }
         return false;
+    }
+
+    public static void reset() {
+        hasBeenApplied = false;
+        DELETED_RECIPES_CACHE.clear();
     }
 }
