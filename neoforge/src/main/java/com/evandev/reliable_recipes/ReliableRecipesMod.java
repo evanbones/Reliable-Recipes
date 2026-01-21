@@ -35,6 +35,8 @@ public class ReliableRecipesMod {
     public ReliableRecipesMod(IEventBus eventBus) {
         CommonClass.init();
 
+        eventBus.addListener(ReliableRecipesMod::registerPayloadHandlers);
+
         if (ModList.get().isLoaded("cloth_config")) {
             eventBus.register(new Object() {
                 @SubscribeEvent
@@ -70,18 +72,17 @@ public class ReliableRecipesMod {
         UndoCommand.register(event.getDispatcher());
     }
 
-    @SubscribeEvent
     private static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
         final PayloadRegistrar registrar = event.registrar("1");
         registrar.playToServer(
                 DeleteRecipePayload.TYPE,
                 DeleteRecipePayload.STREAM_CODEC,
-                (payload, context)-> DeleteRecipePayload.handle(payload.recipeId(), context.player().getServer(), (ServerPlayer) context.player())
+                (payload, context) -> DeleteRecipePayload.handle(payload.recipeId(), context.player().getServer(), (ServerPlayer) context.player())
         );
         registrar.playToClient(
                 ClientboundDeleteRecipePayload.TYPE,
                 ClientboundDeleteRecipePayload.STREAM_CODEC,
-                (payload, context)-> ClientboundDeleteRecipePayload.handle(payload.recipeId(), Minecraft.getInstance())
+                (payload, context) -> ClientboundDeleteRecipePayload.handle(payload.recipeId(), Minecraft.getInstance())
         );
     }
 
@@ -89,8 +90,7 @@ public class ReliableRecipesMod {
     public static void onTagsUpdated(TagsUpdatedEvent event) {
         if (event.getUpdateCause() == TagsUpdatedEvent.UpdateCause.CLIENT_PACKET_RECEIVED) {
             TagModifier.apply();
-        }
-        else if (event.getUpdateCause() == TagsUpdatedEvent.UpdateCause.SERVER_DATA_LOAD) {
+        } else if (event.getUpdateCause() == TagsUpdatedEvent.UpdateCause.SERVER_DATA_LOAD) {
             if (!Thread.currentThread().getName().equals("Server thread")) {
                 return;
             }
