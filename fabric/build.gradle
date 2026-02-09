@@ -17,8 +17,7 @@ dependencies {
     modImplementation "maven.modrinth:reliable-remover:${fabric_reliable_remover_version}"
 
     // Item Obliterator
-    modImplementation "maven.modrinth:item-obliterator:${fabric_item_obliterator_version}"
-    modImplementation "maven.modrinth:necronomicon:${fabric_necronomicon_version}"
+    modCompileOnly "maven.modrinth:item-obliterator:${fabric_item_obliterator_version}"
 
     // EMI
     modImplementation "dev.emi:emi-fabric:${emi_version}"
