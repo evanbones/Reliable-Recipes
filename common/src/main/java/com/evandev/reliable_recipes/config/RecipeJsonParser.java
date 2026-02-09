@@ -175,7 +175,7 @@ public class RecipeJsonParser {
 
     private static Ingredient mergeIngredients(List<Ingredient> ingredients) {
         if (ingredients.isEmpty()) return Ingredient.EMPTY;
-        if (ingredients.size() == 1) return ingredients.get(0);
+        if (ingredients.size() == 1) return ingredients.getFirst();
 
         List<Ingredient.Value> combinedValues = new ArrayList<>();
         for (Ingredient ing : ingredients) {
@@ -187,7 +187,9 @@ public class RecipeJsonParser {
             }
         }
 
-        Ingredient newIngredient = Ingredient.of();
+        // Dummy ingredient to prevent recipe corruption
+        Ingredient newIngredient = Ingredient.of(Items.STONE);
+
         ((IngredientAccessor) (Object) newIngredient)
                 .setValues(combinedValues.toArray(new Ingredient.Value[0]));
         return newIngredient;

@@ -37,8 +37,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
     // Item Obliterator
-    implementation "maven.modrinth:item-obliterator:${forge_item_obliterator_version}"
-    implementation "maven.modrinth:necronomicon:${forge_necronomicon_version}"
+    compileOnly "maven.modrinth:item-obliterator:${forge_item_obliterator_version}"
 
     // Reliable Remover
     implementation "maven.modrinth:reliable-remover:${forge_reliable_remover_version}"
