@@ -1,7 +1,7 @@
 package com.evandev.reliable_recipes.mixin.emi;
 
-import dev.emi.emi.screen.RecipeScreen;
 import dev.emi.emi.runtime.EmiReloadManager;
+import dev.emi.emi.screen.RecipeScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
