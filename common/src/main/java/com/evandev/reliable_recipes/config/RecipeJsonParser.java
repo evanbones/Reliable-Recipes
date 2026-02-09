@@ -172,7 +172,7 @@ public class RecipeJsonParser {
 
     private static Ingredient mergeIngredients(List<Ingredient> ingredients) {
         if (ingredients.isEmpty()) return Ingredient.EMPTY;
-        if (ingredients.size() == 1) return ingredients.getFirst();
+        if (ingredients.size() == 1) return ingredients.get(0);
 
         List<Ingredient.Value> combinedValues = new ArrayList<>();
         for (Ingredient ing : ingredients) {
