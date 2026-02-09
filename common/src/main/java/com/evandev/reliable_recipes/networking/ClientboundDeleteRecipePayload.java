@@ -17,54 +17,54 @@ import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 public record ClientboundDeleteRecipePayload(ResourceLocation recipeId) implements CustomPacketPayload {
-	public static final Type<ClientboundDeleteRecipePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "client_delete_recipe"));
-	public static final StreamCodec<RegistryFriendlyByteBuf, ClientboundDeleteRecipePayload> STREAM_CODEC = StreamCodec.composite(
-			ResourceLocation.STREAM_CODEC,
-			ClientboundDeleteRecipePayload::recipeId,
-			ClientboundDeleteRecipePayload::new
-	);
+    public static final Type<ClientboundDeleteRecipePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "client_delete_recipe"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, ClientboundDeleteRecipePayload> STREAM_CODEC = StreamCodec.composite(
+            ResourceLocation.STREAM_CODEC,
+            ClientboundDeleteRecipePayload::recipeId,
+            ClientboundDeleteRecipePayload::new
+    );
 
-	public static void handle(ResourceLocation recipeId, Minecraft client) {
-		client.execute(() -> {
-			if (client.getConnection() != null) {
-				ItemStack outputIcon = ItemStack.EMPTY;
-				var recipe = client.getConnection().getRecipeManager().byKey(recipeId).orElse(null);
-				if (recipe != null && client.level != null) {
-					outputIcon = recipe.value().getResultItem(client.level.registryAccess());
-				}
+    public static void handle(ResourceLocation recipeId, Minecraft client) {
+        client.execute(() -> {
+            if (client.getConnection() != null) {
+                ItemStack outputIcon = ItemStack.EMPTY;
+                var recipe = client.getConnection().getRecipeManager().byKey(recipeId).orElse(null);
+                if (recipe != null && client.level != null) {
+                    outputIcon = recipe.value().getResultItem(client.level.registryAccess());
+                }
 
-				boolean removed = RecipeModifier.removeRecipe(client.getConnection().getRecipeManager(), recipeId);
-				if (removed) {
-					handleFeedback(recipeId, client, outputIcon);
-				}
-			}
-		});
-	}
+                boolean removed = RecipeModifier.removeRecipe(client.getConnection().getRecipeManager(), recipeId);
+                if (removed) {
+                    handleFeedback(recipeId, client, outputIcon);
+                }
+            }
+        });
+    }
 
-	private static void handleFeedback(ResourceLocation recipeId, Minecraft client, ItemStack outputIcon) {
-		ModConfig config = ModConfig.get();
+    private static void handleFeedback(ResourceLocation recipeId, Minecraft client, ItemStack outputIcon) {
+        ModConfig config = ModConfig.get();
 
-		if (config.reloadEmi) {
-			EmiReloadManager.reload();
-		}
+        if (config.reloadEmi) {
+            EmiReloadManager.reload();
+        }
 
-		if (config.showChatMessages && client.player != null) {
-			client.player.sendSystemMessage(Component.translatable("toast.reliable_recipes.deleted", recipeId)
-					.append(Component.translatable("toast.reliable_recipes.undo")
-							.withStyle(style -> style
-									.withColor(ChatFormatting.RED)
-									.withBold(true)
-									.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/reliable_recipes_undo " + recipeId))
-							)));
-		}
+        if (config.showChatMessages && client.player != null) {
+            client.player.sendSystemMessage(Component.translatable("toast.reliable_recipes.deleted", recipeId)
+                    .append(Component.translatable("toast.reliable_recipes.undo")
+                            .withStyle(style -> style
+                                    .withColor(ChatFormatting.RED)
+                                    .withBold(true)
+                                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/reliable_recipes_undo " + recipeId))
+                            )));
+        }
 
-		if (config.showToast) {
-			DeletionToastOverlay.show(Component.literal(recipeId.getPath()), outputIcon);
-		}
-	}
+        if (config.showToast) {
+            DeletionToastOverlay.show(Component.literal(recipeId.getPath()), outputIcon);
+        }
+    }
 
-	@Override
-	public @NotNull Type<? extends CustomPacketPayload> type() {
-		return TYPE;
-	}
+    @Override
+    public @NotNull Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
 }
