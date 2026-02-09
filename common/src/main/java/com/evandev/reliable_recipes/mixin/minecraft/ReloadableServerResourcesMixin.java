@@ -1,0 +1,28 @@
+package com.evandev.reliable_recipes.mixin.minecraft;
+
+import com.evandev.reliable_recipes.recipe.RecipeModifier;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.server.ReloadableServerResources;
+import net.minecraft.world.item.crafting.RecipeManager;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+@Mixin(ReloadableServerResources.class)
+public class ReloadableServerResourcesMixin {
+
+    @Shadow
+    @Final
+    private RecipeManager recipes;
+
+    @Inject(
+            method = "updateRegistryTags(Lnet/minecraft/core/RegistryAccess;)V",
+            at = @At("RETURN")
+    )
+    private void reliableRecipes$onTagsLoaded(RegistryAccess registryAccess, CallbackInfo ci) {
+        RecipeModifier.apply(this.recipes);
+    }
+}

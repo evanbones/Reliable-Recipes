@@ -1,4 +1,3 @@
-// common/src/main/java/com/evandev/reliable_recipes/recipe/TagModifier.java
 package com.evandev.reliable_recipes.recipe;
 
 import com.evandev.reliable_recipes.Constants;

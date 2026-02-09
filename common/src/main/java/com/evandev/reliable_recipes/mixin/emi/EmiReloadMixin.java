@@ -5,7 +5,6 @@ import dev.emi.emi.screen.RecipeScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
-import net.minecraft.network.protocol.game.ClientboundUpdateTagsPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,20 +19,13 @@ public class EmiReloadMixin {
         reliableRecipes$scheduleReload();
     }
 
-    @Inject(method = "handleUpdateTags", at = @At("RETURN"))
-    private void reliableRecipes$onTagsUpdated(ClientboundUpdateTagsPacket packet, CallbackInfo ci) {
-        reliableRecipes$scheduleReload();
-    }
-
     @Unique
     private void reliableRecipes$scheduleReload() {
-        Minecraft.getInstance().execute(() -> {
-            EmiReloadManager.reload();
+        EmiReloadManager.reload();
 
-            Minecraft client = Minecraft.getInstance();
-            if (client.screen instanceof RecipeScreen) {
-                client.screen.onClose();
-            }
-        });
+        Minecraft client = Minecraft.getInstance();
+        if (client.screen instanceof RecipeScreen) {
+            client.screen.onClose();
+        }
     }
 }

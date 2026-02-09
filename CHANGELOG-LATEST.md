@@ -1,3 +1,3 @@
 ### Fixed
 
-- Fix incompatibility with Immersive Engineering.
+- Fix tag display in EMI.

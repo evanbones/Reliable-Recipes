@@ -9,16 +9,17 @@
     "accessor.AbstractCookingRecipeAccessor",
     "accessor.HolderSetNamedAccessor",
     "accessor.IngredientAccessor",
-    "accessor.IngredientItemValueAccessor",
     "accessor.RecipeManagerAccessor",
     "accessor.ShapedRecipeAccessor",
     "accessor.ShapelessRecipeAccessor",
     "accessor.SingleItemRecipeAccessor",
-    "minecraft.RecipeManagerMixin"
+    "minecraft.RecipeManagerMixin",
+    "minecraft.ReloadableServerResourcesMixin"
   ],
   "client": [
     "emi.EmiRecipeScreenMixin",
-    "emi.EmiReloadMixin"
+    "emi.EmiReloadMixin",
+    "minecraft.ClientPacketListenerMixin"
   ],
   "server": [],
   "injectors": {
