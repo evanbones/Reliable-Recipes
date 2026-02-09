@@ -29,13 +29,24 @@ public class ReliableRecipesMixinPlugin implements IMixinConfigPlugin {
     }
 
     @Override
-    public String getRefMapperConfig() { return null; }
+    public String getRefMapperConfig() {
+        return null;
+    }
+
     @Override
-    public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) { }
+    public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {
+    }
+
     @Override
-    public List<String> getMixins() { return null; }
+    public List<String> getMixins() {
+        return null;
+    }
+
     @Override
-    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) { }
+    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+    }
+
     @Override
-    public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) { }
+    public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+    }
 }

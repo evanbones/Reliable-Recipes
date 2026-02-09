@@ -5,15 +5,13 @@ import com.evandev.reliable_recipes.compat.ReliableRemoverCompat;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.*;
 import com.evandev.reliable_recipes.platform.Services;
+import com.google.common.collect.ImmutableMap;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class RecipeModifier {
     private static final Map<ResourceLocation, Recipe<?>> DELETED_RECIPES_CACHE = new HashMap<>();
@@ -29,11 +27,17 @@ public class RecipeModifier {
         int lastErrorCount = 0;
         List<RecipeRule> rules = RecipeConfigIO.loadRules();
 
-        if (rules.isEmpty() && !Services.PLATFORM.hasItemHidingCapabilities() && !ReliableRemoverCompat.isLoaded()) return;
+        if (rules.isEmpty() && !Services.PLATFORM.hasItemHidingCapabilities() && !ReliableRemoverCompat.isLoaded())
+            return;
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
-        Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> recipesByType = new HashMap<>(managerAccessor.getRecipes());
-        Map<ResourceLocation, Recipe<?>> recipesByName = new HashMap<>(managerAccessor.getByName());
+
+        Map<ResourceLocation, Recipe<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
+
+        Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> recipesByType = new LinkedHashMap<>();
+        for (var entry : managerAccessor.getRecipes().entrySet()) {
+            recipesByType.put(entry.getKey(), new LinkedHashMap<>(entry.getValue()));
+        }
 
         List<ResourceLocation> toRemove = new ArrayList<>();
 
@@ -90,17 +94,13 @@ public class RecipeModifier {
             if (recipe != null) {
                 Map<ResourceLocation, Recipe<?>> typeMap = recipesByType.get(recipe.getType());
                 if (typeMap != null) {
-                    if (!(typeMap instanceof HashMap)) {
-                        typeMap = new HashMap<>(typeMap);
-                        recipesByType.put(recipe.getType(), typeMap);
-                    }
                     typeMap.remove(id);
                 }
             }
         }
 
-        managerAccessor.setRecipes(recipesByType);
-        managerAccessor.setByName(recipesByName);
+        managerAccessor.setByName(ImmutableMap.copyOf(recipesByName));
+        managerAccessor.setRecipes(ImmutableMap.copyOf(recipesByType));
 
         if (!toRemove.isEmpty()) {
             Constants.LOG.info("RecipeModifier removed {} recipes.", toRemove.size());
@@ -113,8 +113,11 @@ public class RecipeModifier {
     public static boolean removeRecipe(RecipeManager manager, ResourceLocation recipeId) {
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
 
-        Map<ResourceLocation, Recipe<?>> recipesByName = new HashMap<>(managerAccessor.getByName());
-        Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> recipesByType = new HashMap<>(managerAccessor.getRecipes());
+        Map<ResourceLocation, Recipe<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
+        Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> recipesByType = new LinkedHashMap<>();
+        for (var entry : managerAccessor.getRecipes().entrySet()) {
+            recipesByType.put(entry.getKey(), new LinkedHashMap<>(entry.getValue()));
+        }
 
         Recipe<?> recipe = recipesByName.remove(recipeId);
 
@@ -123,13 +126,11 @@ public class RecipeModifier {
 
             Map<ResourceLocation, Recipe<?>> typeMap = recipesByType.get(recipe.getType());
             if (typeMap != null) {
-                typeMap = new HashMap<>(typeMap);
                 typeMap.remove(recipeId);
-                recipesByType.put(recipe.getType(), typeMap);
             }
 
-            managerAccessor.setByName(recipesByName);
-            managerAccessor.setRecipes(recipesByType);
+            managerAccessor.setByName(ImmutableMap.copyOf(recipesByName));
+            managerAccessor.setRecipes(ImmutableMap.copyOf(recipesByType));
 
             return true;
         }
@@ -141,20 +142,20 @@ public class RecipeModifier {
         if (recipe == null) return false;
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
-        Map<ResourceLocation, Recipe<?>> recipesByName = new HashMap<>(managerAccessor.getByName());
-        Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> recipesByType = new HashMap<>(managerAccessor.getRecipes());
+
+        Map<ResourceLocation, Recipe<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
+        Map<RecipeType<?>, Map<ResourceLocation, Recipe<?>>> recipesByType = new LinkedHashMap<>();
+        for (var entry : managerAccessor.getRecipes().entrySet()) {
+            recipesByType.put(entry.getKey(), new LinkedHashMap<>(entry.getValue()));
+        }
 
         recipesByName.put(recipeId, recipe);
 
-        Map<ResourceLocation, Recipe<?>> typeMap = recipesByType.get(recipe.getType());
-        if (typeMap == null) typeMap = new HashMap<>();
-        else typeMap = new HashMap<>(typeMap);
+        recipesByType.computeIfAbsent(recipe.getType(), k -> new LinkedHashMap<>())
+                .put(recipeId, recipe);
 
-        typeMap.put(recipeId, recipe);
-        recipesByType.put(recipe.getType(), typeMap);
-
-        managerAccessor.setByName(recipesByName);
-        managerAccessor.setRecipes(recipesByType);
+        managerAccessor.setByName(ImmutableMap.copyOf(recipesByName));
+        managerAccessor.setRecipes(ImmutableMap.copyOf(recipesByType));
 
         Constants.LOG.info("Restored recipe: {}", recipeId);
         return true;
