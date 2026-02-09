@@ -20,20 +20,13 @@ public class EmiReloadMixin {
         reliableRecipes$scheduleReload();
     }
 
-    @Inject(method = "handleUpdateTags", at = @At("RETURN"))
-    private void reliableRecipes$onTagsUpdated(ClientboundUpdateTagsPacket packet, CallbackInfo ci) {
-        reliableRecipes$scheduleReload();
-    }
-
     @Unique
     private void reliableRecipes$scheduleReload() {
-        Minecraft.getInstance().execute(() -> {
-            EmiReloadManager.reload();
+        EmiReloadManager.reload();
 
-            Minecraft client = Minecraft.getInstance();
-            if (client.screen instanceof RecipeScreen) {
-                client.screen.onClose();
-            }
-        });
+        Minecraft client = Minecraft.getInstance();
+        if (client.screen instanceof RecipeScreen) {
+            client.screen.onClose();
+        }
     }
 }

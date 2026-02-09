@@ -1,7 +1,6 @@
 package com.evandev.reliable_recipes.mixin.minecraft;
 
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
-import com.evandev.reliable_recipes.recipe.TagModifier;
 import com.google.gson.JsonElement;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -23,14 +22,5 @@ public class RecipeManagerMixin {
     )
     private void reliableRecipes$resetModifier(Map<ResourceLocation, JsonElement> map, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
         RecipeModifier.reset();
-    }
-
-    @Inject(
-            method = "apply(Ljava/util/Map;Lnet/minecraft/server/packs/resources/ResourceManager;Lnet/minecraft/util/profiling/ProfilerFiller;)V",
-            at = @At("RETURN")
-    )
-    private void reliableRecipes$modifyRecipes(Map<ResourceLocation, JsonElement> map, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
-        RecipeModifier.apply((RecipeManager) (Object) this);
-        TagModifier.apply();
     }
 }
