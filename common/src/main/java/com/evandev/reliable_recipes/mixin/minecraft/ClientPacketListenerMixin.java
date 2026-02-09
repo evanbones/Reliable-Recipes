@@ -2,7 +2,7 @@ package com.evandev.reliable_recipes.mixin.minecraft;
 
 import com.evandev.reliable_recipes.recipe.TagModifier;
 import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.network.protocol.game.ClientboundUpdateTagsPacket;
+import net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

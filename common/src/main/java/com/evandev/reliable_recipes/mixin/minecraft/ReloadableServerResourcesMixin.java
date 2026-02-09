@@ -1,7 +1,6 @@
 package com.evandev.reliable_recipes.mixin.minecraft;
 
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.ReloadableServerResources;
 import net.minecraft.world.item.crafting.RecipeManager;
 import org.spongepowered.asm.mixin.Final;
@@ -19,10 +18,10 @@ public class ReloadableServerResourcesMixin {
     private RecipeManager recipes;
 
     @Inject(
-            method = "updateRegistryTags(Lnet/minecraft/core/RegistryAccess;)V",
+            method = "updateRegistryTags()V",
             at = @At("RETURN")
     )
-    private void reliableRecipes$onTagsLoaded(RegistryAccess registryAccess, CallbackInfo ci) {
+    private void reliableRecipes$onTagsLoaded(CallbackInfo ci) {
         RecipeModifier.apply(this.recipes);
     }
 }
