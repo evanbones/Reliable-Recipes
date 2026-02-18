@@ -74,7 +74,7 @@ public class RecipeModifier {
                             } else if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT) {
                                 replaceInputInRecipe(recipe, rule.getTargetInput(), rule.getNewInput());
                             } else if (rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
-                                replaceOutputInRecipe(recipe, rule.getNewOutput());
+                                replaceOutputInRecipe(recipe.value(), rule.getNewOutput());
                             }
                         }
                     }
@@ -172,16 +172,14 @@ public class RecipeModifier {
         }
     }
 
-    private static void replaceOutputInRecipe(RecipeHolder<?> holder, ItemStack newResult) {
-        var recipe = holder.value();
-        switch (recipe) {
-            case ShapedRecipe shaped -> ((ShapedRecipeAccessor) shaped).setResult(newResult);
-            case ShapelessRecipe shapeless -> ((ShapelessRecipeAccessor) shapeless).setResult(newResult);
-            case AbstractCookingRecipe cooking -> ((AbstractCookingRecipeAccessor) cooking).setResult(newResult);
-            case SingleItemRecipe single -> ((SingleItemRecipeAccessor) single).setResult(newResult);
-            default -> {
-            }
-        }
+    private static void replaceOutputInRecipe(Recipe<?> recipe, ItemStack newResult) {
+        ItemStack copy = newResult.copy();
+
+        if (recipe instanceof ShapedRecipe shaped) ((ShapedRecipeAccessor) shaped).setResult(copy);
+        else if (recipe instanceof ShapelessRecipe shapeless) ((ShapelessRecipeAccessor) shapeless).setResult(copy);
+        else if (recipe instanceof AbstractCookingRecipe cooking)
+            ((AbstractCookingRecipeAccessor) cooking).setResult(copy);
+        else if (recipe instanceof SingleItemRecipe single) ((SingleItemRecipeAccessor) single).setResult(copy);
     }
 
     private static boolean ingredientMatches(Ingredient ing, Ingredient target) {

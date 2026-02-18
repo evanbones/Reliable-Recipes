@@ -1,4 +1,4 @@
 ### Fixed
 
-- Fix tags not applying until running /reload.
-- Fix possible issue with missing item IDs.
+- Fix possible concurrency issues causing log spam.
+- Safely fail recipe matches for dynamic registries.

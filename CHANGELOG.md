@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.8] - 2026-02-18
+
+### Fixed
+
+- Fix possible concurrency issues causing log spam.
+- Safely fail recipe matches for dynamic registries.
+
 ## [1.3.7i] - 2026-02-09
 
 ### Fixed

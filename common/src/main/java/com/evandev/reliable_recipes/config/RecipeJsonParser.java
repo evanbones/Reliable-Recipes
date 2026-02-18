@@ -1,7 +1,6 @@
 package com.evandev.reliable_recipes.config;
 
 import com.evandev.reliable_recipes.Constants;
-import com.evandev.reliable_recipes.mixin.accessor.IngredientAccessor;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.recipe.TagRule;
 import com.google.gson.JsonElement;
@@ -18,6 +17,7 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -100,17 +100,14 @@ public class RecipeJsonParser {
                 Predicate<RecipeHolder<?>> check = switch (key) {
                     case "type" -> {
                         Predicate<String> m = getStringMatcher(criterion);
-                        // Access type via the Recipe object
                         yield r -> m.test(r.value().getType().toString());
                     }
                     case "mod" -> {
                         Predicate<String> m = getStringMatcher(criterion);
-                        // Access namespace via the Holder ID
                         yield r -> m.test(r.id().getNamespace());
                     }
                     case "id" -> {
                         Predicate<String> m = getStringMatcher(criterion);
-                        // Access full ID via the Holder ID
                         yield r -> m.test(r.id().toString());
                     }
                     case "input" -> {
@@ -126,11 +123,14 @@ public class RecipeJsonParser {
                     case "output" -> {
                         Predicate<String> m = getStringMatcher(criterion);
                         yield r -> {
-                            // 1.21 requires RegistryAccess, EMPTY is usually safe for simple item checks
-                            ItemStack out = r.value().getResultItem(RegistryAccess.EMPTY);
-                            if (out.isEmpty()) return false;
-                            ResourceLocation id = BuiltInRegistries.ITEM.getKey(out.getItem());
-                            return m.test(id.toString());
+                            try {
+                                ItemStack out = r.value().getResultItem(RegistryAccess.EMPTY);
+                                if (out.isEmpty()) return false;
+                                ResourceLocation id = BuiltInRegistries.ITEM.getKey(out.getItem());
+                                return m.test(id.toString());
+                            } catch (Exception e) {
+                                return false;
+                            }
                         };
                     }
                     default -> throw new IllegalArgumentException("Unknown filter key: " + key);
@@ -177,22 +177,12 @@ public class RecipeJsonParser {
         if (ingredients.isEmpty()) return Ingredient.EMPTY;
         if (ingredients.size() == 1) return ingredients.getFirst();
 
-        List<Ingredient.Value> combinedValues = new ArrayList<>();
+        List<ItemStack> allStacks = new ArrayList<>();
         for (Ingredient ing : ingredients) {
-            if ((Object) ing instanceof IngredientAccessor accessor) {
-                Ingredient.Value[] values = accessor.getValues();
-                if (values != null) {
-                    combinedValues.addAll(java.util.Arrays.asList(values));
-                }
-            }
+            allStacks.addAll(Arrays.asList(ing.getItems()));
         }
 
-        // Dummy ingredient to prevent recipe corruption
-        Ingredient newIngredient = Ingredient.of(Items.STONE);
-
-        ((IngredientAccessor) (Object) newIngredient)
-                .setValues(combinedValues.toArray(new Ingredient.Value[0]));
-        return newIngredient;
+        return Ingredient.of(allStacks.toArray(new ItemStack[0]));
     }
 
     private static Ingredient parseIngredientString(String str) {
