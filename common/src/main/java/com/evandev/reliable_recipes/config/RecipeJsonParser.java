@@ -1,12 +1,10 @@
 package com.evandev.reliable_recipes.config;
 
 import com.evandev.reliable_recipes.Constants;
-import com.evandev.reliable_recipes.mixin.accessor.IngredientAccessor;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.recipe.TagRule;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -18,6 +16,7 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -124,10 +123,14 @@ public class RecipeJsonParser {
                     case "output" -> {
                         Predicate<String> m = getStringMatcher(criterion);
                         yield r -> {
-                            ItemStack out = r.getResultItem(RegistryAccess.EMPTY);
-                            if (out.isEmpty()) return false;
-                            ResourceLocation id = BuiltInRegistries.ITEM.getKey(out.getItem());
-                            return m.test(id.toString());
+                            try {
+                                ItemStack out = r.getResultItem(net.minecraft.core.RegistryAccess.EMPTY);
+                                if (out.isEmpty()) return false;
+                                ResourceLocation id = BuiltInRegistries.ITEM.getKey(out.getItem());
+                                return m.test(id.toString());
+                            } catch (Exception e) {
+                                return false;
+                            }
                         };
                     }
                     default -> throw new IllegalArgumentException("Unknown filter key: " + key);
@@ -174,22 +177,12 @@ public class RecipeJsonParser {
         if (ingredients.isEmpty()) return Ingredient.EMPTY;
         if (ingredients.size() == 1) return ingredients.get(0);
 
-        List<Ingredient.Value> combinedValues = new ArrayList<>();
+        List<ItemStack> allStacks = new ArrayList<>();
         for (Ingredient ing : ingredients) {
-            if ((Object) ing instanceof IngredientAccessor accessor) {
-                Ingredient.Value[] values = accessor.getValues();
-                if (values != null) {
-                    combinedValues.addAll(java.util.Arrays.asList(values));
-                }
-            }
+            allStacks.addAll(Arrays.asList(ing.getItems()));
         }
 
-        // Dummy ingredient to prevent recipe corruption
-        Ingredient newIngredient = Ingredient.of(Items.STONE);
-
-        ((IngredientAccessor) (Object) newIngredient)
-                .setValues(combinedValues.toArray(new Ingredient.Value[0]));
-        return newIngredient;
+        return Ingredient.of(allStacks.toArray(new ItemStack[0]));
     }
 
     private static Ingredient parseIngredientString(String str) {

@@ -1,6 +1,7 @@
 package com.evandev.reliable_recipes.compat;
 
 import com.evandev.reliable_recipes.platform.Services;
+import com.evandev.reliable_remover.config.RuleManager;
 import net.minecraft.world.item.ItemStack;
 
 public class ReliableRemoverCompat {
@@ -18,7 +19,7 @@ public class ReliableRemoverCompat {
 
     private static class Handler {
         static boolean isHidden(ItemStack stack) {
-            return com.evandev.reliable_remover.config.RuleManager.isHidden(stack);
+            return RuleManager.isHidden(stack);
         }
     }
 }

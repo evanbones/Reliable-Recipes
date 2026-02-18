@@ -184,12 +184,12 @@ public class RecipeModifier {
     }
 
     private static void replaceOutputInRecipe(Recipe<?> recipe, ItemStack newResult) {
-        if (recipe instanceof ShapedRecipe shaped) ((ShapedRecipeAccessor) shaped).setResult(newResult);
-        else if (recipe instanceof ShapelessRecipe shapeless)
-            ((ShapelessRecipeAccessor) shapeless).setResult(newResult);
-        else if (recipe instanceof AbstractCookingRecipe cooking)
-            ((AbstractCookingRecipeAccessor) cooking).setResult(newResult);
-        else if (recipe instanceof SingleItemRecipe single) ((SingleItemRecipeAccessor) single).setResult(newResult);
+        ItemStack copy = newResult.copy(); 
+
+        if (recipe instanceof ShapedRecipe shaped) ((ShapedRecipeAccessor) shaped).setResult(copy);
+        else if (recipe instanceof ShapelessRecipe shapeless) ((ShapelessRecipeAccessor) shapeless).setResult(copy);
+        else if (recipe instanceof AbstractCookingRecipe cooking) ((AbstractCookingRecipeAccessor) cooking).setResult(copy);
+        else if (recipe instanceof SingleItemRecipe single) ((SingleItemRecipeAccessor) single).setResult(copy);
     }
 
     private static boolean ingredientMatches(Ingredient ing, Ingredient target) {
