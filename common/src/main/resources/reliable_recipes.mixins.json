@@ -13,6 +13,8 @@
     "accessor.ShapedRecipeAccessor",
     "accessor.ShapelessRecipeAccessor",
     "accessor.SingleItemRecipeAccessor",
+    "minecraft.GrindstoneMenuMixin",
+    "minecraft.ItemCombinerMenuMixin",
     "minecraft.RecipeManagerMixin",
     "minecraft.ReloadableServerResourcesMixin"
   ],
