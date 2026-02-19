@@ -4,7 +4,10 @@
   "package": "com.evandev.reliable_recipes.mixin",
   "refmap": "${mod_id}.refmap.json",
   "compatibilityLevel": "JAVA_17",
-  "mixins": [],
+  "mixins": [
+    "minecraft.GrindstoneMenuMixin",
+    "minecraft.ItemCombinerMenuMixin"
+  ],
   "client": [],
   "server": [],
   "injectors": {

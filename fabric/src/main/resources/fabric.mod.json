@@ -1,44 +1,47 @@
 {
-    "schemaVersion": 1,
-    "id": "${mod_id}",
-    "version": "${version}",
-    "name": "${mod_name}",
-    "description": "${description}",
-    "authors": [
-        "${mod_author}"
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${description}",
+  "authors": [
+    "${mod_author}"
+  ],
+  "contact": {
+    "homepage": "https://github.com/evanbones/Reliable-Recipes",
+    "sources": "https://github.com/evanbones/Reliable-Recipes"
+  },
+  "license": "${license}",
+  "icon": "${mod_id}.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.evandev.reliable_recipes.ReliableRecipesMod"
     ],
-    "contact": {
-        "homepage": "https://github.com/evanbones/Reliable-Recipes",
-        "sources": "https://github.com/evanbones/Reliable-Recipes"
-    },
-    "license": "${license}",
-    "icon": "${mod_id}.png",
-    "environment": "*",
-    "entrypoints": {
-        "main": [
-            "com.evandev.reliable_recipes.ReliableRecipesMod"
-        ],
-        "client": [
-            "com.evandev.reliable_recipes.client.ReliableRecipesModClient"
-        ],
-        "modmenu": [
-            "com.evandev.reliable_recipes.compat.ModMenuIntegration"
-        ]
-    },
-    "mixins": [
-        "${mod_id}.mixins.json",
-        "${mod_id}.fabric.mixins.json"
+    "client": [
+      "com.evandev.reliable_recipes.client.ReliableRecipesModClient"
     ],
-    "depends": {
-        "fabricloader": ">=0.14",
-        "fabric": "*",
-        "minecraft": "${minecraft_version}",
-        "java": ">=17"
-    },
-    "suggests": {
-        "item_obliterator": "*",
-        "necronomicon": "*",
-        "emi": "*"
-    }
+    "modmenu": [
+      "com.evandev.reliable_recipes.compat.ModMenuIntegration"
+    ],
+    "emi": [
+      "com.evandev.reliable_recipes.compat.emi.ReliableRecipesEmiPlugin"
+    ]
+  },
+  "mixins": [
+    "${mod_id}.mixins.json",
+    "${mod_id}.fabric.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}",
+    "java": ">=17"
+  },
+  "suggests": {
+    "item_obliterator": "*",
+    "necronomicon": "*",
+    "emi": "*"
+  }
 }
   
