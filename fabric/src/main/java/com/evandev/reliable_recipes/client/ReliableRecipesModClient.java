@@ -15,6 +15,30 @@ import net.minecraft.world.item.ItemStack;
 
 public class ReliableRecipesModClient implements ClientModInitializer {
 
+    private static void handleFeedback(ResourceLocation recipeId, ItemStack outputIcon) {
+        ModConfig config = ModConfig.get();
+
+        if (config.reloadEmi) {
+            EmiReloadManager.reload();
+        }
+
+        if (config.showChatMessages) {
+            if (Minecraft.getInstance().player != null) {
+                Minecraft.getInstance().player.sendSystemMessage(Component.translatable("toast.reliable_recipes.deleted", recipeId)
+                        .append(Component.translatable("toast.reliable_recipes.undo")
+                                .withStyle(style -> style
+                                        .withColor(ChatFormatting.RED)
+                                        .withBold(true)
+                                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/rrecipes_undo " + recipeId))
+                                )));
+            }
+        }
+
+        if (config.showToast) {
+            DeletionToastOverlay.show(Component.literal(recipeId.getPath()), outputIcon);
+        }
+    }
+
     @Override
     public void onInitializeClient() {
         ClientPlayNetworking.registerGlobalReceiver(new ResourceLocation("reliable_recipes", "client_delete_recipe"),
@@ -44,29 +68,5 @@ public class ReliableRecipesModClient implements ClientModInitializer {
             });
         });
 
-    }
-
-    private static void handleFeedback(ResourceLocation recipeId, ItemStack outputIcon) {
-        ModConfig config = ModConfig.get();
-
-        if (config.reloadEmi) {
-            EmiReloadManager.reload();
-        }
-
-        if (config.showChatMessages) {
-            if (Minecraft.getInstance().player != null) {
-                Minecraft.getInstance().player.sendSystemMessage(Component.translatable("toast.reliable_recipes.deleted", recipeId)
-                        .append(Component.translatable("toast.reliable_recipes.undo")
-                                .withStyle(style -> style
-                                        .withColor(ChatFormatting.RED)
-                                        .withBold(true)
-                                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/reliable_recipes_undo " + recipeId))
-                                )));
-            }
-        }
-
-        if (config.showToast) {
-            DeletionToastOverlay.show(Component.literal(recipeId.getPath()), outputIcon);
-        }
     }
 }

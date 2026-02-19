@@ -1,4 +1,3 @@
-### Fixed
+### Changed
 
-- Fix possible concurrency issues causing log spam.
-- Safely fail recipe matches for dynamic registries.
+- Changed `/reliable_recipes_undo` to `/rrecipes_undo`.

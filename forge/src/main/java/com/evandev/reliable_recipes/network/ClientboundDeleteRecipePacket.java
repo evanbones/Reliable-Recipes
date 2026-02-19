@@ -55,7 +55,7 @@ public class ClientboundDeleteRecipePacket {
                                         .withStyle(style -> style
                                                 .withColor(ChatFormatting.RED)
                                                 .withBold(true)
-                                                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/reliable_recipes_undo " + msg.recipeId))
+                                                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/rrecipes_undo " + msg.recipeId))
                                         )));
                     }
 
