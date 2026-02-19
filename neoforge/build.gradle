@@ -37,10 +37,10 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
     // Item Obliterator
-    compileOnly "maven.modrinth:item-obliterator:${forge_item_obliterator_version}"
+    compileOnly "maven.modrinth:item-obliterator:${neoforge_item_obliterator_version}"
 
     // Reliable Remover
-    implementation "maven.modrinth:reliable-remover:${forge_reliable_remover_version}"
+    implementation "maven.modrinth:reliable-remover:${neoforge_reliable_remover_version}"
 
     // EMI
     implementation "dev.emi:emi-neoforge:${emi_version}"

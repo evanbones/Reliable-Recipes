@@ -1,3 +1,3 @@
-### Changed
+### Fixed
 
-- Changed `/reliable_recipes_undo` to `/rrecipes_undo`.
+- Removed items are now removed from EMI grindstone and repair recipes.

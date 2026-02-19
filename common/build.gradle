@@ -23,7 +23,7 @@ dependencies {
     compileOnly "me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}"
 
     // Reliable Remover
-    compileOnly "maven.modrinth:reliable-remover:${forge_reliable_remover_version}"
+    compileOnly "maven.modrinth:reliable-remover:${neoforge_reliable_remover_version}"
 
     compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
     compileOnly group: 'org.ow2.asm', name: 'asm-tree', version: '9.6'
