@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 
 public class UndoCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("reliable_recipes_undo")
+        dispatcher.register(Commands.literal("rrecipes_undo")
                 .requires(s -> s.hasPermission(2))
                 .then(Commands.argument("id", ResourceLocationArgument.id())
                         .executes(ctx -> {

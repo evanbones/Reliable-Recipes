@@ -54,7 +54,7 @@ public record ClientboundDeleteRecipePayload(ResourceLocation recipeId) implemen
                             .withStyle(style -> style
                                     .withColor(ChatFormatting.RED)
                                     .withBold(true)
-                                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/reliable_recipes_undo " + recipeId))
+                                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/rrecipes_undo " + recipeId))
                             )));
         }
 
