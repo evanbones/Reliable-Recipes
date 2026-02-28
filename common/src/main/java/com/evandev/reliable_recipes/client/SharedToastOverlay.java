@@ -10,17 +10,18 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
-public class DeletionToastOverlay {
+public class SharedToastOverlay {
     private static final ResourceLocation BACKGROUND_SPRITE = ResourceLocation.withDefaultNamespace("toast/recipe");
-
     private static final long DISPLAY_DURATION = 5000L;
     private static final long FADE_DURATION = 600L;
 
+    private static Component currentTitle;
     private static Component currentMessage;
     private static ItemStack iconStack = ItemStack.EMPTY;
     private static long showTime = -1;
 
-    public static void show(Component message, ItemStack icon) {
+    public static void show(Component title, Component message, ItemStack icon) {
+        currentTitle = title;
         currentMessage = message;
         iconStack = icon;
         showTime = Util.getMillis();
@@ -36,50 +37,38 @@ public class DeletionToastOverlay {
 
         if (!isInventory) return;
 
-        long currentTime = Util.getMillis();
-        long age = currentTime - showTime;
-
+        long age = Util.getMillis() - showTime;
         if (age >= DISPLAY_DURATION) {
             showTime = -1;
             currentMessage = null;
+            currentTitle = null;
             iconStack = ItemStack.EMPTY;
             return;
         }
 
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
         int toastWidth = 160;
         int toastHeight = 32;
-        int xPos = (screenWidth - toastWidth) / 2;
-
+        int xPos = (mc.getWindow().getGuiScaledWidth() - toastWidth) / 2;
         int yPos = getYPos(age, toastHeight);
 
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(xPos, yPos, 1000);
-
         guiGraphics.blitSprite(BACKGROUND_SPRITE, 0, 0, toastWidth, toastHeight);
 
         if (!iconStack.isEmpty()) {
             guiGraphics.renderFakeItem(iconStack, 8, 8);
         }
 
-        guiGraphics.drawString(mc.font, Component.literal("Recipe Deleted"), 30, 7, -11534256, false);
+        guiGraphics.drawString(mc.font, currentTitle != null ? currentTitle : Component.literal("Deleted"), 30, 7, -11534256, false);
         guiGraphics.drawString(mc.font, currentMessage, 30, 18, -16777216, false);
-
         guiGraphics.pose().popPose();
     }
 
     private static int getYPos(long age, int toastHeight) {
-        float animationProgress = 1.0f;
-        if (age < FADE_DURATION) {
-            animationProgress = (float) age / FADE_DURATION;
-        } else if (age > DISPLAY_DURATION - FADE_DURATION) {
-            animationProgress = (float) (DISPLAY_DURATION - age) / FADE_DURATION;
-        }
-
+        float animationProgress = age < FADE_DURATION ? (float) age / FADE_DURATION :
+                (age > DISPLAY_DURATION - FADE_DURATION ? (float) (DISPLAY_DURATION - age) / FADE_DURATION : 1.0f);
         animationProgress = Mth.clamp(animationProgress, 0.0f, 1.0f);
         float ease = 1.0f - (float) Math.pow(1.0f - animationProgress, 3);
-
-        int baseTopPadding = 8;
-        return (int) (baseTopPadding - (toastHeight + baseTopPadding) * (1.0f - ease));
+        return (int) (8 - (toastHeight + 8) * (1.0f - ease));
     }
 }

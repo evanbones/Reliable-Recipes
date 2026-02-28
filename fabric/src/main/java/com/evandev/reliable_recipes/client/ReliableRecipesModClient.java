@@ -14,7 +14,7 @@ public class ReliableRecipesModClient implements ClientModInitializer {
 
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
             ScreenEvents.afterRender(screen).register((sharedScreen, guiGraphics, mouseX, mouseY, tickDelta) -> {
-                DeletionToastOverlay.render(guiGraphics);
+                SharedToastOverlay.render(guiGraphics);
             });
         });
     }

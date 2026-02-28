@@ -1,7 +1,7 @@
 package com.evandev.reliable_recipes.networking;
 
 import com.evandev.reliable_recipes.Constants;
-import com.evandev.reliable_recipes.client.DeletionToastOverlay;
+import com.evandev.reliable_recipes.client.SharedToastOverlay;
 import com.evandev.reliable_recipes.config.ModConfig;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import dev.emi.emi.runtime.EmiReloadManager;
@@ -59,7 +59,7 @@ public record ClientboundDeleteRecipePayload(ResourceLocation recipeId) implemen
         }
 
         if (config.showToast) {
-            DeletionToastOverlay.show(Component.literal(recipeId.getPath()), outputIcon);
+            SharedToastOverlay.show(Component.literal("Recipe Deleted"), Component.literal(recipeId.getPath()), outputIcon);
         }
     }
 
