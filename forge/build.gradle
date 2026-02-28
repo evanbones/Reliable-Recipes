@@ -43,7 +43,7 @@ sourceSets.main.resources.srcDir 'src/generated/resources'
 
 dependencies {
     // Reliable Remover
-    modRuntimeOnly "maven.modrinth:reliable-remover:${forge_reliable_remover_version}"
+    modRuntimeOnly "maven.modrinth:reliable-remover:${reliable_remover_version}-forge-1.20.1"
 
     // EMI
     modImplementation "dev.emi:emi-forge:${emi_version}"

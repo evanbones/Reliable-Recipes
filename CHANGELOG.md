@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.4] - 2026-02-27
+
+### Fixed
+
+- Rollback 1.4.3 changes.
+
+## [1.4.3] - 2026-02-27
+
+### Fixed
+
+- Fixed log spam with EMI.
+
+## [1.4.2] - 2026-02-27
+
+### Changed
+
+- Remove Item Obliterator capabilities.
+
+### Fixed
+
+- Fix Reliable Remover integration.
+
+## [1.4.1] - 2026-02-27
+
+### Changed
+
+- Attempt to fix recipe hot reloading.
+
 ## [1.4.0] - 2026-02-27
 
 ### Changed

@@ -1,7 +1,7 @@
 modLoader = "javafml"
 loaderVersion = "${forge_loader_version_range}"
 license = "${license}"
-issueTrackerURL="https://github.com/evanbones/Reliable-Recipes/issues"
+issueTrackerURL = "https://github.com/evanbones/Reliable-Recipes/issues"
 
 [[mods]]
 modId = "${mod_id}"
@@ -11,35 +11,21 @@ logoFile = "${mod_id}.png"
 authors = "${mod_author}"
 description = '''${description}'''
 
-[[dependencies.${mod_id}]]
-modId = "item_obliterator"
-mandatory = false
-versionRange = "[2.3.0,)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies.${mod_id}]]
-modId = "necronomicon"
-mandatory = false
-versionRange = "[1.6.0,)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies.${mod_id}]]
+[[dependencies.${ mod_id }]]
 modId = "emi"
 mandatory = false
 versionRange = "[1.0.4,)"
 ordering = "AFTER"
 side = "BOTH"
 
-[[dependencies.${mod_id}]]
+[[dependencies.${ mod_id }]]
 modId = "forge"
 mandatory = true
 versionRange = "[${forge_version},)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.${mod_id}]]
+[[dependencies.${ mod_id }]]
 modId = "minecraft"
 mandatory = true
 versionRange = "${minecraft_version_range}"

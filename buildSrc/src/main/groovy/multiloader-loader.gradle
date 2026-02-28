@@ -46,7 +46,6 @@ publishMods {
         minecraftVersions.add("${minecraft_version}")
 
         optional { slug = "reliable-remover" }
-        optional { slug = "item-obliterator" }
         optional { slug = "cloth-config" }
     }
 
@@ -56,7 +55,6 @@ publishMods {
         minecraftVersions.add("${minecraft_version}")
 
         optional { slug = "reliable-remover" }
-        optional { slug = "item-obliterator" }
         optional { slug = "cloth-config" }
     }
 }

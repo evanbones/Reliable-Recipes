@@ -13,7 +13,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 
     // Reliable Remover
-    modRuntimeOnly "maven.modrinth:reliable-remover:${forge_reliable_remover_version}"
+    modRuntimeOnly "maven.modrinth:reliable-remover:${reliable_remover_version}-fabric-1.20.1"
 
     // EMI
     modImplementation "dev.emi:emi-fabric:${emi_version}"
