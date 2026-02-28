@@ -12,7 +12,7 @@ files—without the need for complex scripts (looking at you, KubeJS!).
 
 Learn how to use Reliable Recipes, configure your JSON files, and master recipe actions on our wiki!
 
-**[Modded Minecraft Wiki](https://moddedmc.wiki/en/project/reliable-recipes/latest/docs/reliable-recipes)**
+**[Modded Minecraft Wiki](https://moddedmc.wiki/en/project/reliable-recipes/latest/docs/reliable-recipes/features)**
 
 ## Features
 
