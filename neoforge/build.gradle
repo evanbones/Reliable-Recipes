@@ -36,7 +36,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
     // Reliable Remover
-    runtimeOnly "maven.modrinth:reliable-remover:${neoforge_reliable_remover_version}"
+    runtimeOnly "maven.modrinth:reliable-remover:${reliable_remover_version}-neoforge-1.21.1"
 
     // EMI
     implementation "dev.emi:emi-neoforge:${emi_version}"

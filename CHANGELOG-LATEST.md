@@ -1,3 +1,3 @@
-### Changed
+### Fixed
 
-- Internal refactors/API changes.
+- Rollback 1.4.3 changes.

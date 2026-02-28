@@ -30,7 +30,7 @@ public class RecipeModifier {
         int lastErrorCount = 0;
         List<RecipeRule> rules = RecipeConfigIO.loadRules();
 
-        if (rules.isEmpty() && ReliableRecipesAPI.hasItemHidingCapabilities())
+        if (rules.isEmpty() && !ReliableRecipesAPI.hasItemHidingCapabilities())
             return;
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;

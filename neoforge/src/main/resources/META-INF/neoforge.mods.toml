@@ -40,13 +40,6 @@ ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.${ mod_id }]]
-modId = "item_obliterator"
-type = "optional"
-versionRange = "[2.3.0,)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies.${ mod_id }]]
 modId = "emi"
 type = "optional"
 versionRange = "[1.0.4,)"

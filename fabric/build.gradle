@@ -11,7 +11,7 @@ dependencies {
     }
 
     // Reliable Remover
-    modRuntimeOnly "maven.modrinth:reliable-remover:${fabric_reliable_remover_version}"
+    modRuntimeOnly "maven.modrinth:reliable-remover:${reliable_remover_version}-fabric-1.21.1"
 
     // EMI
     modImplementation "dev.emi:emi-fabric:${emi_version}"
