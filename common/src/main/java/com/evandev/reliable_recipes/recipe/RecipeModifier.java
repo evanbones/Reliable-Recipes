@@ -1,7 +1,7 @@
 package com.evandev.reliable_recipes.recipe;
 
 import com.evandev.reliable_recipes.Constants;
-import com.evandev.reliable_recipes.compat.ReliableRemoverCompat;
+import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.*;
 import com.evandev.reliable_recipes.platform.Services;
@@ -27,7 +27,7 @@ public class RecipeModifier {
         int lastErrorCount = 0;
         List<RecipeRule> rules = RecipeConfigIO.loadRules();
 
-        if (rules.isEmpty() && !Services.PLATFORM.hasItemHidingCapabilities() && !ReliableRemoverCompat.isLoaded())
+        if (rules.isEmpty() && ReliableRecipesAPI.hasItemHidingCapabilities())
             return;
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
@@ -46,7 +46,7 @@ public class RecipeModifier {
                 boolean shouldRemove = false;
 
                 ItemStack result = getResult(recipe);
-                if (!result.isEmpty() && (Services.PLATFORM.isItemHidden(result) || ReliableRemoverCompat.isHidden(result))) {
+                if (!result.isEmpty() && (ReliableRecipesAPI.isItemHidden(result))) {
                     shouldRemove = true;
                 }
 
@@ -54,7 +54,7 @@ public class RecipeModifier {
                     try {
                         for (Ingredient ingredient : recipe.getIngredients()) {
                             for (ItemStack item : ingredient.getItems()) {
-                                if (Services.PLATFORM.isItemHidden(item) || ReliableRemoverCompat.isHidden(item)) {
+                                if (ReliableRecipesAPI.isItemHidden(item)) {
                                     shouldRemove = true;
                                     break;
                                 }
@@ -184,11 +184,12 @@ public class RecipeModifier {
     }
 
     private static void replaceOutputInRecipe(Recipe<?> recipe, ItemStack newResult) {
-        ItemStack copy = newResult.copy(); 
+        ItemStack copy = newResult.copy();
 
         if (recipe instanceof ShapedRecipe shaped) ((ShapedRecipeAccessor) shaped).setResult(copy);
         else if (recipe instanceof ShapelessRecipe shapeless) ((ShapelessRecipeAccessor) shapeless).setResult(copy);
-        else if (recipe instanceof AbstractCookingRecipe cooking) ((AbstractCookingRecipeAccessor) cooking).setResult(copy);
+        else if (recipe instanceof AbstractCookingRecipe cooking)
+            ((AbstractCookingRecipeAccessor) cooking).setResult(copy);
         else if (recipe instanceof SingleItemRecipe single) ((SingleItemRecipeAccessor) single).setResult(copy);
     }
 

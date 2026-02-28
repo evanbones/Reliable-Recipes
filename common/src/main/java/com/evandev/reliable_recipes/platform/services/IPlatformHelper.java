@@ -1,7 +1,7 @@
 package com.evandev.reliable_recipes.platform.services;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
+
 import java.nio.file.Path;
 
 public interface IPlatformHelper {
@@ -43,24 +43,6 @@ public interface IPlatformHelper {
      * @return The path to the config directory.
      */
     Path getConfigDirectory();
-
-    /**
-     * Checks if the platform has a mod loaded that provides item hiding capabilities
-     * (e.g. Item Obliterator).
-     *
-     * @return True if item hiding logic should be processed.
-     */
-    boolean hasItemHidingCapabilities();
-
-    /**
-     * Checks if an item should be hidden.
-     *
-     * @param stack The item stack to check.
-     * @return True if the item is hidden/disabled, false otherwise.
-     */
-    default boolean isItemHidden(ItemStack stack) {
-        return false;
-    }
 
     /**
      * Sends a request to the server to generate a recipe removal.

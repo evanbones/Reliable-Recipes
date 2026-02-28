@@ -1,7 +1,6 @@
 package com.evandev.reliable_recipes.mixin.minecraft;
 
-import com.evandev.reliable_recipes.compat.ReliableRemoverCompat;
-import com.evandev.reliable_recipes.platform.Services;
+import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import net.minecraft.world.Container;
 import net.minecraft.world.inventory.GrindstoneMenu;
 import net.minecraft.world.item.ItemStack;
@@ -25,14 +24,14 @@ public abstract class GrindstoneMenuMixin {
     @Inject(method = "createResult", at = @At("RETURN"))
     private void reliableRecipes$blockHiddenGrindstone(CallbackInfo ci) {
         ItemStack result = this.resultSlots.getItem(0);
-        if (!result.isEmpty() && (Services.PLATFORM.isItemHidden(result) || ReliableRemoverCompat.isHidden(result))) {
+        if (!result.isEmpty() && (ReliableRecipesAPI.isItemHidden(result))) {
             this.resultSlots.setItem(0, ItemStack.EMPTY);
             return;
         }
 
         for (int i = 0; i < this.repairSlots.getContainerSize(); i++) {
             ItemStack input = this.repairSlots.getItem(i);
-            if (!input.isEmpty() && (Services.PLATFORM.isItemHidden(input) || ReliableRemoverCompat.isHidden(input))) {
+            if (!input.isEmpty() && (ReliableRecipesAPI.isItemHidden(input))) {
                 this.resultSlots.setItem(0, ItemStack.EMPTY);
                 return;
             }

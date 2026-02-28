@@ -1,3 +1,3 @@
-### Fixed
+### Changed
 
-- Removed items are now removed from EMI grindstone and repair recipes.
+- Internal refactors/API changes.

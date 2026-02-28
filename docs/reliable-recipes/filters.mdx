@@ -1,0 +1,37 @@
+---
+title: Filters
+hide_meta: true
+---
+
+When modifying recipes, the `filter` object determines which recipes are affected. A recipe must match all provided fields to be selected.
+
+## Basic Filters
+You can filter by simple strings or use **arrays** to match multiple values (acting as an `OR` condition).
+
+| Field | Description | Example |
+|---|---|---|
+| `output` | The registry name of the item produced. | `"minecraft:stone_pickaxe"` |
+| `id` | The specific ID of a recipe. | `"minecraft:black_bed_from_white_bed"` |
+| `mod` | The mod ID that owns the recipe. | `"farmersdelight"` or `["create", "mekanism"]` |
+| `type` | The recipe type. | `"minecraft:smoking"` |
+| `input` | Matches if the recipe contains this ingredient. | `"minecraft:stick"` or `"#minecraft:logs"` |
+
+## Advanced Filters (Regex & Logic)
+* **Regex:** Wrap strings in `/` to use Regular Expressions (e.g., `"/minecraft:.*_log/"` matches all vanilla logs).
+* **Logic:** Use `not`, `or`, and `and` for complex conditions.
+
+### Example: Regex & Logic
+Remove all recipes that output Gold items, *except* those from Vanilla Minecraft.
+
+```json
+{
+  "action": "remove",
+  "filter": {
+    "output": "/.*gold.*/",
+    "not": {
+      "mod": "minecraft"
+    }
+  }
+}
+
+```

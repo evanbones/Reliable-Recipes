@@ -21,9 +21,6 @@ dependencies {
     // Cloth Config
     compileOnly "me.shedaniel.cloth:cloth-config-forge:${cloth_config_version}"
 
-    // Reliable Remover
-    compileOnly "maven.modrinth:reliable-remover:${forge_reliable_remover_version}"
-
     compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
     compileOnly group: 'org.ow2.asm', name: 'asm-tree', version: '9.6'
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'

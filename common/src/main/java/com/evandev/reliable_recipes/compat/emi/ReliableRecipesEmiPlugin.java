@@ -1,7 +1,6 @@
 package com.evandev.reliable_recipes.compat.emi;
 
-import com.evandev.reliable_recipes.compat.ReliableRemoverCompat;
-import com.evandev.reliable_recipes.platform.Services;
+import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import dev.emi.emi.api.EmiEntrypoint;
 import dev.emi.emi.api.EmiPlugin;
 import dev.emi.emi.api.EmiRegistry;
@@ -34,6 +33,6 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
         ItemStack stack = emiStack.getItemStack();
         if (stack == null || stack.isEmpty()) return false;
 
-        return Services.PLATFORM.isItemHidden(stack) || ReliableRemoverCompat.isHidden(stack);
+        return ReliableRecipesAPI.isItemHidden(stack);
     }
 }

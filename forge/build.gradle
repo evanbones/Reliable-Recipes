@@ -1,7 +1,6 @@
 plugins {
     id 'multiloader-loader'
     id 'net.neoforged.moddev.legacyforge'
-    id "me.modmuss50.mod-publish-plugin" version "1.1.0"
 }
 
 mixin {
@@ -44,10 +43,7 @@ sourceSets.main.resources.srcDir 'src/generated/resources'
 
 dependencies {
     // Reliable Remover
-    modImplementation "maven.modrinth:reliable-remover:${forge_reliable_remover_version}"
-
-    // Item Obliterator
-    modCompileOnly "maven.modrinth:item-obliterator:${forge_item_obliterator_version}"
+    modRuntimeOnly "maven.modrinth:reliable-remover:${forge_reliable_remover_version}"
 
     // EMI
     modImplementation "dev.emi:emi-forge:${emi_version}"
@@ -68,28 +64,4 @@ jar {
 
 publishMods {
     file = tasks.named("reobfJar").flatMap { it.archiveFile }
-    changelog = rootProject.file("CHANGELOG-LATEST.md").text
-    type = STABLE
-    displayName = "${mod_name} Forge ${minecraft_version} - ${project.version}"
-    modLoaders.add("forge")
-
-    curseforge {
-        accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
-        projectId = "1414959"
-        minecraftVersions.add("${minecraft_version}")
-
-        optional { slug = "reliable-remover" }
-        optional { slug = "item-obliterator" }
-        optional { slug = "cloth-config" }
-    }
-
-    modrinth {
-        accessToken = providers.environmentVariable("MODRINTH_TOKEN")
-        projectId = "Hl4ARA1z"
-        minecraftVersions.add("${minecraft_version}")
-
-        optional { slug = "reliable-remover" }
-        optional { slug = "item-obliterator" }
-        optional { slug = "cloth-config" }
-    }
 }

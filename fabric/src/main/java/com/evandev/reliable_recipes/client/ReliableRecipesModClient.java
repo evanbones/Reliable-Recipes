@@ -35,7 +35,7 @@ public class ReliableRecipesModClient implements ClientModInitializer {
         }
 
         if (config.showToast) {
-            DeletionToastOverlay.show(Component.literal(recipeId.getPath()), outputIcon);
+            SharedToastOverlay.show(Component.literal("Recipe Deleted"), Component.literal(recipeId.getPath()), outputIcon);
         }
     }
 
@@ -64,7 +64,7 @@ public class ReliableRecipesModClient implements ClientModInitializer {
 
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
             ScreenEvents.afterRender(screen).register((sharedScreen, guiGraphics, mouseX, mouseY, tickDelta) -> {
-                DeletionToastOverlay.render(guiGraphics);
+                SharedToastOverlay.render(guiGraphics);
             });
         });
 

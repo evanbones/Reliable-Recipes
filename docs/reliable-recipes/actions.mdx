@@ -1,0 +1,67 @@
+---
+title: Actions
+hide_meta: true
+---
+
+Once you have filtered the recipes you want to change, you need to apply an action to them.
+
+## Action: `remove`
+
+Completely removes the matching recipes from the game. You can use arrays to remove large batches of recipes at once.
+
+**Example:** Remove specific recipes by ID.
+```json
+{
+  "action": "remove",
+  "filter": {
+    "id": [
+      "minecraft:wooden_pickaxe",
+      "minecraft:wooden_hoe"
+    ]
+  }
+}
+
+```
+
+## Action: `replace_input`
+
+Scans ingredients and replaces a target with a new one.
+
+* **`target`**: The item ID (e.g., `minecraft:stick`) or tag (e.g., `#minecraft:logs`) to find.
+* **`replacement`**: The item or tag to use instead. Can be a Single Item (`"minecraft:bamboo"`) or a Compound Array (`["minecraft:bamboo", "minecraft:stick"]`).
+
+**Example:** Replace Sticks with Bamboo OR Sticks for vanilla recipes.
+
+```json
+{
+  "action": "replace_input",
+  "target": "minecraft:stick",
+  "replacement": [
+    "minecraft:bamboo",
+    "minecraft:stick"
+  ],
+  "filter": {
+    "mod": "minecraft"
+  }
+}
+
+```
+
+## Action: `replace_output`
+
+Changes the result of the matching recipes.
+
+* **`replacement`**: The new item ID for the output.
+
+**Example:** Make the Cake recipe craft a Golden Apple instead.
+
+```json
+{
+  "action": "replace_output",
+  "replacement": "minecraft:golden_apple",
+  "filter": {
+    "id": "minecraft:cake"
+  }
+}
+
+```

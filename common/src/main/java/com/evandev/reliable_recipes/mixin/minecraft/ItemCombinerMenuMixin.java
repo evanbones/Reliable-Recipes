@@ -1,7 +1,6 @@
 package com.evandev.reliable_recipes.mixin.minecraft;
 
-import com.evandev.reliable_recipes.compat.ReliableRemoverCompat;
-import com.evandev.reliable_recipes.platform.Services;
+import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import net.minecraft.world.Container;
 import net.minecraft.world.inventory.ItemCombinerMenu;
 import net.minecraft.world.inventory.ResultContainer;
@@ -28,14 +27,14 @@ public abstract class ItemCombinerMenuMixin {
         if (container == this.inputSlots) {
 
             ItemStack result = this.resultSlots.getItem(0);
-            if (!result.isEmpty() && (Services.PLATFORM.isItemHidden(result) || ReliableRemoverCompat.isHidden(result))) {
+            if (!result.isEmpty() && (ReliableRecipesAPI.isItemHidden(result))) {
                 this.resultSlots.setItem(0, ItemStack.EMPTY);
                 return;
             }
 
             for (int i = 0; i < this.inputSlots.getContainerSize(); i++) {
                 ItemStack input = this.inputSlots.getItem(i);
-                if (!input.isEmpty() && (Services.PLATFORM.isItemHidden(input) || ReliableRemoverCompat.isHidden(input))) {
+                if (!input.isEmpty() && (ReliableRecipesAPI.isItemHidden(input))) {
                     this.resultSlots.setItem(0, ItemStack.EMPTY);
                     return;
                 }

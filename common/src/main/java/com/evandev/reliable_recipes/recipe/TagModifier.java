@@ -1,10 +1,9 @@
 package com.evandev.reliable_recipes.recipe;
 
 import com.evandev.reliable_recipes.Constants;
+import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.HolderSetNamedAccessor;
-import com.evandev.reliable_recipes.platform.Services;
-import com.evandev.reliable_recipes.compat.ReliableRemoverCompat;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -24,7 +23,7 @@ public class TagModifier {
         applyToRegistry(BuiltInRegistries.ITEM, "Item");
         applyToRegistry(BuiltInRegistries.BLOCK, "Block");
 
-        if (Services.PLATFORM.hasItemHidingCapabilities() || ReliableRemoverCompat.isLoaded()) {
+        if (ReliableRecipesAPI.hasItemHidingCapabilities()) {
             applyHiddenItemRules();
         }
     }
@@ -91,7 +90,7 @@ public class TagModifier {
             Set<Block> hiddenBlocks = new HashSet<>();
 
             for (Item item : BuiltInRegistries.ITEM) {
-                if (item != null && (Services.PLATFORM.isItemHidden(item.getDefaultInstance()) || ReliableRemoverCompat.isHidden(item.getDefaultInstance()))) {
+                if (item != null && (ReliableRecipesAPI.isItemHidden(item.getDefaultInstance()))) {
                     hiddenItems.add(item);
 
                     var block = Block.byItem(item);
