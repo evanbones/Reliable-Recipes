@@ -100,7 +100,10 @@ public class RecipeJsonParser {
                 Predicate<Recipe<?>> check = switch (key) {
                     case "type" -> {
                         Predicate<String> m = getStringMatcher(criterion);
-                        yield r -> m.test(r.getType().toString());
+                        yield r -> {
+                            ResourceLocation typeId = BuiltInRegistries.RECIPE_TYPE.getKey(r.getType());
+                            return typeId != null && m.test(typeId.toString());
+                        };
                     }
                     case "mod" -> {
                         Predicate<String> m = getStringMatcher(criterion);

@@ -1,3 +1,3 @@
 ### Fixed
 
-- Rollback 1.4.3 changes.
+- Improved recipe type parsing.
