@@ -16,7 +16,8 @@
     "minecraft.GrindstoneMenuMixin",
     "minecraft.ItemCombinerMenuMixin",
     "minecraft.RecipeManagerMixin",
-    "minecraft.ReloadableServerResourcesMixin"
+    "minecraft.ReloadableServerResourcesMixin",
+    "minecraft.RepairItemRecipeMixin"
   ],
   "client": [
     "emi.EmiRecipeScreenMixin",

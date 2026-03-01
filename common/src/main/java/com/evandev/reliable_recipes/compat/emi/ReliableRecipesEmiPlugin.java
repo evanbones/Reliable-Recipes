@@ -6,6 +6,7 @@ import dev.emi.emi.api.EmiPlugin;
 import dev.emi.emi.api.EmiRegistry;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 @EmiEntrypoint
@@ -14,13 +15,17 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
     @Override
     public void register(EmiRegistry registry) {
         registry.removeRecipes(recipe -> {
+            boolean isRepairRecipe = isRepairCategory(recipe.getCategory().getId());
+
             for (EmiStack stack : recipe.getOutputs()) {
                 if (isHidden(stack)) return true;
+                if (isRepairRecipe && isRepairBlocked(stack)) return true;
             }
 
             for (EmiIngredient ingredient : recipe.getInputs()) {
                 for (EmiStack stack : ingredient.getEmiStacks()) {
                     if (isHidden(stack)) return true;
+                    if (isRepairRecipe && isRepairBlocked(stack)) return true;
                 }
             }
 
@@ -34,5 +39,20 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
         if (stack == null || stack.isEmpty()) return false;
 
         return ReliableRecipesAPI.isItemHidden(stack);
+    }
+
+    private boolean isRepairBlocked(EmiStack emiStack) {
+        if (emiStack.isEmpty()) return false;
+        ItemStack stack = emiStack.getItemStack();
+        if (stack == null || stack.isEmpty()) return false;
+
+        return ReliableRecipesAPI.isRepairBlocked(stack);
+    }
+
+    private boolean isRepairCategory(ResourceLocation categoryId) {
+        if (categoryId == null) return false;
+        String path = categoryId.getPath();
+
+        return path.contains("anvil") || path.contains("grindstone") || path.contains("repair");
     }
 }

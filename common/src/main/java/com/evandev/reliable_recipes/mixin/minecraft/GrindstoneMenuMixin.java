@@ -36,5 +36,13 @@ public abstract class GrindstoneMenuMixin {
                 return;
             }
         }
+
+        ItemStack input1 = this.repairSlots.getItem(0);
+        ItemStack input2 = this.repairSlots.getItem(1);
+        if (!input1.isEmpty() && !input2.isEmpty()) {
+            if (ReliableRecipesAPI.isRepairBlocked(input1) || ReliableRecipesAPI.isRepairBlocked(input2)) {
+                this.resultSlots.setItem(0, ItemStack.EMPTY);
+            }
+        }
     }
 }

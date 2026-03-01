@@ -7,11 +7,8 @@ import net.minecraft.world.item.crafting.Recipe;
 import java.util.function.Predicate;
 
 public class RecipeRule {
-    public enum Action { REMOVE, REPLACE_INPUT, REPLACE_OUTPUT }
-
     private final Action action;
     private final Predicate<Recipe<?>> filter;
-
     private final Ingredient targetInput;
     private final Ingredient newInput;
     private final ItemStack newOutput;
@@ -43,8 +40,21 @@ public class RecipeRule {
         return filter.test(recipe);
     }
 
-    public Action getAction() { return action; }
-    public Ingredient getTargetInput() { return targetInput; }
-    public Ingredient getNewInput() { return newInput; }
-    public ItemStack getNewOutput() { return newOutput; }
+    public Action getAction() {
+        return action;
+    }
+
+    public Ingredient getTargetInput() {
+        return targetInput;
+    }
+
+    public Ingredient getNewInput() {
+        return newInput;
+    }
+
+    public ItemStack getNewOutput() {
+        return newOutput;
+    }
+
+    public enum Action {REMOVE, REPLACE_INPUT, REPLACE_OUTPUT, PREVENT_REPAIR}
 }

@@ -1,3 +1,7 @@
+### Added
+
+- Added `prevent_repair` action to prevent items from being repaired in Anvils, Crafting, etc.
+
 ### Fixed
 
-- Improved recipe type parsing.
+- Fixed boolean logic in filters.

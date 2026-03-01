@@ -40,5 +40,12 @@ public abstract class ItemCombinerMenuMixin {
                 }
             }
         }
+
+        ItemStack input1 = this.inputSlots.getItem(0);
+        ItemStack input2 = this.inputSlots.getItem(1);
+
+        if (!input1.isEmpty() && !input2.isEmpty() && ReliableRecipesAPI.isRepairBlocked(input1)) {
+            this.resultSlots.setItem(0, ItemStack.EMPTY);
+        }
     }
 }
