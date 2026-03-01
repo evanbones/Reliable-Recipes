@@ -8,6 +8,29 @@ import java.util.function.Predicate;
 
 public class ReliableRecipesAPI {
     private static final List<Predicate<ItemStack>> ITEM_HIDERS = new ArrayList<>();
+    private static final List<Predicate<ItemStack>> REPAIR_BLOCKERS = new ArrayList<>();
+
+    /**
+     * Register a predicate that determines if an item should be blocked from being repaired.
+     */
+    public static void registerRepairBlocker(Predicate<ItemStack> predicate) {
+        REPAIR_BLOCKERS.add(predicate);
+    }
+
+    /**
+     * Checks if an item is blocked from being repaired.
+     */
+    public static boolean isRepairBlocked(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        for (Predicate<ItemStack> blocker : REPAIR_BLOCKERS) {
+            if (blocker.test(stack)) return true;
+        }
+        return false;
+    }
+
+    public static void clearRepairBlockers() {
+        REPAIR_BLOCKERS.clear();
+    }
 
     /**
      * Register a predicate that determines if an item should be hidden from recipes, tags, etc.

@@ -30,6 +30,12 @@ public class RecipeModifier {
         int lastErrorCount = 0;
         List<RecipeRule> rules = RecipeConfigIO.loadRules();
 
+        for (RecipeRule rule : rules) {
+            if (rule.getAction() == RecipeRule.Action.PREVENT_REPAIR) {
+                ReliableRecipesAPI.registerRepairBlocker(stack -> rule.getTargetInput().test(stack));
+            }
+        }
+
         if (rules.isEmpty() && !ReliableRecipesAPI.hasItemHidingCapabilities())
             return;
 
@@ -196,5 +202,6 @@ public class RecipeModifier {
     public static void reset() {
         hasBeenApplied = false;
         DELETED_RECIPES_CACHE.clear();
+        ReliableRecipesAPI.clearRepairBlockers();
     }
 }

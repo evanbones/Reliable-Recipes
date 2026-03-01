@@ -29,6 +29,12 @@ public class RecipeJsonParser {
 
     public static RecipeRule parseRule(JsonObject mod) {
         String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
+
+        if (actionStr.equals("prevent_repair")) {
+            Ingredient target = parseIngredient(mod.get("target"));
+            return new RecipeRule(RecipeRule.Action.PREVENT_REPAIR, r -> false, target, Ingredient.EMPTY);
+        }
+
         if (!mod.has("filter")) throw new IllegalArgumentException("Missing filter");
 
         Predicate<RecipeHolder<?>> filter = parseFilter(mod.get("filter"));
@@ -82,22 +88,21 @@ public class RecipeJsonParser {
         if (json.isJsonObject()) {
             JsonObject obj = json.getAsJsonObject();
 
-            if (obj.has("not")) return parseFilter(obj.get("not")).negate();
-            if (obj.has("or")) {
-                Predicate<RecipeHolder<?>> p = r -> false;
-                for (JsonElement e : obj.getAsJsonArray("or")) p = p.or(parseFilter(e));
-                return p;
-            }
-            if (obj.has("and")) {
-                Predicate<RecipeHolder<?>> p = r -> true;
-                for (JsonElement e : obj.getAsJsonArray("and")) p = p.and(parseFilter(e));
-                return p;
-            }
-
             Predicate<RecipeHolder<?>> combined = r -> true;
             for (String key : obj.keySet()) {
                 JsonElement criterion = obj.get(key);
                 Predicate<RecipeHolder<?>> check = switch (key) {
+                    case "not" -> parseFilter(criterion).negate();
+                    case "or" -> {
+                        Predicate<RecipeHolder<?>> p = r -> false;
+                        for (JsonElement e : criterion.getAsJsonArray()) p = p.or(parseFilter(e));
+                        yield p;
+                    }
+                    case "and" -> {
+                        Predicate<RecipeHolder<?>> p = r -> true;
+                        for (JsonElement e : criterion.getAsJsonArray()) p = p.and(parseFilter(e));
+                        yield p;
+                    }
                     case "type" -> {
                         Predicate<String> m = getStringMatcher(criterion);
                         yield r -> {
