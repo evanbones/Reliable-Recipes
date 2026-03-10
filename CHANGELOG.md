@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-03-09
+
+### Changed
+
+- Flattened `recipe` and `tag` rules out of nested blocks.
+    - Existing rules will be automatically converted, but refer to the wiki in the future for the new syntax.
+
+### Fixed
+
+- Fixed issues with nested tags.
+- Fixed EMI recipe removal being too aggressive in certain cases.
+
 ## [1.5.0] - 2026-02-28
 
 ### Added

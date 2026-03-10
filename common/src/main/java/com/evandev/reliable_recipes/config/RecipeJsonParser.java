@@ -19,28 +19,32 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-/**
- * Handles the logic of converting JSON elements into Recipe Rules and Filters.
- */
 public class RecipeJsonParser {
+
+    private static final Set<String> IGNORED_KEYS = Set.of(
+            "action", "target", "replacement", "items", "tags", "tag", "filter"
+    );
 
     public static RecipeRule parseRule(JsonObject mod) {
         String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
+
+        if (Set.of("remove_all_tags", "remove_tag", "remove_from_tag", "clear_tag").contains(actionStr)) {
+            return null;
+        }
 
         if (actionStr.equals("prevent_repair")) {
             Ingredient target = parseIngredient(mod.get("target"));
             return new RecipeRule(RecipeRule.Action.PREVENT_REPAIR, r -> false, target, Ingredient.EMPTY);
         }
 
-        if (!mod.has("filter")) throw new IllegalArgumentException("Missing filter");
-
-        Predicate<RecipeHolder<?>> filter = parseFilter(mod.get("filter"));
+        Predicate<RecipeHolder<?>> filter = mod.has("filter") ? parseFilter(mod.get("filter")) : parseFilter(mod);
 
         return switch (actionStr) {
-            case "remove" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
+            case "remove", "remove_recipe" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
             case "replace_input" -> {
                 Ingredient target = parseIngredient(mod.get("target"));
                 Ingredient replace = parseIngredient(mod.get("replacement"));
@@ -55,18 +59,26 @@ public class RecipeJsonParser {
                 }
                 yield new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, filter, new ItemStack(item));
             }
-            default -> throw new IllegalArgumentException("Unknown action: " + actionStr);
+            default -> {
+                Constants.LOG.warn("Unknown recipe action: {}", actionStr);
+                yield null;
+            }
         };
     }
 
     public static TagRule parseTagRule(JsonObject mod) {
         String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
 
+        if (Set.of("remove", "remove_recipe", "replace_input", "replace_output", "prevent_repair").contains(actionStr)) {
+            return null;
+        }
+
         List<ResourceLocation> items = new ArrayList<>();
-        if (mod.has("items")) {
-            JsonElement el = mod.get("items");
-            if (el.isJsonArray()) el.getAsJsonArray().forEach(e -> items.add(ResourceLocation.parse(e.getAsString())));
-            else items.add(ResourceLocation.parse(el.getAsString()));
+        JsonElement itemEl = mod.has("id") ? mod.get("id") : mod.get("items");
+        if (itemEl != null) {
+            if (itemEl.isJsonArray())
+                itemEl.getAsJsonArray().forEach(e -> items.add(ResourceLocation.parse(e.getAsString())));
+            else items.add(ResourceLocation.parse(itemEl.getAsString()));
         }
 
         List<ResourceLocation> tags = new ArrayList<>();
@@ -77,7 +89,7 @@ public class RecipeJsonParser {
         }
 
         return switch (actionStr) {
-            case "remove_all_tags" -> new TagRule(TagRule.Action.REMOVE_ALL_TAGS, items, null);
+            case "remove_all_tags", "remove_tag" -> new TagRule(TagRule.Action.REMOVE_ALL_TAGS, items, null);
             case "remove_from_tag" -> new TagRule(TagRule.Action.REMOVE_FROM_TAG, items, tags);
             case "clear_tag" -> new TagRule(TagRule.Action.CLEAR_TAG, null, tags);
             default -> throw new IllegalArgumentException("Unknown tag action: " + actionStr);
@@ -90,6 +102,8 @@ public class RecipeJsonParser {
 
             Predicate<RecipeHolder<?>> combined = r -> true;
             for (String key : obj.keySet()) {
+                if (IGNORED_KEYS.contains(key)) continue;
+
                 JsonElement criterion = obj.get(key);
                 Predicate<RecipeHolder<?>> check = switch (key) {
                     case "not" -> parseFilter(criterion).negate();
@@ -114,7 +128,7 @@ public class RecipeJsonParser {
                         Predicate<String> m = getStringMatcher(criterion);
                         yield r -> m.test(r.id().getNamespace());
                     }
-                    case "id" -> {
+                    case "id", "pattern", "patterns" -> {
                         Predicate<String> m = getStringMatcher(criterion);
                         yield r -> m.test(r.id().toString());
                     }
@@ -141,7 +155,7 @@ public class RecipeJsonParser {
                             }
                         };
                     }
-                    default -> throw new IllegalArgumentException("Unknown filter key: " + key);
+                    default -> r -> true;
                 };
                 combined = combined.and(check);
             }
@@ -174,10 +188,8 @@ public class RecipeJsonParser {
         if (json.isJsonArray()) {
             List<Ingredient> list = new ArrayList<>();
             json.getAsJsonArray().forEach(e -> list.add(parseIngredientString(e.getAsString())));
-
             return mergeIngredients(list);
         }
-
         return parseIngredientString(json.getAsString());
     }
 
@@ -189,7 +201,6 @@ public class RecipeJsonParser {
         for (Ingredient ing : ingredients) {
             allStacks.addAll(Arrays.asList(ing.getItems()));
         }
-
         return Ingredient.of(allStacks.toArray(new ItemStack[0]));
     }
 

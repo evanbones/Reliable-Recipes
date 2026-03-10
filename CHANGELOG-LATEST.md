@@ -1,7 +1,9 @@
-### Added
+### Changed
 
-- Added `prevent_repair` action to prevent items from being repaired in Anvils, Crafting, etc.
+- Flattened `recipe` and `tag` rules out of nested blocks.
+    - Existing rules will be automatically converted, but refer to the wiki in the future for the new syntax.
 
 ### Fixed
 
-- Fixed boolean logic in filters.
+- Fixed issues with nested tags.
+- Fixed EMI recipe removal being too aggressive in certain cases.

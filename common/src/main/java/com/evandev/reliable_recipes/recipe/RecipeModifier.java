@@ -12,7 +12,6 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
-import org.jetbrains.annotations.UnknownNullability;
 
 import java.util.*;
 
@@ -41,10 +40,11 @@ public class RecipeModifier {
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
 
-        Multimap<RecipeType<?>, RecipeHolder<?>> recipesByType = LinkedHashMultimap.create(managerAccessor.getRecipes());
         Map<ResourceLocation, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
 
-        List<ResourceLocation> toRemove = new ArrayList<>();
+        Multimap<RecipeType<?>, RecipeHolder<?>> recipesByType = LinkedHashMultimap.create(managerAccessor.getRecipes());
+
+        List<RecipeHolder<?>> toRemove = new ArrayList<>();
 
         for (RecipeHolder<?> recipe : recipesByName.values()) {
             try {
@@ -58,13 +58,23 @@ public class RecipeModifier {
                 if (!shouldRemove) {
                     try {
                         for (Ingredient ingredient : recipe.value().getIngredients()) {
-                            for (ItemStack item : ingredient.getItems()) {
-                                if (ReliableRecipesAPI.isItemHidden(item)) {
+                            ItemStack[] items = ingredient.getItems();
+
+                            if (items.length > 0) {
+                                boolean allHidden = true;
+
+                                for (ItemStack item : items) {
+                                    if (!ReliableRecipesAPI.isItemHidden(item)) {
+                                        allHidden = false;
+                                        break;
+                                    }
+                                }
+
+                                if (allHidden) {
                                     shouldRemove = true;
                                     break;
                                 }
                             }
-                            if (shouldRemove) break;
                         }
                     } catch (Exception ignored) {
                     }
@@ -77,7 +87,7 @@ public class RecipeModifier {
                                 shouldRemove = true;
                                 break;
                             } else if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT) {
-                                replaceInputInRecipe(recipe, rule.getTargetInput(), rule.getNewInput());
+                                replaceInputInRecipe(recipe.value(), rule.getTargetInput(), rule.getNewInput());
                             } else if (rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
                                 replaceOutputInRecipe(recipe.value(), rule.getNewOutput());
                             }
@@ -86,7 +96,7 @@ public class RecipeModifier {
                 }
 
                 if (shouldRemove) {
-                    toRemove.add(recipe.id());
+                    toRemove.add(recipe);
                 }
             } catch (Exception e) {
                 lastErrorCount++;
@@ -94,16 +104,13 @@ public class RecipeModifier {
             }
         }
 
-        for (ResourceLocation id : toRemove) {
-            RecipeHolder<?> recipe = recipesByName.remove(id);
-            if (recipe != null) {
-                recipesByType.get(recipe.value().getType())
-                        .removeIf(r -> r.id().equals(id));
-            }
+        for (RecipeHolder<?> recipe : toRemove) {
+            recipesByName.remove(recipe.id());
+            recipesByType.remove(recipe.value().getType(), recipe);
         }
 
-        managerAccessor.setRecipes(ImmutableMultimap.copyOf(recipesByType));
         managerAccessor.setByName(ImmutableMap.copyOf(recipesByName));
+        managerAccessor.setRecipes(ImmutableMultimap.copyOf(recipesByType));
 
         if (!toRemove.isEmpty()) {
             Constants.LOG.info("RecipeModifier removed {} recipes.", toRemove.size());
@@ -124,8 +131,7 @@ public class RecipeModifier {
         if (recipe != null) {
             DELETED_RECIPES_CACHE.put(recipeId, recipe);
 
-            recipesByType.get(recipe.value().getType())
-                    .removeIf(r -> r.id().equals(recipeId));
+            recipesByType.remove(recipe.value().getType(), recipe);
 
             managerAccessor.setByName(ImmutableMap.copyOf(recipesByName));
             managerAccessor.setRecipes(ImmutableMultimap.copyOf(recipesByType));
@@ -162,8 +168,7 @@ public class RecipeModifier {
         }
     }
 
-    private static void replaceInputInRecipe(@UnknownNullability RecipeHolder<?> holder, Ingredient target, Ingredient replacement) {
-        var recipe = holder.value();
+    private static void replaceInputInRecipe(Recipe<?> recipe, Ingredient target, Ingredient replacement) {
         for (int i = 0; i < recipe.getIngredients().size(); i++) {
             if (ingredientMatches(recipe.getIngredients().get(i), target)) {
                 recipe.getIngredients().set(i, replacement);
