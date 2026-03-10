@@ -3,7 +3,8 @@ title: Filters
 hide_meta: true
 ---
 
-When modifying recipes, the `filter` object determines which recipes are affected. A recipe must match all provided fields to be selected.
+When modifying recipes, the `filter` object determines which recipes are affected.
+A recipe must match all provided fields to be selected.
 
 ## Basic Filters
 You can filter by simple strings or use **arrays** to match multiple values (acting as an `OR` condition).
@@ -25,13 +26,16 @@ Remove all recipes that output Gold items, *except* those from Vanilla Minecraft
 
 ```json
 {
-  "action": "remove",
-  "filter": {
-    "output": "/.*gold.*/",
-    "not": {
-      "mod": "minecraft"
+  "remove_recipes": [
+    {
+      "filter": {
+        "output": "/.*gold.*/",
+        "not": {
+          "mod": "minecraft"
+        }
+      }
     }
-  }
+  ]
 }
 
 ```

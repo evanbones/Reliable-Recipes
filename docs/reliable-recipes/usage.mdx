@@ -11,16 +11,17 @@ Place your configuration files in: `./config/reliable_recipes`
 Upon server startup or data reload, the mod reads these files and injects your specified changes into the internal registries.
 
 ## JSON Structure
-A configuration file can contain two main sections: `recipe_modifications` for recipes and `tag_modifications` for item tags.
+Configuration files define rules that are grouped directly by their action types.
 
 ```json
 {
-  "recipe_modifications": [
-    // Recipe rules go here
+  "remove_recipes": [
+    // Recipe removal rules go here
   ],
-  "tag_modifications": [
-    // Tag rules go here
+  "replace_input": [
+    // Input replacement rules go here
+  ],
+  "remove_from_tag": [
+    // Tag modification rules go here
   ]
 }
-
-```
