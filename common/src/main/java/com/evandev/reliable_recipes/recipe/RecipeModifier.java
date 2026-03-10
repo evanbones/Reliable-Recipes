@@ -58,13 +58,23 @@ public class RecipeModifier {
                 if (!shouldRemove) {
                     try {
                         for (Ingredient ingredient : recipe.getIngredients()) {
-                            for (ItemStack item : ingredient.getItems()) {
-                                if (ReliableRecipesAPI.isItemHidden(item)) {
+                            ItemStack[] items = ingredient.getItems();
+
+                            if (items.length > 0) {
+                                boolean allHidden = true;
+
+                                for (ItemStack item : items) {
+                                    if (!ReliableRecipesAPI.isItemHidden(item)) {
+                                        allHidden = false;
+                                        break;
+                                    }
+                                }
+
+                                if (allHidden) {
                                     shouldRemove = true;
                                     break;
                                 }
                             }
-                            if (shouldRemove) break;
                         }
                     } catch (Exception ignored) {
                     }

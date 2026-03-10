@@ -9,6 +9,8 @@ import dev.emi.emi.api.stack.EmiStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.List;
+
 @EmiEntrypoint
 public class ReliableRecipesEmiPlugin implements EmiPlugin {
 
@@ -18,14 +20,48 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
             boolean isRepairRecipe = isRepairCategory(recipe.getCategory().getId());
 
             for (EmiStack stack : recipe.getOutputs()) {
-                if (isHidden(stack)) return true;
-                if (isRepairRecipe && isRepairBlocked(stack)) return true;
+                if (isHidden(stack) || (isRepairRecipe && isRepairBlocked(stack))) {
+                    boolean isReturnedTool = false;
+
+                    for (EmiIngredient input : recipe.getInputs()) {
+                        if (input.getEmiStacks().stream().anyMatch(s -> ItemStack.isSameItem(s.getItemStack(), stack.getItemStack()))) {
+                            isReturnedTool = true;
+                            break;
+                        }
+                    }
+
+                    if (!isReturnedTool) {
+                        for (EmiIngredient catalyst : recipe.getCatalysts()) {
+                            if (catalyst.getEmiStacks().stream().anyMatch(s -> ItemStack.isSameItem(s.getItemStack(), stack.getItemStack()))) {
+                                isReturnedTool = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!isReturnedTool) {
+                        return true;
+                    }
+                }
             }
 
             for (EmiIngredient ingredient : recipe.getInputs()) {
-                for (EmiStack stack : ingredient.getEmiStacks()) {
-                    if (isHidden(stack)) return true;
-                    if (isRepairRecipe && isRepairBlocked(stack)) return true;
+                List<EmiStack> stacks = ingredient.getEmiStacks();
+                if (stacks != null && !stacks.isEmpty()) {
+                    boolean allHidden = true;
+                    boolean allRepairBlocked = true;
+
+                    for (EmiStack stack : stacks) {
+                        if (!isHidden(stack)) {
+                            allHidden = false;
+                        }
+                        if (!isRepairRecipe || !isRepairBlocked(stack)) {
+                            allRepairBlocked = false;
+                        }
+                    }
+
+                    if (allHidden) return true;
+                    if (isRepairRecipe && allRepairBlocked) return true;
                 }
             }
 

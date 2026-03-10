@@ -20,19 +20,25 @@ public class RecipeConfigIO {
     private static final Path CONFIG_DIR = Services.PLATFORM.getConfigDirectory().resolve("reliable_recipes");
 
     public static List<RecipeRule> loadRules() {
+        ConfigMigrator.migrateConfigsIfNeeded();
+
         List<RecipeRule> rules = new ArrayList<>();
-        List<JsonObject> configs = loadAllConfigs();
+        List<JsonElement> configs = loadAllConfigs();
 
-        for (JsonObject config : configs) {
-            if (!config.has("recipe_modifications")) continue;
-
-            for (JsonElement element : config.getAsJsonArray("recipe_modifications")) {
-                try {
-                    if (!element.isJsonObject()) continue;
-                    RecipeRule rule = RecipeJsonParser.parseRule(element.getAsJsonObject());
-                    if (rule != null) rules.add(rule);
-                } catch (Exception e) {
-                    Constants.LOG.error("Failed to parse recipe rule: {}", element, e);
+        for (JsonElement config : configs) {
+            if (config.isJsonArray()) {
+                for (JsonElement element : config.getAsJsonArray()) {
+                    if (element.isJsonObject()) {
+                        RecipeRule rule = RecipeJsonParser.parseRule(element.getAsJsonObject());
+                        if (rule != null) rules.add(rule);
+                    }
+                }
+            } else if (config.isJsonObject() && config.getAsJsonObject().has("recipe_modifications")) {
+                for (JsonElement element : config.getAsJsonObject().getAsJsonArray("recipe_modifications")) {
+                    if (element.isJsonObject()) {
+                        RecipeRule rule = RecipeJsonParser.parseRule(element.getAsJsonObject());
+                        if (rule != null) rules.add(rule);
+                    }
                 }
             }
         }
@@ -41,25 +47,30 @@ public class RecipeConfigIO {
 
     public static List<TagRule> loadTagRules() {
         List<TagRule> rules = new ArrayList<>();
-        List<JsonObject> configs = loadAllConfigs();
+        List<JsonElement> configs = loadAllConfigs();
 
-        for (JsonObject config : configs) {
-            if (!config.has("tag_modifications")) continue;
-
-            for (JsonElement element : config.getAsJsonArray("tag_modifications")) {
-                try {
-                    if (!element.isJsonObject()) continue;
-                    rules.add(RecipeJsonParser.parseTagRule(element.getAsJsonObject()));
-                } catch (Exception e) {
-                    Constants.LOG.error("Failed to parse tag rule: {}", element, e);
+        for (JsonElement config : configs) {
+            if (config.isJsonArray()) {
+                for (JsonElement element : config.getAsJsonArray()) {
+                    if (element.isJsonObject()) {
+                        TagRule rule = RecipeJsonParser.parseTagRule(element.getAsJsonObject());
+                        if (rule != null) rules.add(rule);
+                    }
+                }
+            } else if (config.isJsonObject() && config.getAsJsonObject().has("tag_modifications")) {
+                for (JsonElement element : config.getAsJsonObject().getAsJsonArray("tag_modifications")) {
+                    if (element.isJsonObject()) {
+                        TagRule rule = RecipeJsonParser.parseTagRule(element.getAsJsonObject());
+                        if (rule != null) rules.add(rule);
+                    }
                 }
             }
         }
         return rules;
     }
 
-    private static List<JsonObject> loadAllConfigs() {
-        List<JsonObject> loadedConfigs = new ArrayList<>();
+    private static List<JsonElement> loadAllConfigs() {
+        List<JsonElement> loadedConfigs = new ArrayList<>();
         File dir = CONFIG_DIR.toFile();
 
         if (!dir.exists()) {
@@ -75,9 +86,9 @@ public class RecipeConfigIO {
 
         for (File file : files) {
             try (FileReader reader = new FileReader(file)) {
-                JsonObject json = GSON.fromJson(reader, JsonObject.class);
-                if (json != null) {
-                    loadedConfigs.add(json);
+                JsonElement root = JsonParser.parseReader(reader);
+                if (root != null) {
+                    loadedConfigs.add(root);
                 }
             } catch (Exception e) {
                 Constants.LOG.error("Failed to load recipe config file: {}", file.getName(), e);
@@ -88,21 +99,16 @@ public class RecipeConfigIO {
     }
 
     private static void createDefault(Path path) {
-        JsonObject root = new JsonObject();
+        JsonArray root = new JsonArray();
 
-        // Recipe Modifications
-        JsonArray recipeMods = new JsonArray();
-
-        // Example 1: Remove all shaped crafting recipes from 'examplemod'
+        // Example 1: Remove recipes
         JsonObject removeExample = new JsonObject();
-        removeExample.addProperty("action", "remove");
-        JsonObject removeFilter = new JsonObject();
-        removeFilter.addProperty("mod", "examplemod");
-        removeFilter.addProperty("type", "minecraft:crafting_shaped");
-        removeExample.add("filter", removeFilter);
-        recipeMods.add(removeExample);
+        removeExample.addProperty("action", "remove_recipe");
+        removeExample.addProperty("mod", "examplemod");
+        removeExample.addProperty("type", "minecraft:crafting_shaped");
+        root.add(removeExample);
 
-        // Example 2: Replace sticks with sticks OR reinforced sticks in a specific recipe
+        // Example 2: Replace inputs
         JsonObject replaceExample = new JsonObject();
         replaceExample.addProperty("action", "replace_input");
         replaceExample.addProperty("target", "minecraft:stick");
@@ -111,28 +117,18 @@ public class RecipeConfigIO {
         replacement.add("minecraft:stick");
         replacement.add("examplemod:reinforced_stick");
         replaceExample.add("replacement", replacement);
+        replaceExample.addProperty("id", "examplemod:reinforced_sword");
+        root.add(replaceExample);
 
-        JsonObject replaceFilter = new JsonObject();
-        replaceFilter.addProperty("id", "examplemod:reinforced_sword");
-        replaceExample.add("filter", replaceFilter);
-
-        recipeMods.add(replaceExample);
-        root.add("recipe_modifications", recipeMods);
-
-        // Tag Modifications
-        JsonArray tagMods = new JsonArray();
-
-        // Example 3: Remove an item from a specific tag
+        // Example 3: Tag modifications
         JsonObject tagRemoveExample = new JsonObject();
         tagRemoveExample.addProperty("action", "remove_from_tag");
         tagRemoveExample.addProperty("tag", "c:foods");
 
         JsonArray tagItems = new JsonArray();
         tagItems.add("examplemod:inedible_food");
-        tagRemoveExample.add("items", tagItems);
-
-        tagMods.add(tagRemoveExample);
-        root.add("tag_modifications", tagMods);
+        tagRemoveExample.add("id", tagItems);
+        root.add(tagRemoveExample);
 
         try (FileWriter writer = new FileWriter(path.toFile())) {
             GSON.toJson(root, writer);
@@ -144,29 +140,26 @@ public class RecipeConfigIO {
     public static void addRemovalRule(String recipeId) {
         Path generatedPath = CONFIG_DIR.resolve("generated_removals.json");
         File file = generatedPath.toFile();
-        JsonObject root;
+        JsonArray root;
 
         if (file.exists()) {
             try (FileReader reader = new FileReader(file)) {
-                root = JsonParser.parseReader(reader).getAsJsonObject();
+                JsonElement parsed = JsonParser.parseReader(reader);
+                root = parsed.isJsonArray() ? parsed.getAsJsonArray() : new JsonArray();
             } catch (Exception e) {
                 Constants.LOG.error("Failed to read generated config", e);
-                root = new JsonObject();
+                root = new JsonArray();
             }
         } else {
-            root = new JsonObject();
+            root = new JsonArray();
         }
-
-        if (!root.has("recipe_modifications")) {
-            root.add("recipe_modifications", new JsonArray());
-        }
-        JsonArray modifications = root.getAsJsonArray("recipe_modifications");
 
         JsonObject bulkRemoveRule = null;
-        for (JsonElement e : modifications) {
+        for (JsonElement e : root) {
             if (e.isJsonObject()) {
                 JsonObject obj = e.getAsJsonObject();
-                if ("remove".equals(obj.get("action").getAsString()) && obj.has("filter")) {
+                String action = obj.has("action") ? obj.get("action").getAsString() : "";
+                if (("remove".equals(action) || "remove_recipe".equals(action)) && !obj.has("filter")) {
                     bulkRemoveRule = obj;
                     break;
                 }
@@ -175,26 +168,23 @@ public class RecipeConfigIO {
 
         if (bulkRemoveRule == null) {
             bulkRemoveRule = new JsonObject();
-            bulkRemoveRule.addProperty("action", "remove");
-            bulkRemoveRule.add("filter", new JsonObject());
-            modifications.add(bulkRemoveRule);
+            bulkRemoveRule.addProperty("action", "remove_recipe");
+            root.add(bulkRemoveRule);
         }
 
-        JsonObject filter = bulkRemoveRule.getAsJsonObject("filter");
         JsonArray ids;
-
-        if (filter.has("id")) {
-            JsonElement existingId = filter.get("id");
+        if (bulkRemoveRule.has("id")) {
+            JsonElement existingId = bulkRemoveRule.get("id");
             if (existingId.isJsonArray()) {
                 ids = existingId.getAsJsonArray();
             } else {
                 ids = new JsonArray();
                 ids.add(existingId);
-                filter.add("id", ids);
+                bulkRemoveRule.add("id", ids);
             }
         } else {
             ids = new JsonArray();
-            filter.add("id", ids);
+            bulkRemoveRule.add("id", ids);
         }
 
         boolean exists = false;
@@ -221,39 +211,42 @@ public class RecipeConfigIO {
         if (!file.exists()) return;
 
         try (FileReader reader = new FileReader(file)) {
-            JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
+            JsonElement parsed = JsonParser.parseReader(reader);
+            if (!parsed.isJsonArray()) return;
+
+            JsonArray root = parsed.getAsJsonArray();
             boolean changed = false;
+            Iterator<JsonElement> modIterator = root.iterator();
 
-            if (root.has("recipe_modifications")) {
-                JsonArray mods = root.getAsJsonArray("recipe_modifications");
-                Iterator<JsonElement> modIterator = mods.iterator();
+            while (modIterator.hasNext()) {
+                JsonElement m = modIterator.next();
+                if (!m.isJsonObject()) continue;
 
-                while (modIterator.hasNext()) {
-                    JsonElement m = modIterator.next();
-                    if (!m.isJsonObject()) continue;
+                JsonObject rule = m.getAsJsonObject();
+                String action = rule.has("action") ? rule.get("action").getAsString() : "";
+                if ("remove".equals(action) || "remove_recipe".equals(action)) {
+                    JsonElement idEl = rule.has("id") ? rule.get("id") : null;
 
-                    JsonObject rule = m.getAsJsonObject();
-                    if ("remove".equals(rule.get("action").getAsString()) && rule.has("filter")) {
-                        JsonObject filter = rule.getAsJsonObject("filter");
-                        if (filter.has("id")) {
-                            JsonElement idEl = filter.get("id");
+                    if (idEl == null && rule.has("filter") && rule.getAsJsonObject("filter").has("id")) {
+                        idEl = rule.getAsJsonObject("filter").get("id");
+                    }
 
-                            if (idEl.isJsonArray()) {
-                                JsonArray ids = idEl.getAsJsonArray();
-                                Iterator<JsonElement> idIterator = ids.iterator();
-                                while (idIterator.hasNext()) {
-                                    if (idIterator.next().getAsString().equals(recipeId)) {
-                                        idIterator.remove();
-                                        changed = true;
-                                    }
+                    if (idEl != null) {
+                        if (idEl.isJsonArray()) {
+                            JsonArray ids = idEl.getAsJsonArray();
+                            Iterator<JsonElement> idIterator = ids.iterator();
+                            while (idIterator.hasNext()) {
+                                if (idIterator.next().getAsString().equals(recipeId)) {
+                                    idIterator.remove();
+                                    changed = true;
                                 }
-                                if (ids.isEmpty()) {
-                                    modIterator.remove();
-                                }
-                            } else if (idEl.getAsString().equals(recipeId)) {
-                                modIterator.remove();
-                                changed = true;
                             }
+                            if (ids.isEmpty()) {
+                                modIterator.remove();
+                            }
+                        } else if (idEl.getAsString().equals(recipeId)) {
+                            modIterator.remove();
+                            changed = true;
                         }
                     }
                 }
