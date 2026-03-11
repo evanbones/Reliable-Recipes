@@ -6,21 +6,20 @@ hide_meta: true
 The configuration file allows you to strip tags from items using specific tag arrays.
 This is extremely useful for cleaning up recipe viewers (JEI/EMI) or removing unobtainable items from tag groups.
 
-## Action: `remove_all_tags`
+## Action: `remove_all_tags` (or `remove_tag`)
 Removes **all** tags from the specified items. This effectively orphans the item from tag-based recipe lookups.
 
 **Example:**
 ```json
-{
-  "remove_all_tags": [
-    {
-      "items": [
-        "minecraft:stick",
-        "minecraft:cake"
-      ]
-    }
-  ]
-}
+[
+  {
+    "action": "remove_all_tags",
+    "id": [
+      "minecraft:stick",
+      "minecraft:cake"
+    ]
+  }
+]
 
 ```
 
@@ -31,14 +30,13 @@ Removes items from a **specific** tag, while leaving them in other tags.
 **Example:** Remove Oak Planks from the generic planks tag.
 
 ```json
-{
-  "remove_from_tag": [
-    {
-      "tag": "minecraft:planks",
-      "items": "minecraft:oak_planks"
-    }
-  ]
-}
+[
+  {
+    "action": "remove_from_tag",
+    "tag": "minecraft:planks",
+    "id": "minecraft:oak_planks"
+  }
+]
 
 ```
 
@@ -50,16 +48,15 @@ This is useful for clearing out mod-added tags that you want to disable entirely
 **Example:** Clear all items from specific modded tags.
 
 ```json
-{
-  "clear_tag": [
-    {
-      "tags": [
-        "createaddition:plant_foods",
-        "caverns_and_chasms:experience_boost_items",
-        "curios:artifact"
-      ]
-    }
-  ]
-}
+[
+  {
+    "action": "clear_tag",
+    "tags": [
+      "createaddition:plant_foods",
+      "caverns_and_chasms:experience_boost_items",
+      "curios:artifact"
+    ]
+  }
+]
 
 ```

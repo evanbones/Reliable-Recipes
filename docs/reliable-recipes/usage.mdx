@@ -11,17 +11,30 @@ Place your configuration files in: `./config/reliable_recipes`
 Upon server startup or data reload, the mod reads these files and injects your specified changes into the internal registries.
 
 ## JSON Structure
-Configuration files define rules that are grouped directly by their action types.
+
+Configuration files define rules within a single, flat top-level JSON array. Each rule specifies its `"action"` alongside any filters or targets.
 
 ```json
-{
-  "remove_recipes": [
-    // Recipe removal rules go here
-  ],
-  "replace_input": [
-    // Input replacement rules go here
-  ],
-  "remove_from_tag": [
-    // Tag modification rules go here
-  ]
-}
+[
+  {
+    "action": "remove_recipe",
+    "mod": "examplemod",
+    "type": "minecraft:crafting_shaped"
+  },
+  {
+    "action": "replace_input",
+    "target": "minecraft:stick",
+    "replacement": [
+      "minecraft:stick",
+      "examplemod:reinforced_stick"
+    ],
+    "id": "examplemod:reinforced_sword"
+  },
+  {
+    "action": "remove_from_tag",
+    "tag": "c:foods",
+    "id": [
+      "examplemod:inedible_food"
+    ]
+  }
+]

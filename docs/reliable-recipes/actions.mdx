@@ -3,27 +3,25 @@ title: Actions
 hide_meta: true
 ---
 
-Once you have filtered the recipes you want to change, you need to apply an action to them.
+Once you have filtered the recipes you want to change, you need to apply an action to them using the `"action"` property.
 
-## Action: `remove_recipes`
+## Action: `remove_recipe`
 
 Completely removes the matching recipes from the game.
 You can use arrays to remove large batches of recipes at once.
 
 **Example:** Remove specific recipes by ID.
+
 ```json
-{
-  "remove_recipes": [
-    {
-      "filter": {
-        "id": [
-          "minecraft:wooden_pickaxe",
-          "minecraft:wooden_hoe"
-        ]
-      }
-    }
-  ]
-}
+[
+  {
+    "action": "remove_recipe",
+    "id": [
+      "minecraft:wooden_pickaxe",
+      "minecraft:wooden_hoe"
+    ]
+  }
+]
 
 ```
 
@@ -32,25 +30,22 @@ You can use arrays to remove large batches of recipes at once.
 Scans ingredients and replaces a target with a new one.
 
 * **`target`**: The item ID (e.g., `minecraft:stick`) or tag (e.g., `#minecraft:logs`) to find.
-* **`replacement`**: The item or tag to use instead. Can be a Single Item (`"minecraft:bamboo"`) or a Compound Array (`["minecraft:bamboo", "minecraft:stick"]`).
+* **`replacement`**: The item or tag to use instead. Can be a single item (`"minecraft:bamboo"`) or an array (`["minecraft:bamboo", "minecraft:stick"]`).
 
 **Example:** Replace Sticks with Bamboo OR Sticks for vanilla recipes.
 
 ```json
-{
-  "replace_input": [
-    {
-      "target": "minecraft:stick",
-      "replacement": [
-        "minecraft:bamboo",
-        "minecraft:stick"
-      ],
-      "filter": {
-        "mod": "minecraft"
-      }
-    }
-  ]
-}
+[
+  {
+    "action": "replace_input",
+    "target": "minecraft:stick",
+    "replacement": [
+      "minecraft:bamboo",
+      "minecraft:stick"
+    ],
+    "mod": "minecraft"
+  }
+]
 
 ```
 
@@ -63,55 +58,44 @@ Changes the result of the matching recipes.
 **Example:** Make the Cake recipe craft a Golden Apple instead.
 
 ```json
-{
-  "replace_output": [
-    {
-      "replacement": "minecraft:golden_apple",
-      "filter": {
-        "id": "minecraft:cake"
-      }
-    }
-  ]
-}
+[
+  {
+    "action": "replace_output",
+    "replacement": "minecraft:golden_apple",
+    "id": "minecraft:cake"
+  }
+]
 
 ```
 
 ## Action: `prevent_repair`
 
 Allows you to block specific items from being repaired across all standard Minecraft repair methods, including the Crafting Grid, Anvil, and Grindstone.
-Unlike other recipe actions, `prevent_repair` does not require a `filter` object.
-Instead, it directly targets items based on the provided item.
 
 * **`target`**: The item ID (e.g., `"minecraft:diamond_pickaxe"`) or tag (e.g., `"#minecraft:swords"`) to block from being repaired.
 
-### Example: Block specific item repair
-
-This configuration will prevent players from repairing a Diamond Pickaxe using any method.
+**Example: Block specific item repair**
 
 ```json
-{
-  "prevent_repair": [
-    {
-      "target": "minecraft:diamond_pickaxe"
-    }
-  ]
-}
+[
+  {
+    "action": "prevent_repair",
+    "target": "minecraft:diamond_pickaxe"
+  }
+]
 
 ```
 
 ## Global Repair Removal
 
-If you want to disable the vanilla crafting grid repair feature for **all** items while still allowing Anvil or Grindstone repairs, you can use the standard `remove_recipes` action instead:
+If you want to disable the vanilla crafting grid repair feature for **all** items while still allowing Anvil or Grindstone repairs, you can use the standard `remove_recipe` action instead:
 
 ```json
-{
-  "remove_recipes": [
-    {
-      "filter": {
-        "id": "minecraft:repair_item"
-      }
-    }
-  ]
-}
+[
+  {
+    "action": "remove_recipe",
+    "id": "minecraft:repair_item"
+  }
+]
 
 ```
