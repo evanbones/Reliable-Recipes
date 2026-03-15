@@ -1,3 +1,3 @@
 ### Added
 
-- Expanded API options for selective tag removals.
+- Added tag whitelist config option.

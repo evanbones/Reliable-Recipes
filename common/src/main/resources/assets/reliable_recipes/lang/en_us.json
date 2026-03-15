@@ -6,10 +6,13 @@
   "toast.reliable_recipes.deleted": "Reliable Recipes: Deleted recipe %s ",
   "toast.reliable_recipes.restored_recipe": "Restored recipe %s",
   "toast.reliable_recipes.restored_recipe_failed": "Could not restore recipe %s (not in cache or already exists)",
+
   "config.reliable_recipes.show_toast": "Show Toast",
   "config.reliable_recipes.show_toast.tooltip": "Show a toast after removing a recipe through EMI",
   "config.reliable_recipes.show_chat_messages": "Show Chat Messages",
   "config.reliable_recipes.show_chat_messages.tooltip": "Show chat feedback after removing a recipe through EMI",
   "config.reliable_recipes.reload_emi": "Reload EMI After Removal",
-  "config.reliable_recipes.reload_emi.tooltip": "Reload EMI immediately after recipe removal"
+  "config.reliable_recipes.reload_emi.tooltip": "Reload EMI immediately after recipe removal",
+  "config.reliable_recipes.ignored_tags": "Ignored Tags",
+  "config.reliable_recipes.ignored_tags.tooltip": "List of specific namespaced tags to retain when removing items with Reliable Remover"
 }

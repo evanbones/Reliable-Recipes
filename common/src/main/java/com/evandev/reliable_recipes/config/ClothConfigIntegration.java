@@ -6,6 +6,9 @@ import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ClothConfigIntegration {
 
     public static Screen createScreen(Screen parent) {
@@ -36,6 +39,12 @@ public class ClothConfigIntegration {
                 .setDefaultValue(true)
                 .setTooltip(Component.translatable("config.reliable_recipes.reload_emi.tooltip"))
                 .setSaveConsumer(newValue -> config.reloadEmi = newValue)
+                .build());
+
+        general.addEntry(entryBuilder.startStrList(Component.translatable("config.reliable_recipes.ignored_tags"), config.ignoredTags)
+                .setDefaultValue(new ArrayList<>(List.of("c:hidden_from_recipe_viewers")))
+                .setTooltip(Component.translatable("config.reliable_recipes.ignored_tags.tooltip"))
+                .setSaveConsumer(newValue -> config.ignoredTags = newValue)
                 .build());
 
         return builder.build();
