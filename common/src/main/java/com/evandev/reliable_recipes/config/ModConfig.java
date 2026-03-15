@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ModConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -19,6 +21,7 @@ public class ModConfig {
     public boolean showToast = true;
     public boolean showChatMessages = true;
     public boolean reloadEmi = true;
+    public List<String> ignoredTags = new ArrayList<>(List.of("c:hidden_from_recipe_viewers"));
 
     public static ModConfig get() {
         if (INSTANCE == null) {

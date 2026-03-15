@@ -2,6 +2,7 @@ package com.evandev.reliable_recipes.recipe;
 
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
+import com.evandev.reliable_recipes.config.ModConfig;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.HolderSetNamedAccessor;
 import net.minecraft.core.Holder;
@@ -126,7 +127,15 @@ public class TagModifier {
     @SuppressWarnings("unchecked")
     private static <T> int removeHiddenValuesFromTags(Registry<T> registry, Set<T> hiddenValues) {
         int count = 0;
+        List<String> ignoredTags = ModConfig.get().ignoredTags;
+
         for (var pair : registry.getTags().toList()) {
+            ResourceLocation tagId = pair.getFirst().location();
+
+            if (ignoredTags != null && ignoredTags.contains(tagId.toString())) {
+                continue;
+            }
+
             var tagSet = pair.getSecond();
 
             if (tagSet instanceof HolderSetNamedAccessor accessor) {
@@ -152,13 +161,14 @@ public class TagModifier {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static <T> void removeFromTag(Object tag, T value) {
         if (tag instanceof HolderSetNamedAccessor accessor) {
-            List<Holder<?>> currentContents = accessor.getContents();
+            List<Holder<T>> currentContents = (List<Holder<T>>) (Object) accessor.getContents();
             if (currentContents != null) {
-                List<Holder<?>> mutableContents = new ArrayList<>(currentContents);
+                List<Holder<T>> mutableContents = new ArrayList<>(currentContents);
                 if (mutableContents.removeIf(holder -> holder.value() == value)) {
-                    accessor.setContents(mutableContents);
+                    accessor.setContents((List<Holder<?>>) (Object) mutableContents);
                 }
             }
         }
