@@ -10,6 +10,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 
 import java.util.ArrayList;
@@ -90,12 +91,18 @@ public class TagModifier {
             Set<Block> hiddenBlocks = new HashSet<>();
 
             for (Item item : BuiltInRegistries.ITEM) {
-                if (item != null && (ReliableRecipesAPI.isItemHidden(item.getDefaultInstance()))) {
-                    hiddenItems.add(item);
+                if (item != null) {
+                    ItemStack defaultInstance = item.getDefaultInstance();
 
-                    var block = Block.byItem(item);
-                    if (block != net.minecraft.world.level.block.Blocks.AIR) {
-                        hiddenBlocks.add(block);
+                    if (ReliableRecipesAPI.isItemHidden(defaultInstance, "tag:item")) {
+                        hiddenItems.add(item);
+                    }
+
+                    if (ReliableRecipesAPI.isItemHidden(defaultInstance, "tag:block")) {
+                        var block = Block.byItem(item);
+                        if (block != net.minecraft.world.level.block.Blocks.AIR) {
+                            hiddenBlocks.add(block);
+                        }
                     }
                 }
             }
