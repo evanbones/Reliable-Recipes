@@ -3,7 +3,9 @@ package com.evandev.reliable_recipes.api;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -11,6 +13,18 @@ public class ReliableRecipesAPI {
     private static final List<Predicate<ItemStack>> ITEM_HIDERS = new ArrayList<>();
     private static final List<BiPredicate<ItemStack, String>> CONTEXTUAL_HIDERS = new ArrayList<>();
     private static final List<Predicate<ItemStack>> REPAIR_BLOCKERS = new ArrayList<>();
+    private static final Map<String, String> ITEM_REPLACEMENTS = new HashMap<>();
+
+    /**
+     * Registers an item to be replaced by another item globally in recipes.
+     */
+    public static void registerItemReplacement(String originalId, String replacementId) {
+        ITEM_REPLACEMENTS.put(originalId, replacementId);
+    }
+
+    public static Map<String, String> getReplacements() {
+        return ITEM_REPLACEMENTS;
+    }
 
     /**
      * Register a predicate that determines if an item should be blocked from being repaired.

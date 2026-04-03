@@ -9,8 +9,11 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
 
 import java.util.*;
@@ -27,7 +30,33 @@ public class RecipeModifier {
         hasBeenApplied = true;
 
         int lastErrorCount = 0;
-        List<RecipeRule> rules = RecipeConfigIO.loadRules();
+        List<RecipeRule> rules = new ArrayList<>(RecipeConfigIO.loadRules());
+
+        for (Map.Entry<String, String> entry : ReliableRecipesAPI.getReplacements().entrySet()) {
+            ResourceLocation targetId = ResourceLocation.tryParse(entry.getKey());
+            ResourceLocation replaceId = ResourceLocation.tryParse(entry.getValue());
+
+            if (targetId != null && replaceId != null) {
+                Item targetItem = BuiltInRegistries.ITEM.get(targetId);
+                Item replaceItem = BuiltInRegistries.ITEM.get(replaceId);
+
+                if (targetItem != Items.AIR && replaceItem != Items.AIR) {
+                    Ingredient targetIng = Ingredient.of(targetItem);
+                    Ingredient replaceIng = Ingredient.of(replaceItem);
+                    ItemStack replaceStack = new ItemStack(replaceItem);
+
+                    rules.add(new RecipeRule(RecipeRule.Action.REPLACE_INPUT, r -> true, targetIng, replaceIng));
+                    rules.add(new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, r -> {
+                        try {
+                            ItemStack out = r.value().getResultItem(RegistryAccess.EMPTY);
+                            return !out.isEmpty() && BuiltInRegistries.ITEM.getKey(out.getItem()).equals(targetId);
+                        } catch (Exception e) {
+                            return false;
+                        }
+                    }, replaceStack));
+                }
+            }
+        }
 
         for (RecipeRule rule : rules) {
             if (rule.getAction() == RecipeRule.Action.PREVENT_REPAIR) {
@@ -41,35 +70,42 @@ public class RecipeModifier {
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
 
         Map<ResourceLocation, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
-
         Multimap<RecipeType<?>, RecipeHolder<?>> recipesByType = LinkedHashMultimap.create(managerAccessor.getRecipes());
 
         List<RecipeHolder<?>> toRemove = new ArrayList<>();
 
-        for (RecipeHolder<?> recipe : recipesByName.values()) {
+        for (RecipeHolder<?> recipeHolder : recipesByName.values()) {
             try {
                 boolean shouldRemove = false;
+                Recipe<?> recipe = recipeHolder.value();
 
-                ItemStack result = getResult(recipe);
+                for (RecipeRule rule : rules) {
+                    if (rule.test(recipeHolder)) {
+                        if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT) {
+                            replaceInputInRecipe(recipe, rule.getTargetInput(), rule.getNewInput());
+                        } else if (rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
+                            replaceOutputInRecipe(recipe, rule.getNewOutput());
+                        }
+                    }
+                }
+
+                ItemStack result = getResult(recipeHolder);
                 if (!result.isEmpty() && (ReliableRecipesAPI.isItemHidden(result))) {
                     shouldRemove = true;
                 }
 
                 if (!shouldRemove) {
                     try {
-                        for (Ingredient ingredient : recipe.value().getIngredients()) {
+                        for (Ingredient ingredient : recipe.getIngredients()) {
                             ItemStack[] items = ingredient.getItems();
-
                             if (items.length > 0) {
                                 boolean allHidden = true;
-
                                 for (ItemStack item : items) {
                                     if (!ReliableRecipesAPI.isItemHidden(item)) {
                                         allHidden = false;
                                         break;
                                     }
                                 }
-
                                 if (allHidden) {
                                     shouldRemove = true;
                                     break;
@@ -82,25 +118,19 @@ public class RecipeModifier {
 
                 if (!shouldRemove) {
                     for (RecipeRule rule : rules) {
-                        if (rule.test(recipe)) {
-                            if (rule.getAction() == RecipeRule.Action.REMOVE) {
-                                shouldRemove = true;
-                                break;
-                            } else if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT) {
-                                replaceInputInRecipe(recipe.value(), rule.getTargetInput(), rule.getNewInput());
-                            } else if (rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
-                                replaceOutputInRecipe(recipe.value(), rule.getNewOutput());
-                            }
+                        if (rule.test(recipeHolder) && rule.getAction() == RecipeRule.Action.REMOVE) {
+                            shouldRemove = true;
+                            break;
                         }
                     }
                 }
 
                 if (shouldRemove) {
-                    toRemove.add(recipe);
+                    toRemove.add(recipeHolder);
                 }
             } catch (Exception e) {
                 lastErrorCount++;
-                Constants.LOG.error("Error processing recipe {}: {}", recipe.id(), e.getMessage());
+                Constants.LOG.error("Error processing recipe {}: {}", recipeHolder.id(), e.getMessage());
             }
         }
 
