@@ -1,3 +1,3 @@
 ### Added
 
-- Added tag whitelist config option.
+- Added item replacement to the API.

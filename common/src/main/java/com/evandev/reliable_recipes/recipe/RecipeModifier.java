@@ -6,8 +6,11 @@ import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.*;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
 
 import java.util.*;
@@ -24,7 +27,31 @@ public class RecipeModifier {
         hasBeenApplied = true;
 
         int lastErrorCount = 0;
-        List<RecipeRule> rules = RecipeConfigIO.loadRules();
+        List<RecipeRule> rules = new ArrayList<>(RecipeConfigIO.loadRules());
+
+        for (Map.Entry<String, String> entry : ReliableRecipesAPI.getReplacements().entrySet()) {
+            ResourceLocation targetId = new ResourceLocation(entry.getKey());
+            ResourceLocation replaceId = new ResourceLocation(entry.getValue());
+
+            Item targetItem = BuiltInRegistries.ITEM.get(targetId);
+            Item replaceItem = BuiltInRegistries.ITEM.get(replaceId);
+
+            if (targetItem != Items.AIR && replaceItem != Items.AIR) {
+                Ingredient targetIng = Ingredient.of(targetItem);
+                Ingredient replaceIng = Ingredient.of(replaceItem);
+                ItemStack replaceStack = new ItemStack(replaceItem);
+
+                rules.add(new RecipeRule(RecipeRule.Action.REPLACE_INPUT, r -> true, targetIng, replaceIng));
+                rules.add(new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, r -> {
+                    try {
+                        ItemStack out = r.getResultItem(RegistryAccess.EMPTY);
+                        return !out.isEmpty() && BuiltInRegistries.ITEM.getKey(out.getItem()).equals(targetId);
+                    } catch (Exception e) {
+                        return false;
+                    }
+                }, replaceStack));
+            }
+        }
 
         for (RecipeRule rule : rules) {
             if (rule.getAction() == RecipeRule.Action.PREVENT_REPAIR) {
@@ -50,6 +77,16 @@ public class RecipeModifier {
             try {
                 boolean shouldRemove = false;
 
+                for (RecipeRule rule : rules) {
+                    if (rule.test(recipe)) {
+                        if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT) {
+                            replaceInputInRecipe(recipe, rule.getTargetInput(), rule.getNewInput());
+                        } else if (rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
+                            replaceOutputInRecipe(recipe, rule.getNewOutput());
+                        }
+                    }
+                }
+
                 ItemStack result = getResult(recipe);
                 if (!result.isEmpty() && (ReliableRecipesAPI.isItemHidden(result))) {
                     shouldRemove = true;
@@ -59,17 +96,14 @@ public class RecipeModifier {
                     try {
                         for (Ingredient ingredient : recipe.getIngredients()) {
                             ItemStack[] items = ingredient.getItems();
-
                             if (items.length > 0) {
                                 boolean allHidden = true;
-
                                 for (ItemStack item : items) {
                                     if (!ReliableRecipesAPI.isItemHidden(item)) {
                                         allHidden = false;
                                         break;
                                     }
                                 }
-
                                 if (allHidden) {
                                     shouldRemove = true;
                                     break;
@@ -82,15 +116,9 @@ public class RecipeModifier {
 
                 if (!shouldRemove) {
                     for (RecipeRule rule : rules) {
-                        if (rule.test(recipe)) {
-                            if (rule.getAction() == RecipeRule.Action.REMOVE) {
-                                shouldRemove = true;
-                                break;
-                            } else if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT) {
-                                replaceInputInRecipe(recipe, rule.getTargetInput(), rule.getNewInput());
-                            } else if (rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
-                                replaceOutputInRecipe(recipe, rule.getNewOutput());
-                            }
+                        if (rule.test(recipe) && rule.getAction() == RecipeRule.Action.REMOVE) {
+                            shouldRemove = true;
+                            break;
                         }
                     }
                 }
