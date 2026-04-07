@@ -1,3 +1,3 @@
 ### Changed
 
-- Final tweaks for Create recipe matching.
+- Fixed repair blocking not working on 1.21.
