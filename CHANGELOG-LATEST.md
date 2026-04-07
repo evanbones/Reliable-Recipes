@@ -1,3 +1,3 @@
-### Added
+### Changed
 
-- Added item replacement to the API.
+- Improved recipe matching with modded recipes and updated API for Reliable Remover.
