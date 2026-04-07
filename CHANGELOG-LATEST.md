@@ -1,3 +1,3 @@
 ### Changed
 
-- Final tweaks for Create recipe matching.
+- Fixes for 1.20 recipe matching.

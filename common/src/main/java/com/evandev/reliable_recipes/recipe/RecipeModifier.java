@@ -174,6 +174,8 @@ public class RecipeModifier {
                     } else if (val instanceof List<?> list) {
                         for (int i = list.size() - 1; i >= 0; i--) {
                             Object obj = list.get(i);
+                            if (obj == null) continue;
+
                             if (obj instanceof ItemStack stack && ReliableRecipesAPI.isItemHidden(stack)) {
                                 try {
                                     list.remove(i);
@@ -187,7 +189,11 @@ public class RecipeModifier {
                             } else {
                                 ItemStack extracted = ReliableRecipesAPI.tryExtractStack(obj);
                                 if (ReliableRecipesAPI.isItemHidden(extracted)) {
-                                    handleNestedStackHiding(obj, extracted);
+                                    try {
+                                        list.remove(i);
+                                    } catch (Exception e) {
+                                        handleNestedStackHiding(obj, extracted);
+                                    }
                                 }
                             }
                         }
@@ -229,7 +235,12 @@ public class RecipeModifier {
         try {
             List<Ingredient> ingredients = recipe.getIngredients();
             for (int i = 0; i < ingredients.size(); i++) {
-                if (ingredientMatches(ingredients.get(i), target)) ingredients.set(i, replacement);
+                if (ingredientMatches(ingredients.get(i), target)) {
+                    try {
+                        ingredients.set(i, replacement);
+                    } catch (Exception ignored) {
+                    }
+                }
             }
         } catch (Exception ignored) {
         }
@@ -259,6 +270,28 @@ public class RecipeModifier {
                                 } catch (Exception ignored) {
                                 }
                             }
+                        }
+                    } else if (val != null && val.getClass().getSimpleName().contains("ShapedRecipePattern")) {
+                        Class<?> patternClass = val.getClass();
+                        while (patternClass != Object.class && patternClass != null) {
+                            for (Field patternField : patternClass.getDeclaredFields()) {
+                                patternField.setAccessible(true);
+                                try {
+                                    Object patternVal = patternField.get(val);
+                                    if (patternVal instanceof List<?> patternList) {
+                                        for (int i = 0; i < patternList.size(); i++) {
+                                            if (patternList.get(i) instanceof Ingredient ing && ingredientMatches(ing, target)) {
+                                                try {
+                                                    ((List<Ingredient>) patternList).set(i, replacement);
+                                                } catch (Exception ignored) {
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (Exception ignored) {
+                                }
+                            }
+                            patternClass = patternClass.getSuperclass();
                         }
                     }
                 }
@@ -303,6 +336,24 @@ public class RecipeModifier {
                                     try {
                                         ((List<ItemStack>) list).set(i, newResult.copy());
                                     } catch (Exception ignored) {
+                                    }
+                                } else if (obj != null) {
+                                    ItemStack extracted = ReliableRecipesAPI.tryExtractStack(obj);
+                                    if (extracted != null && ItemStack.isSameItem(extracted, targetStack)) {
+                                        Class<?> wrapperClass = obj.getClass();
+                                        while (wrapperClass != Object.class && wrapperClass != null) {
+                                            for (Field wrapperField : wrapperClass.getDeclaredFields()) {
+                                                wrapperField.setAccessible(true);
+                                                try {
+                                                    Object fieldVal = wrapperField.get(obj);
+                                                    if (fieldVal instanceof ItemStack ws && ItemStack.isSameItem(ws, targetStack)) {
+                                                        wrapperField.set(obj, newResult.copy());
+                                                    }
+                                                } catch (Exception ignored) {
+                                                }
+                                            }
+                                            wrapperClass = wrapperClass.getSuperclass();
+                                        }
                                     }
                                 }
                             }
