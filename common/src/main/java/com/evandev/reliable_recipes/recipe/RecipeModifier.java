@@ -138,61 +138,82 @@ public class RecipeModifier {
 
     @SuppressWarnings("unchecked")
     private static void stripHiddenOutputs(Recipe<?> recipe) {
-        try {
-            for (Field field : recipe.getClass().getDeclaredFields()) {
-                field.setAccessible(true);
-                Object val = field.get(recipe);
+        Class<?> clazz = recipe.getClass();
+        while (clazz != Object.class && clazz != null) {
+            try {
+                for (Field field : clazz.getDeclaredFields()) {
+                    field.setAccessible(true);
+                    Object val = field.get(recipe);
 
-                if (val instanceof ItemStack stack && ReliableRecipesAPI.isItemHidden(stack)) {
-                    try {
-                        field.set(recipe, ItemStack.EMPTY);
-                    } catch (Exception e) {
-                        stack.setCount(0);
-                    }
-                } else if (val instanceof ItemStack[] stacks) {
-                    for (int i = 0; i < stacks.length; i++) {
-                        if (ReliableRecipesAPI.isItemHidden(stacks[i])) {
-                            try {
-                                stacks[i] = ItemStack.EMPTY;
-                            } catch (Exception e) {
-                                if (stacks[i] != null) stacks[i].setCount(0);
+                    if (val instanceof ItemStack stack && ReliableRecipesAPI.isItemHidden(stack)) {
+                        try {
+                            field.set(recipe, ItemStack.EMPTY);
+                        } catch (Exception e) {
+                            stack.setCount(0);
+                        }
+                    } else if (val instanceof ItemStack[] stacks) {
+                        for (int i = 0; i < stacks.length; i++) {
+                            if (stacks[i] != null && ReliableRecipesAPI.isItemHidden(stacks[i])) {
+                                try {
+                                    stacks[i] = ItemStack.EMPTY;
+                                } catch (Exception e) {
+                                    stacks[i].setCount(0);
+                                }
                             }
                         }
-                    }
-                } else if (val instanceof List<?> list) {
-                    for (int i = 0; i < list.size(); i++) {
-                        Object obj = list.get(i);
-                        if (obj instanceof ItemStack stack && ReliableRecipesAPI.isItemHidden(stack)) {
-                            try {
-                                ((List<ItemStack>) list).set(i, ItemStack.EMPTY);
-                            } catch (Exception e) {
-                                stack.setCount(0);
-                            }
-                        } else if (obj != null) {
-                            ItemStack extracted = ReliableRecipesAPI.tryExtractStack(obj);
-                            if (ReliableRecipesAPI.isItemHidden(extracted)) {
-                                boolean cleared = false;
-                                for (Field wrapperField : obj.getClass().getDeclaredFields()) {
-                                    wrapperField.setAccessible(true);
-                                    Object fieldVal = wrapperField.get(obj);
-                                    if (fieldVal instanceof ItemStack ws && ReliableRecipesAPI.isItemHidden(ws)) {
-                                        try {
-                                            wrapperField.set(obj, ItemStack.EMPTY);
-                                        } catch (Exception e) {
-                                            ws.setCount(0);
-                                        }
-                                        cleared = true;
+                    } else if (val instanceof List<?> list) {
+                        for (int i = list.size() - 1; i >= 0; i--) {
+                            Object obj = list.get(i);
+                            if (obj == null) continue;
+
+                            if (obj instanceof ItemStack stack && ReliableRecipesAPI.isItemHidden(stack)) {
+                                try {
+                                    list.remove(i);
+                                } catch (Exception e) {
+                                    try {
+                                        ((List<ItemStack>) list).set(i, ItemStack.EMPTY);
+                                    } catch (Exception e2) {
+                                        stack.setCount(0);
                                     }
                                 }
-                                if (!cleared) {
-                                    extracted.setCount(0);
+                            } else {
+                                ItemStack extracted = ReliableRecipesAPI.tryExtractStack(obj);
+                                if (ReliableRecipesAPI.isItemHidden(extracted)) {
+                                    try {
+                                        list.remove(i);
+                                    } catch (Exception e) {
+                                        boolean cleared = false;
+                                        Class<?> wrapperClass = obj.getClass();
+                                        while (wrapperClass != Object.class && wrapperClass != null) {
+                                            for (Field wrapperField : wrapperClass.getDeclaredFields()) {
+                                                wrapperField.setAccessible(true);
+                                                try {
+                                                    Object fieldVal = wrapperField.get(obj);
+                                                    if (fieldVal instanceof ItemStack ws && ReliableRecipesAPI.isItemHidden(ws)) {
+                                                        try {
+                                                            wrapperField.set(obj, ItemStack.EMPTY);
+                                                        } catch (Exception ex) {
+                                                            ws.setCount(0);
+                                                        }
+                                                        cleared = true;
+                                                    }
+                                                } catch (Exception ignored) {
+                                                }
+                                            }
+                                            wrapperClass = wrapperClass.getSuperclass();
+                                        }
+                                        if (!cleared) {
+                                            extracted.setCount(0);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            } catch (Exception ignored) {
             }
-        } catch (Exception ignored) {
+            clazz = clazz.getSuperclass();
         }
     }
 
@@ -211,43 +232,54 @@ public class RecipeModifier {
         if (recipe instanceof AbstractCookingRecipe cooking && ingredientMatches(cooking.getIngredients().getFirst(), target))
             ((AbstractCookingRecipeAccessor) cooking).setIngredient(replacement);
 
-        try {
-            for (Field field : recipe.getClass().getDeclaredFields()) {
-                field.setAccessible(true);
-                Object val = field.get(recipe);
-                if (val instanceof Ingredient ing && ingredientMatches(ing, target)) {
-                    field.set(recipe, replacement);
-                } else if (val instanceof Ingredient[] ings) {
-                    for (int i = 0; i < ings.length; i++) {
-                        if (ings[i] != null && ingredientMatches(ings[i], target)) ings[i] = replacement;
-                    }
-                } else if (val instanceof List<?> list) {
-                    for (int i = 0; i < list.size(); i++) {
-                        if (list.get(i) instanceof Ingredient ing && ingredientMatches(ing, target)) {
-                            try {
-                                ((List<Ingredient>) list).set(i, replacement);
-                            } catch (Exception ignored) {
-                            }
+        Class<?> clazz = recipe.getClass();
+        while (clazz != Object.class && clazz != null) {
+            try {
+                for (Field field : clazz.getDeclaredFields()) {
+                    field.setAccessible(true);
+                    Object val = field.get(recipe);
+                    if (val instanceof Ingredient ing && ingredientMatches(ing, target)) {
+                        field.set(recipe, replacement);
+                    } else if (val instanceof Ingredient[] ings) {
+                        for (int i = 0; i < ings.length; i++) {
+                            if (ings[i] != null && ingredientMatches(ings[i], target)) ings[i] = replacement;
                         }
-                    }
-                } else if (val != null && val.getClass().getSimpleName().contains("ShapedRecipePattern")) {
-                    for (Field patternField : val.getClass().getDeclaredFields()) {
-                        patternField.setAccessible(true);
-                        Object patternVal = patternField.get(val);
-                        if (patternVal instanceof List<?> list) {
-                            for (int i = 0; i < list.size(); i++) {
-                                if (list.get(i) instanceof Ingredient ing && ingredientMatches(ing, target)) {
-                                    try {
-                                        ((List<Ingredient>) list).set(i, replacement);
-                                    } catch (Exception ignored) {
-                                    }
+                    } else if (val instanceof List<?> list) {
+                        for (int i = 0; i < list.size(); i++) {
+                            if (list.get(i) instanceof Ingredient ing && ingredientMatches(ing, target)) {
+                                try {
+                                    ((List<Ingredient>) list).set(i, replacement);
+                                } catch (Exception ignored) {
                                 }
                             }
                         }
+                    } else if (val != null && val.getClass().getSimpleName().contains("ShapedRecipePattern")) {
+                        Class<?> patternClass = val.getClass();
+                        while (patternClass != Object.class && patternClass != null) {
+                            for (Field patternField : patternClass.getDeclaredFields()) {
+                                patternField.setAccessible(true);
+                                try {
+                                    Object patternVal = patternField.get(val);
+                                    if (patternVal instanceof List<?> patternList) {
+                                        for (int i = 0; i < patternList.size(); i++) {
+                                            if (patternList.get(i) instanceof Ingredient ing && ingredientMatches(ing, target)) {
+                                                try {
+                                                    ((List<Ingredient>) patternList).set(i, replacement);
+                                                } catch (Exception ignored) {
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (Exception ignored) {
+                                }
+                            }
+                            patternClass = patternClass.getSuperclass();
+                        }
                     }
                 }
+            } catch (Exception ignored) {
             }
-        } catch (Exception ignored) {
+            clazz = clazz.getSuperclass();
         }
     }
 
@@ -266,29 +298,52 @@ public class RecipeModifier {
             ((SingleItemRecipeAccessor) single).setResult(copy);
 
         if (checkMatch) {
-            try {
-                for (Field field : recipe.getClass().getDeclaredFields()) {
-                    field.setAccessible(true);
-                    Object val = field.get(recipe);
-                    if (val instanceof ItemStack stack && ItemStack.isSameItem(stack, targetStack)) {
-                        field.set(recipe, newResult.copy());
-                    } else if (val instanceof ItemStack[] stacks) {
-                        for (int i = 0; i < stacks.length; i++) {
-                            if (stacks[i] != null && ItemStack.isSameItem(stacks[i], targetStack))
-                                stacks[i] = newResult.copy();
-                        }
-                    } else if (val instanceof List<?> list) {
-                        for (int i = 0; i < list.size(); i++) {
-                            if (list.get(i) instanceof ItemStack stack && ItemStack.isSameItem(stack, targetStack)) {
-                                try {
-                                    ((List<ItemStack>) list).set(i, newResult.copy());
-                                } catch (Exception ignored) {
+            Class<?> clazz = recipe.getClass();
+            while (clazz != Object.class && clazz != null) {
+                try {
+                    for (Field field : clazz.getDeclaredFields()) {
+                        field.setAccessible(true);
+                        Object val = field.get(recipe);
+                        if (val instanceof ItemStack stack && ItemStack.isSameItem(stack, targetStack)) {
+                            field.set(recipe, newResult.copy());
+                        } else if (val instanceof ItemStack[] stacks) {
+                            for (int i = 0; i < stacks.length; i++) {
+                                if (stacks[i] != null && ItemStack.isSameItem(stacks[i], targetStack))
+                                    stacks[i] = newResult.copy();
+                            }
+                        } else if (val instanceof List<?> list) {
+                            for (int i = 0; i < list.size(); i++) {
+                                Object obj = list.get(i);
+                                if (obj instanceof ItemStack stack && ItemStack.isSameItem(stack, targetStack)) {
+                                    try {
+                                        ((List<ItemStack>) list).set(i, newResult.copy());
+                                    } catch (Exception ignored) {
+                                    }
+                                } else if (obj != null) {
+                                    ItemStack extracted = ReliableRecipesAPI.tryExtractStack(obj);
+                                    if (extracted != null && ItemStack.isSameItem(extracted, targetStack)) {
+                                        Class<?> wrapperClass = obj.getClass();
+                                        while (wrapperClass != Object.class && wrapperClass != null) {
+                                            for (Field wrapperField : wrapperClass.getDeclaredFields()) {
+                                                wrapperField.setAccessible(true);
+                                                try {
+                                                    Object fieldVal = wrapperField.get(obj);
+                                                    if (fieldVal instanceof ItemStack ws && ItemStack.isSameItem(ws, targetStack)) {
+                                                        wrapperField.set(obj, newResult.copy());
+                                                    }
+                                                } catch (Exception ignored) {
+                                                }
+                                            }
+                                            wrapperClass = wrapperClass.getSuperclass();
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
+                } catch (Exception ignored) {
                 }
-            } catch (Exception ignored) {
+                clazz = clazz.getSuperclass();
             }
         }
     }
