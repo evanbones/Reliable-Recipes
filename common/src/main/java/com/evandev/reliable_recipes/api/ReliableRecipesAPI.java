@@ -1,11 +1,12 @@
 package com.evandev.reliable_recipes.api;
 
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Recipe;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Method;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -84,5 +85,54 @@ public class ReliableRecipesAPI {
      */
     public static boolean hasItemHidingCapabilities() {
         return !ITEM_HIDERS.isEmpty() || !CONTEXTUAL_HIDERS.isEmpty();
+    }
+
+    /**
+     * Extracts all possible result ItemStacks from a given recipe using reflection.
+     */
+    public static List<ItemStack> getRecipeResults(Recipe<?> recipe) {
+        List<ItemStack> results = new ArrayList<>();
+        try {
+            ItemStack primary = recipe.getResultItem(RegistryAccess.EMPTY);
+            if (!primary.isEmpty()) results.add(primary);
+        } catch (Exception ignored) {
+        }
+        String[] methodNames = {"getResults", "getOutputs", "getRollableResults", "getRecipeOutputs"};
+        for (String name : methodNames) {
+            try {
+                Method method = recipe.getClass().getMethod(name);
+                Object result = method.invoke(recipe);
+                if (result instanceof Collection<?> coll) {
+                    for (Object obj : coll) {
+                        if (obj instanceof ItemStack stack) {
+                            if (!stack.isEmpty()) results.add(stack);
+                        } else if (obj != null) {
+                            ItemStack stack = tryExtractStack(obj);
+                            if (stack != null && !stack.isEmpty()) results.add(stack);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Attempts to dynamically extract an ItemStack from an unknown object.
+     */
+    public static ItemStack tryExtractStack(Object obj) {
+        if (obj instanceof ItemStack s) return s;
+        String[] methods = {"getStack", "getItemStack", "getItem", "stack", "item"};
+        for (String m : methods) {
+            try {
+                Method method = obj.getClass().getMethod(m);
+                Object res = method.invoke(obj);
+                if (res instanceof ItemStack s) return s;
+                if (res instanceof Item item) return new ItemStack(item);
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
     }
 }

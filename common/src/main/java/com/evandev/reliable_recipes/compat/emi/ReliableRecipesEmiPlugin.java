@@ -19,30 +19,38 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
         registry.removeRecipes(recipe -> {
             boolean isRepairRecipe = isRepairCategory(recipe.getCategory().getId());
 
-            for (EmiStack stack : recipe.getOutputs()) {
-                if (isHidden(stack) || (isRepairRecipe && isRepairBlocked(stack))) {
-                    boolean isReturnedTool = false;
+            boolean hasAnyRealOutput = false;
+            boolean hasValidOutput = false;
 
-                    for (EmiIngredient input : recipe.getInputs()) {
-                        if (input.getEmiStacks().stream().anyMatch(s -> ItemStack.isSameItem(s.getItemStack(), stack.getItemStack()))) {
+            for (EmiStack stack : recipe.getOutputs()) {
+                boolean isReturnedTool = false;
+
+                for (EmiIngredient input : recipe.getInputs()) {
+                    if (input.getEmiStacks().stream().anyMatch(s -> ItemStack.isSameItem(s.getItemStack(), stack.getItemStack()))) {
+                        isReturnedTool = true;
+                        break;
+                    }
+                }
+
+                if (!isReturnedTool) {
+                    for (EmiIngredient catalyst : recipe.getCatalysts()) {
+                        if (catalyst.getEmiStacks().stream().anyMatch(s -> ItemStack.isSameItem(s.getItemStack(), stack.getItemStack()))) {
                             isReturnedTool = true;
                             break;
                         }
                     }
+                }
 
-                    if (!isReturnedTool) {
-                        for (EmiIngredient catalyst : recipe.getCatalysts()) {
-                            if (catalyst.getEmiStacks().stream().anyMatch(s -> ItemStack.isSameItem(s.getItemStack(), stack.getItemStack()))) {
-                                isReturnedTool = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!isReturnedTool) {
-                        return true;
+                if (!isReturnedTool) {
+                    hasAnyRealOutput = true;
+                    if (!isHidden(stack) && !(isRepairRecipe && isRepairBlocked(stack))) {
+                        hasValidOutput = true;
                     }
                 }
+            }
+
+            if (hasAnyRealOutput && !hasValidOutput) {
+                return true;
             }
 
             for (EmiIngredient ingredient : recipe.getInputs()) {
