@@ -29,6 +29,12 @@ public class RecipeModifier {
 
         List<RecipeRule> rules = new ArrayList<>(RecipeConfigIO.loadRules());
 
+        for (RecipeRule rule : rules) {
+            if (rule.getAction() == RecipeRule.Action.PREVENT_REPAIR) {
+                ReliableRecipesAPI.registerRepairBlocker(stack -> rule.getTargetInput().test(stack));
+            }
+        }
+
         if (rules.isEmpty() && ReliableRecipesAPI.getReplacements().isEmpty() && !ReliableRecipesAPI.hasItemHidingCapabilities())
             return;
 
