@@ -8,20 +8,20 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.NotNull;
 
-public record DeleteRecipePayload(ResourceLocation recipeId) implements CustomPacketPayload {
-    public static final Type<DeleteRecipePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "delete_recipe"));
+public record DeleteRecipePayload(Identifier recipeId) implements CustomPacketPayload {
+    public static final Type<DeleteRecipePayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "delete_recipe"));
     public static final StreamCodec<RegistryFriendlyByteBuf, DeleteRecipePayload> STREAM_CODEC = StreamCodec.composite(
-            ResourceLocation.STREAM_CODEC,
+            Identifier.STREAM_CODEC,
             DeleteRecipePayload::recipeId,
             DeleteRecipePayload::new
     );
 
-    public static void handle(ResourceLocation id, MinecraftServer server, ServerPlayer player) {
+    public static void handle(Identifier id, MinecraftServer server, ServerPlayer player) {
         {
             if (player.hasPermissions(2)) {
                 RecipeConfigIO.addRemovalRule(id.toString());

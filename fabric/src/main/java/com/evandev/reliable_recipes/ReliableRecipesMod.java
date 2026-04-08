@@ -7,7 +7,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class ReliableRecipesMod implements ModInitializer {
 
@@ -24,7 +24,7 @@ public class ReliableRecipesMod implements ModInitializer {
 
         ServerPlayNetworking.registerGlobalReceiver(DeleteRecipePayload.TYPE,
                 (payload, context) -> {
-                    ResourceLocation id = payload.recipeId();
+                    Identifier id = payload.recipeId();
                     var server = context.server();
                     var player = context.player();
                     server.execute(() -> DeleteRecipePayload.handle(id, server, player));

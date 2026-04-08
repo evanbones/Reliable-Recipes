@@ -8,7 +8,7 @@ import com.evandev.reliable_recipes.mixin.accessor.HolderSetNamedAccessor;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -39,7 +39,7 @@ public class TagModifier {
                 switch (rule.action()) {
                     case REMOVE_ALL_TAGS -> {
                         if (rule.items() == null) continue;
-                        for (ResourceLocation id : rule.items()) {
+                        for (Identifier id : rule.items()) {
                             T object = registry.get(id);
                             if (object != null) {
                                 removalCount += removeAllTagsFrom(registry, object);
@@ -48,11 +48,11 @@ public class TagModifier {
                     }
                     case REMOVE_FROM_TAG -> {
                         if (rule.tags() == null || rule.items() == null) continue;
-                        for (ResourceLocation tagId : rule.tags()) {
+                        for (Identifier tagId : rule.tags()) {
                             TagKey<T> key = TagKey.create(registry.key(), tagId);
                             var vanillaTag = registry.getTag(key).orElse(null);
 
-                            for (ResourceLocation id : rule.items()) {
+                            for (Identifier id : rule.items()) {
                                 T object = registry.get(id);
                                 if (object != null && vanillaTag != null && vanillaTag.contains(registry.wrapAsHolder(object))) {
                                     removeFromTag(vanillaTag, object);
@@ -63,7 +63,7 @@ public class TagModifier {
                     }
                     case CLEAR_TAG -> {
                         if (rule.tags() == null) continue;
-                        for (ResourceLocation tagId : rule.tags()) {
+                        for (Identifier tagId : rule.tags()) {
                             TagKey<T> key = TagKey.create(registry.key(), tagId);
                             var vanillaTag = registry.getTag(key).orElse(null);
 
@@ -130,7 +130,7 @@ public class TagModifier {
         List<String> ignoredTags = ModConfig.get().ignoredTags;
 
         for (var pair : registry.getTags().toList()) {
-            ResourceLocation tagId = pair.getFirst().location();
+            Identifier tagId = pair.getFirst().location();
 
             if (ignoredTags != null && ignoredTags.contains(tagId.toString())) {
                 continue;

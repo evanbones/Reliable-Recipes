@@ -10,7 +10,7 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -20,7 +20,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 public class RecipeModifier {
-    private static final Map<ResourceLocation, RecipeHolder<?>> DELETED_RECIPES_CACHE = new HashMap<>();
+    private static final Map<Identifier, RecipeHolder<?>> DELETED_RECIPES_CACHE = new HashMap<>();
     private static boolean hasBeenApplied = false;
 
     public static void apply(RecipeManager manager) {
@@ -39,7 +39,7 @@ public class RecipeModifier {
             return;
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
-        Map<ResourceLocation, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
+        Map<Identifier, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
         Multimap<RecipeType<?>, RecipeHolder<?>> recipesByType = LinkedHashMultimap.create(managerAccessor.getRecipes());
         List<RecipeHolder<?>> toRemove = new ArrayList<>();
 
@@ -49,8 +49,8 @@ public class RecipeModifier {
                 Recipe<?> recipe = recipeHolder.value();
 
                 for (Map.Entry<String, String> entry : ReliableRecipesAPI.getReplacements().entrySet()) {
-                    ResourceLocation targetId = ResourceLocation.tryParse(entry.getKey());
-                    ResourceLocation replaceId = ResourceLocation.tryParse(entry.getValue());
+                    Identifier targetId = Identifier.tryParse(entry.getKey());
+                    Identifier replaceId = Identifier.tryParse(entry.getValue());
                     if (targetId != null && replaceId != null) {
                         Item targetItem = BuiltInRegistries.ITEM.get(targetId);
                         Item replaceItem = BuiltInRegistries.ITEM.get(replaceId);
@@ -92,10 +92,10 @@ public class RecipeModifier {
         managerAccessor.setRecipes(ImmutableMultimap.copyOf(recipesByType));
     }
 
-    public static boolean removeRecipe(RecipeManager manager, ResourceLocation recipeId) {
+    public static boolean removeRecipe(RecipeManager manager, Identifier recipeId) {
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
 
-        Map<ResourceLocation, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
+        Map<Identifier, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
         Multimap<RecipeType<?>, RecipeHolder<?>> recipesByType = LinkedHashMultimap.create(managerAccessor.getRecipes());
 
         RecipeHolder<?> recipe = recipesByName.remove(recipeId);
@@ -110,13 +110,13 @@ public class RecipeModifier {
         return false;
     }
 
-    public static boolean restoreRecipe(RecipeManager manager, ResourceLocation recipeId) {
+    public static boolean restoreRecipe(RecipeManager manager, Identifier recipeId) {
         RecipeHolder<?> recipe = DELETED_RECIPES_CACHE.remove(recipeId);
         if (recipe == null) return false;
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
 
-        Map<ResourceLocation, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
+        Map<Identifier, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
         Multimap<RecipeType<?>, RecipeHolder<?>> recipesByType = LinkedHashMultimap.create(managerAccessor.getRecipes());
 
         recipesByName.put(recipeId, recipe);

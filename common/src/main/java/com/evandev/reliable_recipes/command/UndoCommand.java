@@ -5,18 +5,18 @@ import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class UndoCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("rrecipes_undo")
                 .requires(s -> s.hasPermission(2))
-                .then(Commands.argument("id", ResourceLocationArgument.id())
+                .then(Commands.argument("id", IdentifierArgument.id())
                         .executes(ctx -> {
-                            ResourceLocation id = ResourceLocationArgument.getId(ctx, "id");
+                            Identifier id = IdentifierArgument.getId(ctx, "id");
 
                             // Remove from config
                             RecipeConfigIO.removeRemovalRule(id.toString());

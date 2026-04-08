@@ -2,7 +2,7 @@ package com.evandev.reliable_recipes.mixin.minecraft;
 
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.google.gson.JsonElement;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.crafting.RecipeManager;
@@ -20,7 +20,7 @@ public class RecipeManagerMixin {
             method = "apply(Ljava/util/Map;Lnet/minecraft/server/packs/resources/ResourceManager;Lnet/minecraft/util/profiling/ProfilerFiller;)V",
             at = @At("HEAD")
     )
-    private void reliableRecipes$resetModifier(Map<ResourceLocation, JsonElement> map, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
+    private void reliableRecipes$resetModifier(Map<Identifier, JsonElement> map, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
         RecipeModifier.reset();
     }
 }

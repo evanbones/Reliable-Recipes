@@ -1,17 +1,17 @@
 package com.evandev.reliable_recipes.client;
 
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.util.Util;
 import net.minecraft.world.item.ItemStack;
 
 public class SharedToastOverlay {
-    private static final ResourceLocation BACKGROUND_SPRITE = ResourceLocation.withDefaultNamespace("toast/recipe");
+    private static final Identifier BACKGROUND_SPRITE = Identifier.withDefaultNamespace("toast/recipe");
     private static final long DISPLAY_DURATION = 5000L;
     private static final long FADE_DURATION = 600L;
 
@@ -27,7 +27,7 @@ public class SharedToastOverlay {
         showTime = Util.getMillis();
     }
 
-    public static void render(GuiGraphics guiGraphics) {
+    public static void render(GuiGraphicsExtractor guiGraphics) {
         if (showTime == -1 || currentMessage == null) return;
 
         Minecraft mc = Minecraft.getInstance();
@@ -51,7 +51,7 @@ public class SharedToastOverlay {
         int xPos = (mc.getWindow().getGuiScaledWidth() - toastWidth) / 2;
         int yPos = getYPos(age, toastHeight);
 
-        guiGraphics.pose().pushPose();
+        guiGraphics.pose().pushMatrix();
         guiGraphics.pose().translate(xPos, yPos, 1000);
         guiGraphics.blitSprite(BACKGROUND_SPRITE, 0, 0, toastWidth, toastHeight);
 
@@ -61,7 +61,7 @@ public class SharedToastOverlay {
 
         guiGraphics.drawString(mc.font, currentTitle != null ? currentTitle : Component.literal("Deleted"), 30, 7, -11534256, false);
         guiGraphics.drawString(mc.font, currentMessage, 30, 18, -16777216, false);
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().pushMatrix();
     }
 
     private static int getYPos(long age, int toastHeight) {

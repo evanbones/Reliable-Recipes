@@ -10,6 +10,6 @@ public class ClientEvents {
 
     @SubscribeEvent
     public static void onScreenRender(ScreenEvent.Render.Post event) {
-        SharedToastOverlay.render(event.getGuiGraphics());
+        SharedToastOverlay.render(event.getGuiGraphicsExtractor());
     }
 }

@@ -12,19 +12,19 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
-public record ClientboundDeleteRecipePayload(ResourceLocation recipeId) implements CustomPacketPayload {
-    public static final Type<ClientboundDeleteRecipePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Constants.MOD_ID, "client_delete_recipe"));
+public record ClientboundDeleteRecipePayload(Identifier recipeId) implements CustomPacketPayload {
+    public static final Type<ClientboundDeleteRecipePayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "client_delete_recipe"));
     public static final StreamCodec<RegistryFriendlyByteBuf, ClientboundDeleteRecipePayload> STREAM_CODEC = StreamCodec.composite(
-            ResourceLocation.STREAM_CODEC,
+            Identifier.STREAM_CODEC,
             ClientboundDeleteRecipePayload::recipeId,
             ClientboundDeleteRecipePayload::new
     );
 
-    public static void handle(ResourceLocation recipeId, Minecraft client) {
+    public static void handle(Identifier recipeId, Minecraft client) {
         client.execute(() -> {
             if (client.getConnection() != null) {
                 ItemStack outputIcon = ItemStack.EMPTY;
@@ -41,7 +41,7 @@ public record ClientboundDeleteRecipePayload(ResourceLocation recipeId) implemen
         });
     }
 
-    private static void handleFeedback(ResourceLocation recipeId, Minecraft client, ItemStack outputIcon) {
+    private static void handleFeedback(Identifier recipeId, Minecraft client, ItemStack outputIcon) {
         ModConfig config = ModConfig.get();
 
         if (config.reloadEmi) {

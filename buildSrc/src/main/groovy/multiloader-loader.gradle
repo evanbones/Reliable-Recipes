@@ -17,6 +17,10 @@ dependencies {
         capabilities {
             requireCapability "$group:$mod_id"
         }
+        def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
     }
     commonJava project(path: ':common', configuration: 'commonJava')
     commonResources project(path: ':common', configuration: 'commonResources')
@@ -28,6 +32,13 @@ tasks.named('compileJava', JavaCompile) {
 }
 
 processResources {
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}
+
+tasks.named('sourcesJar', Jar) {
+    dependsOn(configurations.commonJava)
+    from(configurations.commonJava)
     dependsOn(configurations.commonResources)
     from(configurations.commonResources)
 }
@@ -44,7 +55,6 @@ publishMods {
         projectId = "1414959"
         minecraftVersions.add("${minecraft_version}")
 
-        optional { slug = "reliable-remover" }
         optional { slug = "cloth-config" }
     }
 
@@ -53,7 +63,6 @@ publishMods {
         projectId = "Hl4ARA1z"
         minecraftVersions.add("${minecraft_version}")
 
-        optional { slug = "reliable-remover" }
         optional { slug = "cloth-config" }
     }
 }

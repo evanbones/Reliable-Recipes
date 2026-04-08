@@ -3,7 +3,7 @@ package com.evandev.reliable_recipes.platform;
 import com.evandev.reliable_recipes.networking.ClientboundDeleteRecipePayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import com.evandev.reliable_recipes.platform.services.IPlatformHelper;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
@@ -34,12 +34,12 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public void sendDeleteRecipePacket(ResourceLocation recipeId) {
+    public void sendDeleteRecipePacket(Identifier recipeId) {
         PacketDistributor.sendToServer(new DeleteRecipePayload(recipeId));
     }
 
     @Override
-    public void sendDeleteRecipePacketToPlayer(ServerPlayer player, ResourceLocation recipeId) {
+    public void sendDeleteRecipePacketToPlayer(ServerPlayer player, Identifier recipeId) {
         PacketDistributor.sendToPlayer(player, new ClientboundDeleteRecipePayload(recipeId));
     }
 }

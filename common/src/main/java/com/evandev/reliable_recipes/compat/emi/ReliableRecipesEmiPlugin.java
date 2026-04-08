@@ -6,7 +6,7 @@ import dev.emi.emi.api.EmiPlugin;
 import dev.emi.emi.api.EmiRegistry;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
@@ -93,7 +93,7 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
         return ReliableRecipesAPI.isRepairBlocked(stack);
     }
 
-    private boolean isRepairCategory(ResourceLocation categoryId) {
+    private boolean isRepairCategory(Identifier categoryId) {
         if (categoryId == null) return false;
         String path = categoryId.getPath();
 

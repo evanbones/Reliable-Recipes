@@ -8,7 +8,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -52,7 +52,7 @@ public class RecipeJsonParser {
             }
             case "replace_output" -> {
                 String idStr = mod.get("replacement").getAsString();
-                Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(idStr));
+                Item item = BuiltInRegistries.ITEM.get(Identifier.parse(idStr));
                 if (item == Items.AIR) {
                     Constants.LOG.warn("Skipping rule: Invalid replacement item '{}'.", idStr);
                     yield null;
@@ -73,19 +73,19 @@ public class RecipeJsonParser {
             return null;
         }
 
-        List<ResourceLocation> items = new ArrayList<>();
+        List<Identifier> items = new ArrayList<>();
         JsonElement itemEl = mod.has("id") ? mod.get("id") : mod.get("items");
         if (itemEl != null) {
             if (itemEl.isJsonArray())
-                itemEl.getAsJsonArray().forEach(e -> items.add(ResourceLocation.parse(e.getAsString())));
-            else items.add(ResourceLocation.parse(itemEl.getAsString()));
+                itemEl.getAsJsonArray().forEach(e -> items.add(Identifier.parse(e.getAsString())));
+            else items.add(Identifier.parse(itemEl.getAsString()));
         }
 
-        List<ResourceLocation> tags = new ArrayList<>();
+        List<Identifier> tags = new ArrayList<>();
         if (mod.has("tags")) {
-            mod.get("tags").getAsJsonArray().forEach(e -> tags.add(ResourceLocation.parse(e.getAsString())));
+            mod.get("tags").getAsJsonArray().forEach(e -> tags.add(Identifier.parse(e.getAsString())));
         } else if (mod.has("tag")) {
-            tags.add(ResourceLocation.parse(mod.get("tag").getAsString()));
+            tags.add(Identifier.parse(mod.get("tag").getAsString()));
         }
 
         return switch (actionStr) {
@@ -120,7 +120,7 @@ public class RecipeJsonParser {
                     case "type" -> {
                         Predicate<String> m = getStringMatcher(criterion);
                         yield r -> {
-                            ResourceLocation typeId = BuiltInRegistries.RECIPE_TYPE.getKey(r.value().getType());
+                            Identifier typeId = BuiltInRegistries.RECIPE_TYPE.getKey(r.value().getType());
                             return typeId != null && m.test(typeId.toString());
                         };
                     }
@@ -136,7 +136,7 @@ public class RecipeJsonParser {
                         Predicate<String> matcher = getStringMatcher(criterion);
                         yield r -> r.value().getIngredients().stream().anyMatch(ing -> {
                             for (ItemStack stack : ing.getItems()) {
-                                ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+                                Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
                                 if (matcher.test(id.toString())) return true;
                             }
                             return false;
@@ -148,7 +148,7 @@ public class RecipeJsonParser {
                             try {
                                 ItemStack out = r.value().getResultItem(RegistryAccess.EMPTY);
                                 if (out.isEmpty()) return false;
-                                ResourceLocation id = BuiltInRegistries.ITEM.getKey(out.getItem());
+                                Identifier id = BuiltInRegistries.ITEM.getKey(out.getItem());
                                 return m.test(id.toString());
                             } catch (Exception e) {
                                 return false;
@@ -206,9 +206,9 @@ public class RecipeJsonParser {
 
     private static Ingredient parseIngredientString(String str) {
         if (str.startsWith("#")) {
-            return Ingredient.of(TagKey.create(Registries.ITEM, ResourceLocation.parse(str.substring(1))));
+            return Ingredient.of(TagKey.create(Registries.ITEM, Identifier.parse(str.substring(1))));
         }
-        Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(str));
+        Item item = BuiltInRegistries.ITEM.get(Identifier.parse(str));
         return item != Items.AIR ? Ingredient.of(item) : Ingredient.EMPTY;
     }
 }
