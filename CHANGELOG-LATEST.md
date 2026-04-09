@@ -1,3 +1,3 @@
 ### Changed
 
-- Fixed repair blocking not working on 1.21.
+- Reverted experimental recipe output stripping.
