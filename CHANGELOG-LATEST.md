@@ -1,1 +1,3 @@
-- Ported to 26.1.
+### Changed
+
+- Reverted experimental recipe output stripping.

@@ -71,11 +71,11 @@ public class RecipeModifier {
                     }
                 }
 
-                if (!shouldRemove && shouldHideRecipe(recipeHolder)) shouldRemove = true;
+                if (!shouldRemove && shouldHideRecipe(recipeHolder)) {
+                    shouldRemove = true;
+                }
 
-                if (!shouldRemove) {
-                    stripHiddenOutputs(recipe);
-                } else {
+                if (shouldRemove) {
                     toRemove.add(recipeHolder);
                 }
             } catch (Exception e) {
@@ -132,95 +132,13 @@ public class RecipeModifier {
     private static boolean shouldHideRecipe(RecipeHolder<?> holder) {
         List<ItemStack> outputs = ReliableRecipesAPI.getRecipeResults(holder.value());
         if (outputs.isEmpty()) return false;
-        boolean allHidden = true;
+
         for (ItemStack stack : outputs) {
-            if (!stack.isEmpty() && !ReliableRecipesAPI.isItemHidden(stack)) {
-                allHidden = false;
-                break;
+            if (!stack.isEmpty() && ReliableRecipesAPI.isItemHidden(stack)) {
+                return true;
             }
         }
-        return allHidden;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static void stripHiddenOutputs(Recipe<?> recipe) {
-        Class<?> clazz = recipe.getClass();
-        while (clazz != Object.class && clazz != null) {
-            try {
-                for (Field field : clazz.getDeclaredFields()) {
-                    field.setAccessible(true);
-                    Object val = field.get(recipe);
-
-                    if (val instanceof ItemStack stack && ReliableRecipesAPI.isItemHidden(stack)) {
-                        try {
-                            field.set(recipe, ItemStack.EMPTY);
-                        } catch (Exception e) {
-                            stack.setCount(0);
-                        }
-                    } else if (val instanceof ItemStack[] stacks) {
-                        for (int i = 0; i < stacks.length; i++) {
-                            if (stacks[i] != null && ReliableRecipesAPI.isItemHidden(stacks[i])) {
-                                try {
-                                    stacks[i] = ItemStack.EMPTY;
-                                } catch (Exception e) {
-                                    stacks[i].setCount(0);
-                                }
-                            }
-                        }
-                    } else if (val instanceof List<?> list) {
-                        for (int i = list.size() - 1; i >= 0; i--) {
-                            Object obj = list.get(i);
-                            if (obj == null) continue;
-
-                            if (obj instanceof ItemStack stack && ReliableRecipesAPI.isItemHidden(stack)) {
-                                try {
-                                    list.remove(i);
-                                } catch (Exception e) {
-                                    try {
-                                        ((List<ItemStack>) list).set(i, ItemStack.EMPTY);
-                                    } catch (Exception e2) {
-                                        stack.setCount(0);
-                                    }
-                                }
-                            } else {
-                                ItemStack extracted = ReliableRecipesAPI.tryExtractStack(obj);
-                                if (ReliableRecipesAPI.isItemHidden(extracted)) {
-                                    try {
-                                        list.remove(i);
-                                    } catch (Exception e) {
-                                        boolean cleared = false;
-                                        Class<?> wrapperClass = obj.getClass();
-                                        while (wrapperClass != Object.class && wrapperClass != null) {
-                                            for (Field wrapperField : wrapperClass.getDeclaredFields()) {
-                                                wrapperField.setAccessible(true);
-                                                try {
-                                                    Object fieldVal = wrapperField.get(obj);
-                                                    if (fieldVal instanceof ItemStack ws && ReliableRecipesAPI.isItemHidden(ws)) {
-                                                        try {
-                                                            wrapperField.set(obj, ItemStack.EMPTY);
-                                                        } catch (Exception ex) {
-                                                            ws.setCount(0);
-                                                        }
-                                                        cleared = true;
-                                                    }
-                                                } catch (Exception ignored) {
-                                                }
-                                            }
-                                            wrapperClass = wrapperClass.getSuperclass();
-                                        }
-                                        if (!cleared) {
-                                            extracted.setCount(0);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch (Exception ignored) {
-            }
-            clazz = clazz.getSuperclass();
-        }
+        return false;
     }
 
     @SuppressWarnings("unchecked")
