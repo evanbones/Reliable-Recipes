@@ -1,3 +1,1 @@
-### Fixed
-
-- Fixed TPS issues with certain mods (like Overgeared).
+- Ported to 26.1.
