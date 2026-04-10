@@ -1,10 +1,11 @@
 package com.evandev.reliable_recipes;
 
+import cc.cassian.rrv.common.recipe.ClientRecipeManager;
 import com.evandev.reliable_recipes.command.UndoCommand;
 import com.evandev.reliable_recipes.config.ClothConfigIntegration;
 import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
 import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
-import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
+import com.evandev.reliable_recipes.networking.DeleteRecipeByOutputPayload;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -57,12 +58,12 @@ public class ReliableRecipesMod {
         final PayloadRegistrar registrar = event.registrar("1");
 
         registrar.playToServer(
-                DeleteRecipePayload.TYPE,
-                DeleteRecipePayload.STREAM_CODEC,
+                DeleteRecipeByOutputPayload.TYPE,
+                DeleteRecipeByOutputPayload.STREAM_CODEC,
                 (payload, context) -> {
                     context.enqueueWork(() -> {
                         ServerPlayer player = (ServerPlayer) context.player();
-                        DeleteRecipePayload.handle(payload.recipeKey(), player.level().getServer(), player);
+                        DeleteRecipeByOutputPayload.handle(payload.output(), player.level().getServer(), player);
                     });
                 }
         );
@@ -72,8 +73,7 @@ public class ReliableRecipesMod {
                 ClientboundRemoveRecipePayload.STREAM_CODEC,
                 (payload, context) -> {
                     context.enqueueWork(() -> {
-                        // TODO: Trigger EMI/JEI cache removal
-                        // Example: ReliableRecipesEmiPlugin.removeRecipe(payload.recipeKey());
+                        ClientRecipeManager.INSTANCE.requestServerRrvData();
                     });
                 }
         );
@@ -83,8 +83,7 @@ public class ReliableRecipesMod {
                 ClientboundAddRecipePayload.STREAM_CODEC,
                 (payload, context) -> {
                     context.enqueueWork(() -> {
-                        // TODO: Trigger RRV/JEI cache addition
-                        // ex ReliableRecipesRRVPlugin.addRecipe(payload.recipeHolder());
+                        ClientRecipeManager.INSTANCE.requestServerRrvData();
                     });
                 }
         );

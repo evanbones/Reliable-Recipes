@@ -1,5 +1,5 @@
 {
-  "toast.reliable_recipes.rrv_cheat_mode": "Reliable Recipes: Enable RRV cheat mode to delete recipes.",
+  "toast.reliable_recipes.dev_mode": "Reliable Recipes: Enable dev mode in the config to delete recipes.",
   "toast.reliable_recipes.could_not_find_recipe": "Reliable Recipes: Could not find recipe %s",
   "toast.reliable_recipes.permission_denied": "Reliable Recipes: You need OP to delete recipes.",
   "toast.reliable_recipes.undo": "[UNDO]",
@@ -14,5 +14,7 @@
   "config.reliable_recipes.reload_rrv": "Reload RRV After Removal",
   "config.reliable_recipes.reload_rrv.tooltip": "Reload RRV immediately after recipe removal",
   "config.reliable_recipes.ignored_tags": "Ignored Tags",
-  "config.reliable_recipes.ignored_tags.tooltip": "List of specific namespaced tags to retain when removing items with Reliable Remover"
+  "config.reliable_recipes.ignored_tags.tooltip": "List of specific namespaced tags to retain when removing items with Reliable Remover",
+  "config.reliable_recipes.dev_mode": "Enable Dev Mode",
+  "config.reliable_recipes.dev_mode.tooltip": "Allow deleting recipes through RRV"
 }

@@ -35,6 +35,13 @@ public class ClothConfigIntegration {
                 .setSaveConsumer(newValue -> config.showChatMessages = newValue)
                 .build());
 
+        general.addEntry(entryBuilder.startBooleanToggle(Component.translatable("config.reliable_recipes.dev_mode"), config.devMode)
+                .setDefaultValue(false)
+                .setTooltip(Component.translatable("config.reliable_recipes.dev_mode.tooltip"))
+                .setSaveConsumer(newValue -> config.devMode = newValue)
+                .build());
+
+
         general.addEntry(entryBuilder.startBooleanToggle(Component.translatable("config.reliable_recipes.reload_rrv"), config.reloadRrv)
                 .setDefaultValue(true)
                 .setTooltip(Component.translatable("config.reliable_recipes.reload_rrv.tooltip"))

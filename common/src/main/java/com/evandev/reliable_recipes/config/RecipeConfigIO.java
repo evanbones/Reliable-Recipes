@@ -20,8 +20,6 @@ public class RecipeConfigIO {
     private static final Path CONFIG_DIR = Services.PLATFORM.getConfigDirectory().resolve("reliable_recipes");
 
     public static List<RecipeRule> loadRules() {
-        ConfigMigrator.migrateConfigsIfNeeded();
-
         List<RecipeRule> rules = new ArrayList<>();
         List<JsonElement> configs = loadAllConfigs();
 

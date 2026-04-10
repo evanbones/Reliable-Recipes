@@ -2,6 +2,7 @@ package com.evandev.reliable_recipes.platform.services;
 
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
@@ -50,9 +51,9 @@ public interface IPlatformHelper {
     /**
      * Sends a request to the server to generate a recipe removal.
      *
-     * @param recipeKey The Key of the recipe to be removed.
+     * @param output The ItemStack to be removed.
      */
-    default void sendDeleteRecipePacket(ResourceKey<Recipe<?>> recipeKey) {
+    default void sendDeleteRecipeByOutputPacket(ItemStack output) {
     }
 
     default void sendDeleteRecipePacketToPlayer(ServerPlayer player, ResourceKey<Recipe<?>> recipeKey) {
