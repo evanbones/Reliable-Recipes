@@ -7,6 +7,7 @@ import net.minecraft.world.item.crafting.Recipe;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -15,6 +16,13 @@ public class ReliableRecipesAPI {
     private static final List<BiPredicate<ItemStack, String>> CONTEXTUAL_HIDERS = new ArrayList<>();
     private static final List<Predicate<ItemStack>> REPAIR_BLOCKERS = new ArrayList<>();
     private static final Map<String, String> ITEM_REPLACEMENTS = new HashMap<>();
+
+    private static final Map<Class<?>, Method> RECIPE_OUTPUT_METHODS = new ConcurrentHashMap<>();
+    private static final Set<Class<?>> RECIPE_NO_OUTPUT_METHODS = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    private static final Map<Class<?>, Method> EXTRACT_METHODS = new ConcurrentHashMap<>();
+    private static final Set<Class<?>> NO_EXTRACT_METHODS = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
 
     /**
      * Registers an item to be replaced by another item globally in recipes.
@@ -97,22 +105,42 @@ public class ReliableRecipesAPI {
             if (!primary.isEmpty()) results.add(primary);
         } catch (Exception ignored) {
         }
-        String[] methodNames = {"getResults", "getOutputs", "getRollableResults", "getRecipeOutputs"};
-        for (String name : methodNames) {
-            try {
-                Method method = recipe.getClass().getMethod(name);
-                Object result = method.invoke(recipe);
-                if (result instanceof Collection<?> coll) {
-                    for (Object obj : coll) {
-                        if (obj instanceof ItemStack stack) {
-                            if (!stack.isEmpty()) results.add(stack);
-                        } else if (obj != null) {
-                            ItemStack stack = tryExtractStack(obj);
-                            if (stack != null && !stack.isEmpty()) results.add(stack);
-                        }
+
+        Class<?> recipeClass = recipe.getClass();
+
+        if (!RECIPE_NO_OUTPUT_METHODS.contains(recipeClass)) {
+            Method method = RECIPE_OUTPUT_METHODS.get(recipeClass);
+
+            if (method == null) {
+                String[] methodNames = {"getResults", "getOutputs", "getRollableResults", "getRecipeOutputs"};
+                for (String name : methodNames) {
+                    try {
+                        method = recipeClass.getMethod(name);
+                        RECIPE_OUTPUT_METHODS.put(recipeClass, method);
+                        break;
+                    } catch (NoSuchMethodException ignored) {
                     }
                 }
-            } catch (Exception ignored) {
+                if (method == null) {
+                    RECIPE_NO_OUTPUT_METHODS.add(recipeClass);
+                }
+            }
+
+            if (method != null) {
+                try {
+                    Object result = method.invoke(recipe);
+                    if (result instanceof Collection<?> coll) {
+                        for (Object obj : coll) {
+                            if (obj instanceof ItemStack stack) {
+                                if (!stack.isEmpty()) results.add(stack);
+                            } else if (obj != null) {
+                                ItemStack stack = tryExtractStack(obj);
+                                if (stack != null && !stack.isEmpty()) results.add(stack);
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
             }
         }
         return results;
@@ -123,14 +151,34 @@ public class ReliableRecipesAPI {
      */
     public static ItemStack tryExtractStack(Object obj) {
         if (obj instanceof ItemStack s) return s;
-        String[] methods = {"getStack", "getItemStack", "getItem", "stack", "item"};
-        for (String m : methods) {
-            try {
-                Method method = obj.getClass().getMethod(m);
-                Object res = method.invoke(obj);
-                if (res instanceof ItemStack s) return s;
-                if (res instanceof Item item) return new ItemStack(item);
-            } catch (Exception ignored) {
+
+        Class<?> objClass = obj.getClass();
+
+        if (!NO_EXTRACT_METHODS.contains(objClass)) {
+            Method method = EXTRACT_METHODS.get(objClass);
+
+            if (method == null) {
+                String[] methods = {"getStack", "getItemStack", "getItem", "stack", "item"};
+                for (String m : methods) {
+                    try {
+                        method = objClass.getMethod(m);
+                        EXTRACT_METHODS.put(objClass, method);
+                        break;
+                    } catch (NoSuchMethodException ignored) {
+                    }
+                }
+                if (method == null) {
+                    NO_EXTRACT_METHODS.add(objClass);
+                }
+            }
+
+            if (method != null) {
+                try {
+                    Object res = method.invoke(obj);
+                    if (res instanceof ItemStack s) return s;
+                    if (res instanceof Item item) return new ItemStack(item);
+                } catch (Exception ignored) {
+                }
             }
         }
         return null;
