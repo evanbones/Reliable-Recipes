@@ -1,6 +1,5 @@
 package com.evandev.reliable_recipes.recipe;
 
-import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -13,9 +12,8 @@ public class RecipeJsonMutator {
     /**
      * Mutates the JSON and returns true if any changes were made.
      */
-    public static boolean mutateRecipe(JsonElement element) {
-        Map<String, String> replacements = ReliableRecipesAPI.getReplacements();
-        if (replacements.isEmpty()) return false;
+    public static boolean mutateRecipe(JsonElement element, Map<String, String> replacements) {
+        if (replacements == null || replacements.isEmpty()) return false;
         return mutateRecursively(element, replacements);
     }
 

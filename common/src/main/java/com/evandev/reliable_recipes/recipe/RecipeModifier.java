@@ -5,7 +5,6 @@ import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.RecipeManagerAccessor;
 import com.google.gson.JsonElement;
-import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.RegistryOps;
@@ -23,7 +22,6 @@ public class RecipeModifier {
     private static final Map<ResourceKey<Recipe<?>>, RecipeHolder<?>> DELETED_RECIPES_CACHE = new HashMap<>();
     private static boolean hasBeenApplied = false;
 
-    @SuppressWarnings("unchecked")
     public static void apply(RecipeManager manager, HolderLookup.Provider registries) {
         if (hasBeenApplied) return;
         hasBeenApplied = true;
@@ -42,39 +40,46 @@ public class RecipeModifier {
         List<RecipeHolder<?>> validRecipes = new ArrayList<>();
 
         RegistryOps<JsonElement> ops = registries.createSerializationContext(JsonOps.INSTANCE);
+        int replacedCount = 0;
 
         for (RecipeHolder<?> recipeHolder : currentMap.values()) {
             boolean shouldRemove = false;
             Recipe<?> recipe = recipeHolder.value();
+            Map<String, String> replacementsForThisRecipe = new HashMap<>();
 
             try {
-                if (!ReliableRecipesAPI.getReplacements().isEmpty()) {
-                    Codec<Recipe<?>> codec = (Codec<Recipe<?>>) recipe.getSerializer().codec();
-
-                    Optional<JsonElement> encodeResult = codec.encodeStart(ops, recipe).result();
-                    if (encodeResult.isPresent()) {
-                        JsonElement json = encodeResult.get();
-
-                        if (RecipeJsonMutator.mutateRecipe(json)) {
-                            Optional<Recipe<?>> decodeResult = codec.parse(ops, json).result();
-                            if (decodeResult.isPresent()) {
-                                recipe = decodeResult.get();
-                                recipeHolder = new RecipeHolder<>(recipeHolder.id(), recipe);
-                            }
-                        }
-                    }
-                }
-
                 for (RecipeRule rule : rules) {
                     if (rule.test(recipeHolder)) {
                         if (rule.getAction() == RecipeRule.Action.REMOVE) {
                             shouldRemove = true;
+                        } else if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT || rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
+                            if (rule.getReplaceTargetStr() != null && rule.getReplaceWithStr() != null && !rule.getReplaceTargetStr().isEmpty()) {
+                                replacementsForThisRecipe.put(rule.getReplaceTargetStr(), rule.getReplaceWithStr());
+                            }
                         }
                     }
                 }
 
                 if (!shouldRemove && shouldHideRecipe(recipeHolder)) {
                     shouldRemove = true;
+                }
+
+                if (!shouldRemove && !replacementsForThisRecipe.isEmpty()) {
+                    Optional<JsonElement> encodeResult = Recipe.CODEC.encodeStart(ops, recipe).result();
+                    if (encodeResult.isPresent()) {
+                        JsonElement json = encodeResult.get();
+
+                        if (RecipeJsonMutator.mutateRecipe(json, replacementsForThisRecipe)) {
+                            Optional<Recipe<?>> decodeResult = Recipe.CODEC.parse(ops, json).result();
+                            if (decodeResult.isPresent()) {
+                                recipe = decodeResult.get();
+                                recipeHolder = new RecipeHolder<>(recipeHolder.id(), recipe);
+                                replacedCount++;
+                            } else {
+                                Constants.LOG.error("Failed to decode mutated recipe: {}", recipeHolder.id().identifier());
+                            }
+                        }
+                    }
                 }
 
                 if (!shouldRemove) {
@@ -89,8 +94,8 @@ public class RecipeModifier {
             }
         }
 
-        if (!DELETED_RECIPES_CACHE.isEmpty()) {
-            Constants.LOG.info("RecipeModifier removed or replaced {} recipes.", DELETED_RECIPES_CACHE.size());
+        if (!DELETED_RECIPES_CACHE.isEmpty() || replacedCount > 0) {
+            Constants.LOG.info("RecipeModifier removed {} and replaced contents in {} recipes.", DELETED_RECIPES_CACHE.size(), replacedCount);
         }
 
         managerAccessor.reliableRecipes$setRecipeMap(RecipeMap.create(validRecipes));
@@ -130,11 +135,14 @@ public class RecipeModifier {
     }
 
     private static boolean shouldHideRecipe(RecipeHolder<?> holder) {
-        List<ItemStack> outputs = ReliableRecipesAPI.getRecipeResults(holder.value());
-        for (ItemStack stack : outputs) {
-            if (!stack.isEmpty() && ReliableRecipesAPI.isItemHidden(stack)) {
-                return true;
+        try {
+            List<ItemStack> outputs = ReliableRecipesAPI.getRecipeResults(holder.value());
+            for (ItemStack stack : outputs) {
+                if (!stack.isEmpty() && ReliableRecipesAPI.isItemHidden(stack)) {
+                    return true;
+                }
             }
+        } catch (Exception ignored) {
         }
         return false;
     }

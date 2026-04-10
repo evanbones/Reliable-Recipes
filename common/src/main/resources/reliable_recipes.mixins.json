@@ -9,7 +9,6 @@
     "accessor.RecipeManagerAccessor",
     "minecraft.GrindstoneMenuMixin",
     "minecraft.ItemCombinerMenuMixin",
-    "minecraft.RecipeManagerMixin",
     "minecraft.ReloadableServerResourcesMixin",
     "minecraft.RepairItemRecipeMixin",
     "rrv.RecipeViewMenuAccessor"

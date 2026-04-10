@@ -38,28 +38,26 @@ public class RecipeJsonParser {
             return null;
         }
 
-        if (actionStr.equals("prevent_repair")) {
-            Optional<Ingredient> target = parseIngredient(mod.get("target"));
-            return new RecipeRule(RecipeRule.Action.PREVENT_REPAIR, r -> false, target, Optional.empty());
-        }
-
         Predicate<RecipeHolder<?>> filter = mod.has("filter") ? parseFilter(mod.get("filter")) : parseFilter(mod);
 
         return switch (actionStr) {
             case "remove", "remove_recipe" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
-            case "replace_input" -> {
+            case "prevent_repair" -> {
                 Optional<Ingredient> target = parseIngredient(mod.get("target"));
-                Optional<Ingredient> replace = parseIngredient(mod.get("replacement"));
+                yield new RecipeRule(RecipeRule.Action.PREVENT_REPAIR, r -> false, target);
+            }
+            case "replace_input" -> {
+                String target = mod.get("target").getAsString();
+                String replace = mod.get("replacement").getAsString();
                 yield new RecipeRule(RecipeRule.Action.REPLACE_INPUT, filter, target, replace);
             }
             case "replace_output" -> {
-                String idStr = mod.get("replacement").getAsString();
-                Item item = BuiltInRegistries.ITEM.get(Identifier.parse(idStr)).map(Holder.Reference::value).orElse(Items.AIR);
-                if (item == Items.AIR) {
-                    Constants.LOG.warn("Skipping rule: Invalid replacement item '{}'.", idStr);
-                    yield null;
+                String replace = mod.get("replacement").getAsString();
+                String target = mod.has("target") ? mod.get("target").getAsString() : "";
+                if (target.isEmpty() && mod.has("filter") && mod.getAsJsonObject("filter").has("id")) {
+                    target = mod.getAsJsonObject("filter").get("id").getAsString();
                 }
-                yield new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, filter, new ItemStack(item));
+                yield new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, filter, target, replace);
             }
             default -> {
                 Constants.LOG.warn("Unknown recipe action: {}", actionStr);
@@ -154,6 +152,7 @@ public class RecipeJsonParser {
                                     return m.test(id.toString());
                                 });
                             } catch (Exception e) {
+                                Constants.LOG.error("Failed to parse output for filter on recipe {}: {}", r.id().identifier(), e.getMessage());
                                 return false;
                             }
                         };
@@ -204,10 +203,7 @@ public class RecipeJsonParser {
         if (str.startsWith("#")) {
             TagKey<Item> tagKey = TagKey.create(Registries.ITEM, Identifier.parse(str.substring(1)));
             var tagOpt = BuiltInRegistries.ITEM.get(tagKey);
-            if (tagOpt.isPresent() && tagOpt.get().size() > 0) {
-                return Optional.of(Ingredient.of(tagOpt.get()));
-            }
-            return Optional.empty();
+            return tagOpt.map(Ingredient::of);
         }
 
         Item item = BuiltInRegistries.ITEM.get(Identifier.parse(str)).map(Holder.Reference::value).orElse(Items.AIR);

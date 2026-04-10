@@ -1,6 +1,5 @@
 package com.evandev.reliable_recipes.recipe;
 
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
@@ -11,30 +10,30 @@ public class RecipeRule {
     private final Action action;
     private final Predicate<RecipeHolder<?>> filter;
     private final Optional<Ingredient> targetInput;
-    private final Optional<Ingredient> newInput;
-    private final ItemStack newOutput;
+    private final String replaceTargetStr;
+    private final String replaceWithStr;
 
     // Removals
     public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter) {
-        this(action, filter, Optional.empty(), Optional.empty(), ItemStack.EMPTY);
+        this(action, filter, Optional.empty(), null, null);
     }
 
-    // Input Replacement
-    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> target, Optional<Ingredient> replacement) {
-        this(action, filter, target, replacement, ItemStack.EMPTY);
+    // Prevent Repair
+    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> target) {
+        this(action, filter, target, null, null);
     }
 
-    // Output Replacement
-    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, ItemStack output) {
-        this(action, filter, Optional.empty(), Optional.empty(), output);
+    // Replacements
+    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, String targetStr, String replacementStr) {
+        this(action, filter, Optional.empty(), targetStr, replacementStr);
     }
 
-    private RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> target, Optional<Ingredient> rep, ItemStack out) {
+    private RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> targetInput, String targetStr, String replacementStr) {
         this.action = action;
         this.filter = filter;
-        this.targetInput = target;
-        this.newInput = rep;
-        this.newOutput = out;
+        this.targetInput = targetInput;
+        this.replaceTargetStr = targetStr;
+        this.replaceWithStr = replacementStr;
     }
 
     public boolean test(RecipeHolder<?> holder) {
@@ -49,12 +48,12 @@ public class RecipeRule {
         return targetInput;
     }
 
-    public Optional<Ingredient> getNewInput() {
-        return newInput;
+    public String getReplaceTargetStr() {
+        return replaceTargetStr;
     }
 
-    public ItemStack getNewOutput() {
-        return newOutput;
+    public String getReplaceWithStr() {
+        return replaceWithStr;
     }
 
     public enum Action {REMOVE, REPLACE_INPUT, REPLACE_OUTPUT, PREVENT_REPAIR}
