@@ -1,10 +1,9 @@
-package com.evandev.reliable_recipes.mixin.emi;
+package com.evandev.reliable_recipes.mixin.rrv;
 
-import dev.emi.emi.runtime.EmiReloadManager;
-import dev.emi.emi.screen.RecipeScreen;
+import cc.cassian.rrv.common.recipe.ClientRecipeManager;
+import cc.cassian.rrv.common.recipe.inventory.RecipeViewScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -13,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientPacketListener.class)
-public class EmiReloadMixin {
+public class RrvReloadMixin {
 
     @Inject(method = "handleUpdateRecipes", at = @At("RETURN"))
     private void reliableRecipes$onRecipesUpdated(ClientboundUpdateRecipesPacket packet, CallbackInfo ci) {
@@ -22,10 +21,10 @@ public class EmiReloadMixin {
 
     @Unique
     private void reliableRecipes$scheduleReload() {
-        EmiReloadManager.reload();
+        ClientRecipeManager.INSTANCE.requestServerRrvData();
 
         Minecraft client = Minecraft.getInstance();
-        if (client.screen instanceof RecipeScreen) {
+        if (client.screen instanceof RecipeViewScreen) {
             client.screen.onClose();
         }
     }

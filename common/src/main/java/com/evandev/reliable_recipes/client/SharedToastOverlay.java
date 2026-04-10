@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -27,7 +28,7 @@ public class SharedToastOverlay {
         showTime = Util.getMillis();
     }
 
-    public static void render(GuiGraphicsExtractor guiGraphics) {
+    public static void extract(GuiGraphicsExtractor guiGraphics) {
         if (showTime == -1 || currentMessage == null) return;
 
         Minecraft mc = Minecraft.getInstance();
@@ -48,20 +49,24 @@ public class SharedToastOverlay {
 
         int toastWidth = 160;
         int toastHeight = 32;
-        int xPos = (mc.getWindow().getGuiScaledWidth() - toastWidth) / 2;
+        int xPos = (guiGraphics.guiWidth() - toastWidth) / 2;
         int yPos = getYPos(age, toastHeight);
 
+        guiGraphics.nextStratum();
+
         guiGraphics.pose().pushMatrix();
-        guiGraphics.pose().translate(xPos, yPos, 1000);
-        guiGraphics.blitSprite(BACKGROUND_SPRITE, 0, 0, toastWidth, toastHeight);
+        guiGraphics.pose().translate((float) xPos, (float) yPos);
+
+        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, BACKGROUND_SPRITE, 0, 0, toastWidth, toastHeight);
 
         if (!iconStack.isEmpty()) {
-            guiGraphics.renderFakeItem(iconStack, 8, 8);
+            guiGraphics.fakeItem(iconStack, 8, 8);
         }
 
-        guiGraphics.drawString(mc.font, currentTitle != null ? currentTitle : Component.literal("Deleted"), 30, 7, -11534256, false);
-        guiGraphics.drawString(mc.font, currentMessage, 30, 18, -16777216, false);
-        guiGraphics.pose().pushMatrix();
+        guiGraphics.text(mc.font, currentTitle != null ? currentTitle : Component.literal("Deleted"), 30, 7, -11534256, false);
+        guiGraphics.text(mc.font, currentMessage, 30, 18, -16777216, false);
+
+        guiGraphics.pose().popMatrix();
     }
 
     private static int getYPos(long age, int toastHeight) {

@@ -3,71 +3,73 @@ package com.evandev.reliable_recipes.recipe;
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
-import com.evandev.reliable_recipes.mixin.accessor.*;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Multimap;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
+import com.evandev.reliable_recipes.mixin.accessor.RecipeManagerAccessor;
+import com.google.gson.JsonElement;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.JsonOps;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.resources.RegistryOps;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.*;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.RecipeMap;
 
-import java.lang.reflect.Field;
 import java.util.*;
 
 public class RecipeModifier {
-    private static final Map<Identifier, RecipeHolder<?>> DELETED_RECIPES_CACHE = new HashMap<>();
+
+    private static final Map<ResourceKey<Recipe<?>>, RecipeHolder<?>> DELETED_RECIPES_CACHE = new HashMap<>();
     private static boolean hasBeenApplied = false;
 
-    public static void apply(RecipeManager manager) {
+    @SuppressWarnings("unchecked")
+    public static void apply(RecipeManager manager, HolderLookup.Provider registries) {
         if (hasBeenApplied) return;
         hasBeenApplied = true;
 
         List<RecipeRule> rules = new ArrayList<>(RecipeConfigIO.loadRules());
-
         for (RecipeRule rule : rules) {
             if (rule.getAction() == RecipeRule.Action.PREVENT_REPAIR) {
-                ReliableRecipesAPI.registerRepairBlocker(stack -> rule.getTargetInput().test(stack));
+                ReliableRecipesAPI.registerRepairBlocker(stack ->
+                        rule.getTargetInput().map(ing -> ing.test(stack)).orElse(false)
+                );
             }
         }
 
-        if (rules.isEmpty() && ReliableRecipesAPI.getReplacements().isEmpty() && !ReliableRecipesAPI.hasItemHidingCapabilities())
-            return;
-
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
-        Map<Identifier, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
-        Multimap<RecipeType<?>, RecipeHolder<?>> recipesByType = LinkedHashMultimap.create(managerAccessor.getRecipes());
-        List<RecipeHolder<?>> toRemove = new ArrayList<>();
+        RecipeMap currentMap = managerAccessor.reliableRecipes$getRecipeMap();
+        List<RecipeHolder<?>> validRecipes = new ArrayList<>();
 
-        for (RecipeHolder<?> recipeHolder : recipesByName.values()) {
+        RegistryOps<JsonElement> ops = registries.createSerializationContext(JsonOps.INSTANCE);
+
+        for (RecipeHolder<?> recipeHolder : currentMap.values()) {
+            boolean shouldRemove = false;
+            Recipe<?> recipe = recipeHolder.value();
+
             try {
-                boolean shouldRemove = false;
-                Recipe<?> recipe = recipeHolder.value();
+                if (!ReliableRecipesAPI.getReplacements().isEmpty()) {
+                    Codec<Recipe<?>> codec = (Codec<Recipe<?>>) recipe.getSerializer().codec();
 
-                for (Map.Entry<String, String> entry : ReliableRecipesAPI.getReplacements().entrySet()) {
-                    Identifier targetId = Identifier.tryParse(entry.getKey());
-                    Identifier replaceId = Identifier.tryParse(entry.getValue());
-                    if (targetId != null && replaceId != null) {
-                        Item targetItem = BuiltInRegistries.ITEM.get(targetId);
-                        Item replaceItem = BuiltInRegistries.ITEM.get(replaceId);
-                        if (targetItem != Items.AIR && replaceItem != Items.AIR) {
-                            replaceInputInRecipe(recipe, Ingredient.of(targetItem), Ingredient.of(replaceItem));
-                            replaceOutputInRecipe(recipe, new ItemStack(targetItem), new ItemStack(replaceItem));
+                    Optional<JsonElement> encodeResult = codec.encodeStart(ops, recipe).result();
+                    if (encodeResult.isPresent()) {
+                        JsonElement json = encodeResult.get();
+
+                        if (RecipeJsonMutator.mutateRecipe(json)) {
+                            Optional<Recipe<?>> decodeResult = codec.parse(ops, json).result();
+                            if (decodeResult.isPresent()) {
+                                recipe = decodeResult.get();
+                                recipeHolder = new RecipeHolder<>(recipeHolder.id(), recipe);
+                            }
                         }
                     }
                 }
 
                 for (RecipeRule rule : rules) {
                     if (rule.test(recipeHolder)) {
-                        if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT)
-                            replaceInputInRecipe(recipe, rule.getTargetInput(), rule.getNewInput());
-                        else if (rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT)
-                            replaceOutputInRecipe(recipe, ItemStack.EMPTY, rule.getNewOutput());
-                        else if (rule.getAction() == RecipeRule.Action.REMOVE) shouldRemove = true;
+                        if (rule.getAction() == RecipeRule.Action.REMOVE) {
+                            shouldRemove = true;
+                        }
                     }
                 }
 
@@ -75,210 +77,64 @@ public class RecipeModifier {
                     shouldRemove = true;
                 }
 
-                if (shouldRemove) {
-                    toRemove.add(recipeHolder);
+                if (!shouldRemove) {
+                    validRecipes.add(recipeHolder);
+                } else {
+                    DELETED_RECIPES_CACHE.put(recipeHolder.id(), recipeHolder);
                 }
+
             } catch (Exception e) {
-                Constants.LOG.error("Error processing recipe {}: {}", recipeHolder.id(), e.getMessage());
+                Constants.LOG.error("Failed to process recipe modifications for: {}", recipeHolder.id().identifier(), e);
+                validRecipes.add(recipeHolder);
             }
         }
 
-        for (RecipeHolder<?> recipe : toRemove) {
-            recipesByName.remove(recipe.id());
-            recipesByType.remove(recipe.value().getType(), recipe);
+        if (!DELETED_RECIPES_CACHE.isEmpty()) {
+            Constants.LOG.info("RecipeModifier removed or replaced {} recipes.", DELETED_RECIPES_CACHE.size());
         }
 
-        managerAccessor.setByName(ImmutableMap.copyOf(recipesByName));
-        managerAccessor.setRecipes(ImmutableMultimap.copyOf(recipesByType));
+        managerAccessor.reliableRecipes$setRecipeMap(RecipeMap.create(validRecipes));
     }
 
-    public static boolean removeRecipe(RecipeManager manager, Identifier recipeId) {
+    public static boolean removeRecipe(RecipeManager manager, ResourceKey<Recipe<?>> recipeKey) {
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
+        RecipeMap currentMap = managerAccessor.reliableRecipes$getRecipeMap();
 
-        Map<Identifier, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
-        Multimap<RecipeType<?>, RecipeHolder<?>> recipesByType = LinkedHashMultimap.create(managerAccessor.getRecipes());
-
-        RecipeHolder<?> recipe = recipesByName.remove(recipeId);
-
+        RecipeHolder<?> recipe = currentMap.byKey(recipeKey);
         if (recipe != null) {
-            DELETED_RECIPES_CACHE.put(recipeId, recipe);
-            recipesByType.remove(recipe.value().getType(), recipe);
-            managerAccessor.setByName(ImmutableMap.copyOf(recipesByName));
-            managerAccessor.setRecipes(ImmutableMultimap.copyOf(recipesByType));
+            DELETED_RECIPES_CACHE.put(recipeKey, recipe);
+            List<RecipeHolder<?>> updatedRecipes = new ArrayList<>();
+            for (RecipeHolder<?> holder : currentMap.values()) {
+                if (!holder.id().equals(recipeKey)) {
+                    updatedRecipes.add(holder);
+                }
+            }
+            managerAccessor.reliableRecipes$setRecipeMap(RecipeMap.create(updatedRecipes));
             return true;
         }
         return false;
     }
 
-    public static boolean restoreRecipe(RecipeManager manager, Identifier recipeId) {
-        RecipeHolder<?> recipe = DELETED_RECIPES_CACHE.remove(recipeId);
+    public static boolean restoreRecipe(RecipeManager manager, ResourceKey<Recipe<?>> recipeKey) {
+        RecipeHolder<?> recipe = DELETED_RECIPES_CACHE.remove(recipeKey);
         if (recipe == null) return false;
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
+        RecipeMap currentMap = managerAccessor.reliableRecipes$getRecipeMap();
 
-        Map<Identifier, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
-        Multimap<RecipeType<?>, RecipeHolder<?>> recipesByType = LinkedHashMultimap.create(managerAccessor.getRecipes());
+        List<RecipeHolder<?>> updatedRecipes = new ArrayList<>(currentMap.values());
+        updatedRecipes.add(recipe);
 
-        recipesByName.put(recipeId, recipe);
-        recipesByType.put(recipe.value().getType(), recipe);
-
-        managerAccessor.setByName(ImmutableMap.copyOf(recipesByName));
-        managerAccessor.setRecipes(ImmutableMultimap.copyOf(recipesByType));
-
-        Constants.LOG.info("Restored recipe: {}", recipeId);
+        managerAccessor.reliableRecipes$setRecipeMap(RecipeMap.create(updatedRecipes));
         return true;
     }
 
     private static boolean shouldHideRecipe(RecipeHolder<?> holder) {
         List<ItemStack> outputs = ReliableRecipesAPI.getRecipeResults(holder.value());
-        if (outputs.isEmpty()) return false;
-
         for (ItemStack stack : outputs) {
             if (!stack.isEmpty() && ReliableRecipesAPI.isItemHidden(stack)) {
                 return true;
             }
-        }
-        return false;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static void replaceInputInRecipe(Recipe<?> recipe, Ingredient target, Ingredient replacement) {
-        try {
-            for (int i = 0; i < recipe.getIngredients().size(); i++) {
-                if (ingredientMatches(recipe.getIngredients().get(i), target))
-                    recipe.getIngredients().set(i, replacement);
-            }
-        } catch (Exception ignored) {
-        }
-
-        if (recipe instanceof SingleItemRecipe single && ingredientMatches(single.getIngredients().getFirst(), target))
-            ((SingleItemRecipeAccessor) single).setIngredient(replacement);
-        if (recipe instanceof AbstractCookingRecipe cooking && ingredientMatches(cooking.getIngredients().getFirst(), target))
-            ((AbstractCookingRecipeAccessor) cooking).setIngredient(replacement);
-
-        Class<?> clazz = recipe.getClass();
-        while (clazz != Object.class && clazz != null) {
-            try {
-                for (Field field : clazz.getDeclaredFields()) {
-                    field.setAccessible(true);
-                    Object val = field.get(recipe);
-                    if (val instanceof Ingredient ing && ingredientMatches(ing, target)) {
-                        field.set(recipe, replacement);
-                    } else if (val instanceof Ingredient[] ings) {
-                        for (int i = 0; i < ings.length; i++) {
-                            if (ings[i] != null && ingredientMatches(ings[i], target)) ings[i] = replacement;
-                        }
-                    } else if (val instanceof List<?> list) {
-                        for (int i = 0; i < list.size(); i++) {
-                            if (list.get(i) instanceof Ingredient ing && ingredientMatches(ing, target)) {
-                                try {
-                                    ((List<Ingredient>) list).set(i, replacement);
-                                } catch (Exception ignored) {
-                                }
-                            }
-                        }
-                    } else if (val != null && val.getClass().getSimpleName().contains("ShapedRecipePattern")) {
-                        Class<?> patternClass = val.getClass();
-                        while (patternClass != Object.class && patternClass != null) {
-                            for (Field patternField : patternClass.getDeclaredFields()) {
-                                patternField.setAccessible(true);
-                                try {
-                                    Object patternVal = patternField.get(val);
-                                    if (patternVal instanceof List<?> patternList) {
-                                        for (int i = 0; i < patternList.size(); i++) {
-                                            if (patternList.get(i) instanceof Ingredient ing && ingredientMatches(ing, target)) {
-                                                try {
-                                                    ((List<Ingredient>) patternList).set(i, replacement);
-                                                } catch (Exception ignored) {
-                                                }
-                                            }
-                                        }
-                                    }
-                                } catch (Exception ignored) {
-                                }
-                            }
-                            patternClass = patternClass.getSuperclass();
-                        }
-                    }
-                }
-            } catch (Exception ignored) {
-            }
-            clazz = clazz.getSuperclass();
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static void replaceOutputInRecipe(Recipe<?> recipe, ItemStack targetStack, ItemStack newResult) {
-        ItemStack copy = newResult.copy();
-        boolean checkMatch = !targetStack.isEmpty();
-
-        if (recipe instanceof ShapedRecipe shaped && (!checkMatch || ItemStack.isSameItem(shaped.getResultItem(RegistryAccess.EMPTY), targetStack)))
-            ((ShapedRecipeAccessor) shaped).setResult(copy);
-        else if (recipe instanceof ShapelessRecipe shapeless && (!checkMatch || ItemStack.isSameItem(shapeless.getResultItem(RegistryAccess.EMPTY), targetStack)))
-            ((ShapelessRecipeAccessor) shapeless).setResult(copy);
-        else if (recipe instanceof AbstractCookingRecipe cooking && (!checkMatch || ItemStack.isSameItem(cooking.getResultItem(RegistryAccess.EMPTY), targetStack)))
-            ((AbstractCookingRecipeAccessor) cooking).setResult(copy);
-        else if (recipe instanceof SingleItemRecipe single && (!checkMatch || ItemStack.isSameItem(single.getResultItem(RegistryAccess.EMPTY), targetStack)))
-            ((SingleItemRecipeAccessor) single).setResult(copy);
-
-        if (checkMatch) {
-            Class<?> clazz = recipe.getClass();
-            while (clazz != Object.class && clazz != null) {
-                try {
-                    for (Field field : clazz.getDeclaredFields()) {
-                        field.setAccessible(true);
-                        Object val = field.get(recipe);
-                        if (val instanceof ItemStack stack && ItemStack.isSameItem(stack, targetStack)) {
-                            field.set(recipe, newResult.copy());
-                        } else if (val instanceof ItemStack[] stacks) {
-                            for (int i = 0; i < stacks.length; i++) {
-                                if (stacks[i] != null && ItemStack.isSameItem(stacks[i], targetStack))
-                                    stacks[i] = newResult.copy();
-                            }
-                        } else if (val instanceof List<?> list) {
-                            for (int i = 0; i < list.size(); i++) {
-                                Object obj = list.get(i);
-                                if (obj instanceof ItemStack stack && ItemStack.isSameItem(stack, targetStack)) {
-                                    try {
-                                        ((List<ItemStack>) list).set(i, newResult.copy());
-                                    } catch (Exception ignored) {
-                                    }
-                                } else if (obj != null) {
-                                    ItemStack extracted = ReliableRecipesAPI.tryExtractStack(obj);
-                                    if (extracted != null && ItemStack.isSameItem(extracted, targetStack)) {
-                                        Class<?> wrapperClass = obj.getClass();
-                                        while (wrapperClass != Object.class && wrapperClass != null) {
-                                            for (Field wrapperField : wrapperClass.getDeclaredFields()) {
-                                                wrapperField.setAccessible(true);
-                                                try {
-                                                    Object fieldVal = wrapperField.get(obj);
-                                                    if (fieldVal instanceof ItemStack ws && ItemStack.isSameItem(ws, targetStack)) {
-                                                        wrapperField.set(obj, newResult.copy());
-                                                    }
-                                                } catch (Exception ignored) {
-                                                }
-                                            }
-                                            wrapperClass = wrapperClass.getSuperclass();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (Exception ignored) {
-                }
-                clazz = clazz.getSuperclass();
-            }
-        }
-    }
-
-    private static boolean ingredientMatches(Ingredient ing, Ingredient target) {
-        if (ing == null || ing.isEmpty() || target == null || target.isEmpty()) return false;
-        try {
-            for (ItemStack targetItem : target.getItems()) {
-                if (ing.test(targetItem)) return true;
-            }
-        } catch (Exception ignored) {
         }
         return false;
     }

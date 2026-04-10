@@ -2,27 +2,22 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.evandev.reliable_recipes.mixin",
-  "refmap": "${mod_id}.refmap.json",
   "plugin": "com.evandev.reliable_recipes.mixin.ReliableRecipesMixinPlugin",
   "compatibilityLevel": "JAVA_18",
   "mixins": [
-    "accessor.AbstractCookingRecipeAccessor",
     "accessor.HolderSetNamedAccessor",
-    "accessor.IngredientAccessor",
     "accessor.RecipeManagerAccessor",
-    "accessor.ShapedRecipeAccessor",
-    "accessor.ShapelessRecipeAccessor",
-    "accessor.SingleItemRecipeAccessor",
     "minecraft.GrindstoneMenuMixin",
     "minecraft.ItemCombinerMenuMixin",
     "minecraft.RecipeManagerMixin",
     "minecraft.ReloadableServerResourcesMixin",
-    "minecraft.RepairItemRecipeMixin"
+    "minecraft.RepairItemRecipeMixin",
+    "rrv.RecipeViewMenuAccessor"
   ],
   "client": [
-    "emi.EmiRecipeScreenMixin",
-    "emi.EmiReloadMixin",
-    "minecraft.ClientPacketListenerMixin"
+    "minecraft.ClientPacketListenerMixin",
+    "rrv.RrvRecipeScreenMixin",
+    "rrv.RrvReloadMixin"
   ],
   "server": [],
   "injectors": {

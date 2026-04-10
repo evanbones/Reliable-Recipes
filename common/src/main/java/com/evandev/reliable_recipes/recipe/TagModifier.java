@@ -6,6 +6,7 @@ import com.evandev.reliable_recipes.config.ModConfig;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.mixin.accessor.HolderSetNamedAccessor;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -40,7 +41,7 @@ public class TagModifier {
                     case REMOVE_ALL_TAGS -> {
                         if (rule.items() == null) continue;
                         for (Identifier id : rule.items()) {
-                            T object = registry.get(id);
+                            T object = registry.get(id).map(Holder.Reference::value).orElse(null);
                             if (object != null) {
                                 removalCount += removeAllTagsFrom(registry, object);
                             }
@@ -50,10 +51,10 @@ public class TagModifier {
                         if (rule.tags() == null || rule.items() == null) continue;
                         for (Identifier tagId : rule.tags()) {
                             TagKey<T> key = TagKey.create(registry.key(), tagId);
-                            var vanillaTag = registry.getTag(key).orElse(null);
+                            var vanillaTag = registry.get(key).orElse(null);
 
                             for (Identifier id : rule.items()) {
-                                T object = registry.get(id);
+                                T object = registry.get(id).map(Holder.Reference::value).orElse(null);
                                 if (object != null && vanillaTag != null && vanillaTag.contains(registry.wrapAsHolder(object))) {
                                     removeFromTag(vanillaTag, object);
                                     removalCount++;
@@ -65,7 +66,7 @@ public class TagModifier {
                         if (rule.tags() == null) continue;
                         for (Identifier tagId : rule.tags()) {
                             TagKey<T> key = TagKey.create(registry.key(), tagId);
-                            var vanillaTag = registry.getTag(key).orElse(null);
+                            var vanillaTag = registry.get(key).orElse(null);
 
                             if (vanillaTag != null && vanillaTag.size() > 0) {
                                 Constants.LOG.info("TagModifier: Clearing tag '{}' (contained {} items)", tagId, vanillaTag.size());
@@ -92,18 +93,14 @@ public class TagModifier {
             Set<Block> hiddenBlocks = new HashSet<>();
 
             for (Item item : BuiltInRegistries.ITEM) {
-                if (item != null) {
-                    ItemStack defaultInstance = item.getDefaultInstance();
+                ItemStack defaultInstance = item.getDefaultInstance();
 
-                    if (ReliableRecipesAPI.isItemHidden(defaultInstance, "tag:item")) {
-                        hiddenItems.add(item);
-                    }
+                if (ReliableRecipesAPI.isItemHidden(defaultInstance)) {
+                    hiddenItems.add(item);
 
-                    if (ReliableRecipesAPI.isItemHidden(defaultInstance, "tag:block")) {
-                        var block = Block.byItem(item);
-                        if (block != net.minecraft.world.level.block.Blocks.AIR) {
-                            hiddenBlocks.add(block);
-                        }
+                    var block = Block.byItem(item);
+                    if (block != net.minecraft.world.level.block.Blocks.AIR) {
+                        hiddenBlocks.add(block);
                     }
                 }
             }
@@ -129,14 +126,12 @@ public class TagModifier {
         int count = 0;
         List<String> ignoredTags = ModConfig.get().ignoredTags;
 
-        for (var pair : registry.getTags().toList()) {
-            Identifier tagId = pair.getFirst().location();
+        for (HolderSet.Named<T> tagSet : registry.getTags().toList()) {
+            Identifier tagId = tagSet.key().location();
 
             if (ignoredTags != null && ignoredTags.contains(tagId.toString())) {
                 continue;
             }
-
-            var tagSet = pair.getSecond();
 
             if (tagSet instanceof HolderSetNamedAccessor accessor) {
                 List<Holder<T>> currentContents = (List<Holder<T>>) (Object) accessor.getContents();
@@ -182,7 +177,7 @@ public class TagModifier {
         var tags = holder.tags().toList();
 
         for (TagKey<T> key : tags) {
-            var vanillaTag = registry.getTag(key).orElse(null);
+            var vanillaTag = registry.get(key).orElse(null);
             if (vanillaTag != null) {
                 removeFromTag(vanillaTag, value);
                 count++;

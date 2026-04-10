@@ -20,7 +20,7 @@ public class ModConfig {
 
     public boolean showToast = true;
     public boolean showChatMessages = true;
-    public boolean reloadEmi = true;
+    public boolean reloadRrv = true;
     public List<String> ignoredTags = new ArrayList<>(List.of("c:hidden_from_recipe_viewers"));
 
     public static ModConfig get() {

@@ -24,8 +24,8 @@
     "modmenu": [
       "com.evandev.reliable_recipes.compat.ModMenuIntegration"
     ],
-    "emi": [
-      "com.evandev.reliable_recipes.compat.emi.ReliableRecipesEmiPlugin"
+    "rrv_client": [
+      "com.evandev.reliable_recipes.compat.ReliableRecipesRrvPlugin"
     ]
   },
   "mixins": [
@@ -40,7 +40,7 @@
   },
   "suggests": {
     "reliable_remover": "*",
-    "emi": "*"
+    "rrv": "*"
   }
 }
   

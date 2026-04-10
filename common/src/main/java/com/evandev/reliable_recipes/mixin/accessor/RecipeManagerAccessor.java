@@ -1,27 +1,16 @@
 package com.evandev.reliable_recipes.mixin.accessor;
 
-import com.google.common.collect.Multimap;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.crafting.Recipe;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
-import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.RecipeMap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-import java.util.Map;
-
 @Mixin(RecipeManager.class)
 public interface RecipeManagerAccessor {
-    @Accessor("byType")
-    Multimap<RecipeType<?>, RecipeHolder<?>> getRecipes();
 
-    @Accessor("byType")
-    void setRecipes(Multimap<RecipeType<?>, RecipeHolder<?>> recipes);
+    @Accessor("recipes")
+    RecipeMap reliableRecipes$getRecipeMap();
 
-    @Accessor("byName")
-    Map<Identifier, RecipeHolder<?>> getByName();
-
-    @Accessor("byName")
-    void setByName(Map<Identifier, RecipeHolder<?>> byName);
+    @Accessor("recipes")
+    void reliableRecipes$setRecipeMap(RecipeMap recipeMap);
 }

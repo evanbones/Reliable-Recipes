@@ -1,186 +1,111 @@
 package com.evandev.reliable_recipes.api;
 
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.world.item.Item;
+import net.minecraft.util.context.ContextMap;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 
-import java.lang.reflect.Method;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiPredicate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 public class ReliableRecipesAPI {
-    private static final List<Predicate<ItemStack>> ITEM_HIDERS = new ArrayList<>();
-    private static final List<BiPredicate<ItemStack, String>> CONTEXTUAL_HIDERS = new ArrayList<>();
+
+    private static final Map<String, String> REPLACEMENTS = new HashMap<>();
     private static final List<Predicate<ItemStack>> REPAIR_BLOCKERS = new ArrayList<>();
-    private static final Map<String, String> ITEM_REPLACEMENTS = new HashMap<>();
-
-    private static final Map<Class<?>, Method> RECIPE_OUTPUT_METHODS = new ConcurrentHashMap<>();
-    private static final Set<Class<?>> RECIPE_NO_OUTPUT_METHODS = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
-    private static final Map<Class<?>, Method> EXTRACT_METHODS = new ConcurrentHashMap<>();
-    private static final Set<Class<?>> NO_EXTRACT_METHODS = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
+    private static boolean ITEM_HIDING_CAPABLE = false;
+    private static Predicate<ItemStack> HIDING_PREDICATE = stack -> false;
 
     /**
-     * Registers an item to be replaced by another item globally in recipes.
+     * Determines whether item hiding functionality is currently enabled and capable.
+     *
+     * @return true if an item hiding capability is active, false otherwise.
      */
-    public static void registerItemReplacement(String originalId, String replacementId) {
-        ITEM_REPLACEMENTS.put(originalId, replacementId);
-    }
-
-    public static Map<String, String> getReplacements() {
-        return ITEM_REPLACEMENTS;
+    public static boolean hasItemHidingCapabilities() {
+        return ITEM_HIDING_CAPABLE;
     }
 
     /**
-     * Register a predicate that determines if an item should be blocked from being repaired.
+     * Registers a predicate that determines if a specific ItemStack should be hidden.
+     *
+     * @param predicate The condition defining whether the stack is hidden.
+     */
+    public static void setItemHidingCapability(Predicate<ItemStack> predicate) {
+        ITEM_HIDING_CAPABLE = true;
+        HIDING_PREDICATE = predicate;
+    }
+
+    /**
+     * Checks if a specific ItemStack is flagged to be hidden by the registered predicate.
+     *
+     * @param stack The ItemStack to check.
+     * @return true if the item should be hidden.
+     */
+    public static boolean isItemHidden(ItemStack stack) {
+        return HIDING_PREDICATE.test(stack);
+    }
+
+    /**
+     * Retrieves the outputs of a recipe by parsing its display configuration.
+     *
+     * @param recipe The recipe to analyze.
+     * @return A list of ItemStacks representing the outputs of the recipe.
+     */
+    public static List<ItemStack> getRecipeResults(Recipe<?> recipe) {
+        List<ItemStack> results = new ArrayList<>();
+        List<RecipeDisplay> displays = recipe.display();
+        ContextMap emptyContext = new ContextMap.Builder().create(SlotDisplayContext.CONTEXT);
+
+        for (RecipeDisplay display : displays) {
+            SlotDisplay resultDisplay = display.result();
+            results.addAll(resultDisplay.resolveForStacks(emptyContext));
+        }
+        return results;
+    }
+
+    /**
+     * Checks if the given ItemStack is blocked from being used in repairs.
+     *
+     * @param stack The ItemStack to check.
+     * @return true if repairing should be prevented.
+     */
+    public static boolean isRepairBlocked(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+
+        for (Predicate<ItemStack> blocker : REPAIR_BLOCKERS) {
+            if (blocker.test(stack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gets the map of configured string replacements for items.
+     *
+     * @return A map containing replacement rules.
+     */
+    public static Map<String, String> getReplacements() {
+        return REPLACEMENTS;
+    }
+
+    /**
+     * Registers a condition to block repairs for certain items.
+     *
+     * @param predicate The condition evaluated when repairing.
      */
     public static void registerRepairBlocker(Predicate<ItemStack> predicate) {
         REPAIR_BLOCKERS.add(predicate);
     }
 
     /**
-     * Checks if an item is blocked from being repaired.
+     * Clears all registered repair blockers.
      */
-    public static boolean isRepairBlocked(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) return false;
-        for (Predicate<ItemStack> blocker : REPAIR_BLOCKERS) {
-            if (blocker.test(stack)) return true;
-        }
-        return false;
-    }
-
     public static void clearRepairBlockers() {
         REPAIR_BLOCKERS.clear();
-    }
-
-    /**
-     * Register a predicate that determines if an item should be hidden from recipes, tags, etc.
-     */
-    public static void registerItemHider(Predicate<ItemStack> predicate) {
-        ITEM_HIDERS.add(predicate);
-    }
-
-    /**
-     * Checks if an item is hidden by any registered mod.
-     */
-    public static void registerContextualItemHider(BiPredicate<ItemStack, String> predicate) {
-        CONTEXTUAL_HIDERS.add(predicate);
-    }
-
-    public static boolean isItemHidden(ItemStack stack) {
-        return isItemHidden(stack, "item");
-    }
-
-    public static boolean isItemHidden(ItemStack stack, String context) {
-        if (stack == null || stack.isEmpty()) return false;
-
-        for (BiPredicate<ItemStack, String> hider : CONTEXTUAL_HIDERS) {
-            if (hider.test(stack, context)) return true;
-        }
-
-        for (Predicate<ItemStack> hider : ITEM_HIDERS) {
-            if (hider.test(stack)) return true;
-        }
-        return false;
-    }
-
-    /**
-     * Checks if any hiding capabilities have been registered.
-     */
-    public static boolean hasItemHidingCapabilities() {
-        return !ITEM_HIDERS.isEmpty() || !CONTEXTUAL_HIDERS.isEmpty();
-    }
-
-    /**
-     * Extracts all possible result ItemStacks from a given recipe using reflection.
-     */
-    public static List<ItemStack> getRecipeResults(Recipe<?> recipe) {
-        List<ItemStack> results = new ArrayList<>();
-        try {
-            ItemStack primary = recipe.getResultItem(RegistryAccess.EMPTY);
-            if (!primary.isEmpty()) results.add(primary);
-        } catch (Exception ignored) {
-        }
-
-        Class<?> recipeClass = recipe.getClass();
-
-        if (!RECIPE_NO_OUTPUT_METHODS.contains(recipeClass)) {
-            Method method = RECIPE_OUTPUT_METHODS.get(recipeClass);
-
-            if (method == null) {
-                String[] methodNames = {"getResults", "getOutputs", "getRollableResults", "getRecipeOutputs"};
-                for (String name : methodNames) {
-                    try {
-                        method = recipeClass.getMethod(name);
-                        RECIPE_OUTPUT_METHODS.put(recipeClass, method);
-                        break;
-                    } catch (NoSuchMethodException ignored) {
-                    }
-                }
-                if (method == null) {
-                    RECIPE_NO_OUTPUT_METHODS.add(recipeClass);
-                }
-            }
-
-            if (method != null) {
-                try {
-                    Object result = method.invoke(recipe);
-                    if (result instanceof Collection<?> coll) {
-                        for (Object obj : coll) {
-                            if (obj instanceof ItemStack stack) {
-                                if (!stack.isEmpty()) results.add(stack);
-                            } else if (obj != null) {
-                                ItemStack stack = tryExtractStack(obj);
-                                if (stack != null && !stack.isEmpty()) results.add(stack);
-                            }
-                        }
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-        }
-        return results;
-    }
-
-    /**
-     * Attempts to dynamically extract an ItemStack from an unknown object.
-     */
-    public static ItemStack tryExtractStack(Object obj) {
-        if (obj instanceof ItemStack s) return s;
-
-        Class<?> objClass = obj.getClass();
-
-        if (!NO_EXTRACT_METHODS.contains(objClass)) {
-            Method method = EXTRACT_METHODS.get(objClass);
-
-            if (method == null) {
-                String[] methods = {"getStack", "getItemStack", "getItem", "stack", "item"};
-                for (String m : methods) {
-                    try {
-                        method = objClass.getMethod(m);
-                        EXTRACT_METHODS.put(objClass, method);
-                        break;
-                    } catch (NoSuchMethodException ignored) {
-                    }
-                }
-                if (method == null) {
-                    NO_EXTRACT_METHODS.add(objClass);
-                }
-            }
-
-            if (method != null) {
-                try {
-                    Object res = method.invoke(obj);
-                    if (res instanceof ItemStack s) return s;
-                    if (res instanceof Item item) return new ItemStack(item);
-                } catch (Exception ignored) {
-                }
-            }
-        }
-        return null;
     }
 }

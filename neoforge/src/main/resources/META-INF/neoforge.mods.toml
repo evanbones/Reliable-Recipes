@@ -11,6 +11,7 @@ logoFile = "${mod_id}.png"
 credits = "${credits}"
 authors = "${mod_author}"
 description = '''${description}'''
+rrv_client = "com.evandev.reliable_recipes.compat.ReliableRecipesRrvPlugin"
 
 [[mixins]]
 config = "${mod_id}.mixins.json"
@@ -40,8 +41,8 @@ ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.${ mod_id }]]
-modId = "emi"
+modId = "rrv"
 type = "optional"
-versionRange = "[1.0.4,)"
+versionRange = "[7.0.0,)"
 ordering = "AFTER"
 side = "BOTH"

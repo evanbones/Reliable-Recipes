@@ -16,7 +16,7 @@ public abstract class GrindstoneMenuMixin {
 
     @Shadow
     @Final
-    Container repairSlots;
+    private Container repairSlots;
     @Shadow
     @Final
     private Container resultSlots;

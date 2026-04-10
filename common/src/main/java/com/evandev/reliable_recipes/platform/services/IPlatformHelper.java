@@ -1,7 +1,9 @@
 package com.evandev.reliable_recipes.platform.services;
 
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
 import java.nio.file.Path;
 
@@ -48,12 +50,14 @@ public interface IPlatformHelper {
     /**
      * Sends a request to the server to generate a recipe removal.
      *
-     * @param recipeId The ID of the recipe to be removed.
-     *
+     * @param recipeKey The Key of the recipe to be removed.
      */
-    default void sendDeleteRecipePacket(Identifier recipeId) {
+    default void sendDeleteRecipePacket(ResourceKey<Recipe<?>> recipeKey) {
     }
 
-    default void sendDeleteRecipePacketToPlayer(ServerPlayer player, Identifier recipeId) {
+    default void sendDeleteRecipePacketToPlayer(ServerPlayer player, ResourceKey<Recipe<?>> recipeKey) {
+    }
+
+    default void sendAddRecipePacketToPlayer(ServerPlayer player, RecipeHolder<?> recipeHolder) {
     }
 }
