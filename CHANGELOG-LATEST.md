@@ -1,3 +1,3 @@
-### Changed
+### Fixed
 
-- Reverted experimental recipe output stripping.
+- Fixed TPS issues with certain mods (like Overgeared).
