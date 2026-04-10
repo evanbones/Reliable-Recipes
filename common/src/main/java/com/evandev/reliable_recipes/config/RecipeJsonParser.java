@@ -120,6 +120,11 @@ public class RecipeJsonParser {
                     case "type" -> {
                         Predicate<String> m = getStringMatcher(criterion);
                         yield r -> {
+                            Identifier serializerId = BuiltInRegistries.RECIPE_SERIALIZER.getKey(r.value().getSerializer());
+                            if (serializerId != null && m.test(serializerId.toString())) {
+                                return true;
+                            }
+
                             Identifier typeId = BuiltInRegistries.RECIPE_TYPE.getKey(r.value().getType());
                             return typeId != null && m.test(typeId.toString());
                         };

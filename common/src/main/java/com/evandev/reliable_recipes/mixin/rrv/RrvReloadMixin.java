@@ -1,6 +1,5 @@
 package com.evandev.reliable_recipes.mixin.rrv;
 
-import cc.cassian.rrv.common.recipe.ClientRecipeManager;
 import cc.cassian.rrv.common.recipe.inventory.RecipeViewScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -21,8 +20,6 @@ public class RrvReloadMixin {
 
     @Unique
     private void reliableRecipes$scheduleReload() {
-        ClientRecipeManager.INSTANCE.requestServerRrvData();
-
         Minecraft client = Minecraft.getInstance();
         if (client.screen instanceof RecipeViewScreen) {
             client.screen.onClose();
