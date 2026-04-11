@@ -17,8 +17,7 @@ public class ReliableRecipesAPI {
 
     private static final Map<String, String> REPLACEMENTS = new HashMap<>();
     private static final List<Predicate<ItemStack>> REPAIR_BLOCKERS = new ArrayList<>();
-    private static boolean ITEM_HIDING_CAPABLE = false;
-    private static Predicate<ItemStack> HIDING_PREDICATE = stack -> false;
+    private static final List<Predicate<ItemStack>> ITEM_HIDERS = new ArrayList<>();
 
     /**
      * Determines whether item hiding functionality is currently enabled and capable.
@@ -26,7 +25,7 @@ public class ReliableRecipesAPI {
      * @return true if an item hiding capability is active, false otherwise.
      */
     public static boolean hasItemHidingCapabilities() {
-        return ITEM_HIDING_CAPABLE;
+        return !ITEM_HIDERS.isEmpty();
     }
 
     /**
@@ -34,19 +33,25 @@ public class ReliableRecipesAPI {
      *
      * @param predicate The condition defining whether the stack is hidden.
      */
-    public static void setItemHidingCapability(Predicate<ItemStack> predicate) {
-        ITEM_HIDING_CAPABLE = true;
-        HIDING_PREDICATE = predicate;
+    public static void registerItemHider(Predicate<ItemStack> predicate) {
+        ITEM_HIDERS.add(predicate);
     }
 
     /**
-     * Checks if a specific ItemStack is flagged to be hidden by the registered predicate.
+     * Checks if a specific ItemStack is flagged to be hidden by any registered predicate.
      *
      * @param stack The ItemStack to check.
      * @return true if the item should be hidden.
      */
     public static boolean isItemHidden(ItemStack stack) {
-        return HIDING_PREDICATE.test(stack);
+        if (stack == null || stack.isEmpty()) return false;
+
+        for (Predicate<ItemStack> hider : ITEM_HIDERS) {
+            if (hider.test(stack)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -91,6 +96,16 @@ public class ReliableRecipesAPI {
      */
     public static Map<String, String> getReplacements() {
         return REPLACEMENTS;
+    }
+
+    /**
+     * Registers an item to be replaced by another item globally in recipes.
+     *
+     * @param originalId    The original item ID.
+     * @param replacementId The replacement item ID.
+     */
+    public static void registerItemReplacement(String originalId, String replacementId) {
+        REPLACEMENTS.put(originalId, replacementId);
     }
 
     /**

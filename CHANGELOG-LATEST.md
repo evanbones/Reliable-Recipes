@@ -1,3 +1,3 @@
-### Fixed
+### Changed
 
-- Fixed recipe removal using dev mode and RRV in 26.1.
+- Updated API to closer match pre-26.1 functionality.
