@@ -17,7 +17,7 @@ Learn how to use Reliable Recipes, configure your JSON files, and master recipe 
 ## Features
 
 * **Dynamic Recipe Control:** Remove hardcoded recipes or inject custom ones at runtime.
-* **Tag Manipulation:** Add or remove items/blocks from tags via config files.
+* **Tag Manipulation:** Remove items/blocks from tags via config files.
 * **No Scripting Required:** Uses standard Minecraft-style JSON syntax for ease of use.
 * **Cross-mod Compatibility:** Integrates seamlessly with mods like Reliable Removal.
 

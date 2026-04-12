@@ -35,11 +35,10 @@
   "depends": {
     "fabricloader": ">=${fabric_loader_version}",
     "fabric-api": "*",
-    "minecraft": "${minecraft_version}",
+    "minecraft": ">26 <27",
     "java": ">=${java_version}"
   },
   "suggests": {
-    "reliable_remover": "*",
     "rrv": "*"
   }
 }

@@ -42,6 +42,9 @@ body:
       label: Mod Version
       description: The version of Reliable Recipes you were using
       options:
+        - "1.9.4"
+        - "1.9.3"
+        - "1.9.2"
         - "1.9.1"
         - "1.9.0"
         - "1.8.4"
