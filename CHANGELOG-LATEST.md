@@ -1,3 +1,3 @@
-### Changed
+### Fixed
 
-- Adjust dependencies on 26.1.
+- Fixed replacement arrays not working on 26.1.

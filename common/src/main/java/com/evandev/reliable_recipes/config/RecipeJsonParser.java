@@ -48,11 +48,11 @@ public class RecipeJsonParser {
             }
             case "replace_input" -> {
                 String target = mod.get("target").getAsString();
-                String replace = mod.get("replacement").getAsString();
+                JsonElement replace = mod.get("replacement");
                 yield new RecipeRule(RecipeRule.Action.REPLACE_INPUT, filter, target, replace);
             }
             case "replace_output" -> {
-                String replace = mod.get("replacement").getAsString();
+                JsonElement replace = mod.get("replacement");
                 String target = mod.has("target") ? mod.get("target").getAsString() : "";
                 if (target.isEmpty() && mod.has("filter") && mod.getAsJsonObject("filter").has("id")) {
                     target = mod.getAsJsonObject("filter").get("id").getAsString();

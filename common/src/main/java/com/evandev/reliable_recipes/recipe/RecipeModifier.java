@@ -45,7 +45,7 @@ public class RecipeModifier {
         for (RecipeHolder<?> recipeHolder : currentMap.values()) {
             boolean shouldRemove = false;
             Recipe<?> recipe = recipeHolder.value();
-            Map<String, String> replacementsForThisRecipe = new HashMap<>();
+            Map<String, JsonElement> replacementsForThisRecipe = new HashMap<>();
 
             try {
                 for (RecipeRule rule : rules) {
@@ -53,8 +53,8 @@ public class RecipeModifier {
                         if (rule.getAction() == RecipeRule.Action.REMOVE) {
                             shouldRemove = true;
                         } else if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT || rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
-                            if (rule.getReplaceTargetStr() != null && rule.getReplaceWithStr() != null && !rule.getReplaceTargetStr().isEmpty()) {
-                                replacementsForThisRecipe.put(rule.getReplaceTargetStr(), rule.getReplaceWithStr());
+                            if (rule.getReplaceTargetStr() != null && rule.getReplaceWithEl() != null && !rule.getReplaceTargetStr().isEmpty()) {
+                                replacementsForThisRecipe.put(rule.getReplaceTargetStr(), rule.getReplaceWithEl());
                             }
                         }
                     }

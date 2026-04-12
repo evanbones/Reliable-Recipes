@@ -1,5 +1,6 @@
 package com.evandev.reliable_recipes.recipe;
 
+import com.google.gson.JsonElement;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
@@ -11,7 +12,7 @@ public class RecipeRule {
     private final Predicate<RecipeHolder<?>> filter;
     private final Optional<Ingredient> targetInput;
     private final String replaceTargetStr;
-    private final String replaceWithStr;
+    private final JsonElement replaceWithEl;
 
     // Removals
     public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter) {
@@ -24,16 +25,16 @@ public class RecipeRule {
     }
 
     // Replacements
-    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, String targetStr, String replacementStr) {
-        this(action, filter, Optional.empty(), targetStr, replacementStr);
+    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, String targetStr, JsonElement replacementEl) {
+        this(action, filter, Optional.empty(), targetStr, replacementEl);
     }
 
-    private RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> targetInput, String targetStr, String replacementStr) {
+    private RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> targetInput, String targetStr, JsonElement replacementEl) {
         this.action = action;
         this.filter = filter;
         this.targetInput = targetInput;
         this.replaceTargetStr = targetStr;
-        this.replaceWithStr = replacementStr;
+        this.replaceWithEl = replacementEl;
     }
 
     public boolean test(RecipeHolder<?> holder) {
@@ -52,8 +53,8 @@ public class RecipeRule {
         return replaceTargetStr;
     }
 
-    public String getReplaceWithStr() {
-        return replaceWithStr;
+    public JsonElement getReplaceWithEl() {
+        return replaceWithEl;
     }
 
     public enum Action {REMOVE, REPLACE_INPUT, REPLACE_OUTPUT, PREVENT_REPAIR}
