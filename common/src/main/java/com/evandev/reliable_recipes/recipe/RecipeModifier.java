@@ -15,10 +15,27 @@ import net.minecraft.world.item.crafting.*;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RecipeModifier {
     private static final Map<ResourceLocation, Recipe<?>> DELETED_RECIPES_CACHE = new HashMap<>();
+    private static final Map<Class<?>, List<Field>> CLASS_FIELD_CACHE = new ConcurrentHashMap<>();
     private static boolean hasBeenApplied = false;
+
+    private static List<Field> getCachedFields(Class<?> clazz) {
+        return CLASS_FIELD_CACHE.computeIfAbsent(clazz, c -> {
+            List<Field> fields = new ArrayList<>();
+            Class<?> current = c;
+            while (current != Object.class && current != null) {
+                for (Field field : current.getDeclaredFields()) {
+                    field.setAccessible(true);
+                    fields.add(field);
+                }
+                current = current.getSuperclass();
+            }
+            return fields;
+        });
+    }
 
     public static void apply(RecipeManager manager) {
         if (hasBeenApplied) return;
@@ -172,54 +189,44 @@ public class RecipeModifier {
         if (recipe instanceof AbstractCookingRecipe cooking && ingredientMatches(cooking.getIngredients().get(0), target))
             ((AbstractCookingRecipeAccessor) cooking).setIngredient(replacement);
 
-        Class<?> clazz = recipe.getClass();
-        while (clazz != Object.class && clazz != null) {
+        for (Field field : getCachedFields(recipe.getClass())) {
             try {
-                for (Field field : clazz.getDeclaredFields()) {
-                    field.setAccessible(true);
-                    Object val = field.get(recipe);
-                    if (val instanceof Ingredient ing && ingredientMatches(ing, target)) {
-                        field.set(recipe, replacement);
-                    } else if (val instanceof Ingredient[] ings) {
-                        for (int i = 0; i < ings.length; i++) {
-                            if (ings[i] != null && ingredientMatches(ings[i], target)) ings[i] = replacement;
-                        }
-                    } else if (val instanceof List<?> list) {
-                        for (int i = 0; i < list.size(); i++) {
-                            if (list.get(i) instanceof Ingredient ing && ingredientMatches(ing, target)) {
-                                try {
-                                    ((List<Ingredient>) list).set(i, replacement);
-                                } catch (Exception ignored) {
-                                }
+                Object val = field.get(recipe);
+                if (val instanceof Ingredient ing && ingredientMatches(ing, target)) {
+                    field.set(recipe, replacement);
+                } else if (val instanceof Ingredient[] ings) {
+                    for (int i = 0; i < ings.length; i++) {
+                        if (ings[i] != null && ingredientMatches(ings[i], target)) ings[i] = replacement;
+                    }
+                } else if (val instanceof List<?> list) {
+                    for (int i = 0; i < list.size(); i++) {
+                        if (list.get(i) instanceof Ingredient ing && ingredientMatches(ing, target)) {
+                            try {
+                                ((List<Ingredient>) list).set(i, replacement);
+                            } catch (Exception ignored) {
                             }
                         }
-                    } else if (val != null && val.getClass().getSimpleName().contains("ShapedRecipePattern")) {
-                        Class<?> patternClass = val.getClass();
-                        while (patternClass != Object.class && patternClass != null) {
-                            for (Field patternField : patternClass.getDeclaredFields()) {
-                                patternField.setAccessible(true);
-                                try {
-                                    Object patternVal = patternField.get(val);
-                                    if (patternVal instanceof List<?> patternList) {
-                                        for (int i = 0; i < patternList.size(); i++) {
-                                            if (patternList.get(i) instanceof Ingredient ing && ingredientMatches(ing, target)) {
-                                                try {
-                                                    ((List<Ingredient>) patternList).set(i, replacement);
-                                                } catch (Exception ignored) {
-                                                }
-                                            }
+                    }
+                } else if (val != null && val.getClass().getSimpleName().contains("ShapedRecipePattern")) {
+                    for (Field patternField : getCachedFields(val.getClass())) {
+                        try {
+                            Object patternVal = patternField.get(val);
+                            if (patternVal instanceof List<?> patternList) {
+                                for (int i = 0; i < patternList.size(); i++) {
+                                    if (patternList.get(i) instanceof Ingredient ing && ingredientMatches(ing, target)) {
+                                        try {
+                                            ((List<Ingredient>) patternList).set(i, replacement);
+                                        } catch (Exception ignored) {
                                         }
                                     }
-                                } catch (Exception ignored) {
                                 }
                             }
-                            patternClass = patternClass.getSuperclass();
+                        } catch (Exception ignored) {
                         }
                     }
                 }
             } catch (Exception ignored) {
             }
-            clazz = clazz.getSuperclass();
         }
     }
 
@@ -238,43 +245,34 @@ public class RecipeModifier {
             ((SingleItemRecipeAccessor) single).setResult(copy);
 
         if (checkMatch) {
-            Class<?> clazz = recipe.getClass();
-            while (clazz != Object.class && clazz != null) {
+            for (Field field : getCachedFields(recipe.getClass())) {
                 try {
-                    for (Field field : clazz.getDeclaredFields()) {
-                        field.setAccessible(true);
-                        Object val = field.get(recipe);
-                        if (val instanceof ItemStack stack && ItemStack.isSameItem(stack, targetStack)) {
-                            field.set(recipe, newResult.copy());
-                        } else if (val instanceof ItemStack[] stacks) {
-                            for (int i = 0; i < stacks.length; i++) {
-                                if (stacks[i] != null && ItemStack.isSameItem(stacks[i], targetStack))
-                                    stacks[i] = newResult.copy();
-                            }
-                        } else if (val instanceof List<?> list) {
-                            for (int i = 0; i < list.size(); i++) {
-                                Object obj = list.get(i);
-                                if (obj instanceof ItemStack stack && ItemStack.isSameItem(stack, targetStack)) {
-                                    try {
-                                        ((List<ItemStack>) list).set(i, newResult.copy());
-                                    } catch (Exception ignored) {
-                                    }
-                                } else if (obj != null) {
-                                    ItemStack extracted = ReliableRecipesAPI.tryExtractStack(obj);
-                                    if (extracted != null && ItemStack.isSameItem(extracted, targetStack)) {
-                                        Class<?> wrapperClass = obj.getClass();
-                                        while (wrapperClass != Object.class && wrapperClass != null) {
-                                            for (Field wrapperField : wrapperClass.getDeclaredFields()) {
-                                                wrapperField.setAccessible(true);
-                                                try {
-                                                    Object fieldVal = wrapperField.get(obj);
-                                                    if (fieldVal instanceof ItemStack ws && ItemStack.isSameItem(ws, targetStack)) {
-                                                        wrapperField.set(obj, newResult.copy());
-                                                    }
-                                                } catch (Exception ignored) {
-                                                }
+                    Object val = field.get(recipe);
+                    if (val instanceof ItemStack stack && ItemStack.isSameItem(stack, targetStack)) {
+                        field.set(recipe, newResult.copy());
+                    } else if (val instanceof ItemStack[] stacks) {
+                        for (int i = 0; i < stacks.length; i++) {
+                            if (stacks[i] != null && ItemStack.isSameItem(stacks[i], targetStack))
+                                stacks[i] = newResult.copy();
+                        }
+                    } else if (val instanceof List<?> list) {
+                        for (int i = 0; i < list.size(); i++) {
+                            Object obj = list.get(i);
+                            if (obj instanceof ItemStack stack && ItemStack.isSameItem(stack, targetStack)) {
+                                try {
+                                    ((List<ItemStack>) list).set(i, newResult.copy());
+                                } catch (Exception ignored) {
+                                }
+                            } else if (obj != null) {
+                                ItemStack extracted = ReliableRecipesAPI.tryExtractStack(obj);
+                                if (extracted != null && ItemStack.isSameItem(extracted, targetStack)) {
+                                    for (Field wrapperField : getCachedFields(obj.getClass())) {
+                                        try {
+                                            Object fieldVal = wrapperField.get(obj);
+                                            if (fieldVal instanceof ItemStack ws && ItemStack.isSameItem(ws, targetStack)) {
+                                                wrapperField.set(obj, newResult.copy());
                                             }
-                                            wrapperClass = wrapperClass.getSuperclass();
+                                        } catch (Exception ignored) {
                                         }
                                     }
                                 }
@@ -283,7 +281,6 @@ public class RecipeModifier {
                     }
                 } catch (Exception ignored) {
                 }
-                clazz = clazz.getSuperclass();
             }
         }
     }

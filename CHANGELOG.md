@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.6] - 2026-04-12
+
+### Fixed
+
+- Performance improvements.
+
+## [1.9.5] - 2026-04-12
+
+### Fixed
+
+- Fixed replacement arrays not working on 26.1.
+
+## [1.9.4] - 2026-04-11
+
+### Changed
+
+- Adjust dependencies on 26.1.
+
+## [1.9.3] - 2026-04-10
+
+### Changed
+
+- Updated API to closer match pre-26.1 functionality.
+
+## [1.9.2] - 2026-04-10
+
+### Fixed
+
+- Fixed recipe removal using dev mode and RRV in 26.1.
+
 ## [1.9.1] - 2026-04-09
 
 ### Fixed
@@ -22,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Fixes for 1.20 recipe matching.
+- Fixed repair blocking not working on 1.21.
 
 ## [1.8.3] - 2026-04-06
 
