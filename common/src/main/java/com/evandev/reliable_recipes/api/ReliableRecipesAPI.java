@@ -119,6 +119,7 @@ public class ReliableRecipesAPI {
                         RECIPE_OUTPUT_METHODS.put(recipeClass, method);
                         break;
                     } catch (NoSuchMethodException ignored) {
+                    } catch (Throwable ignored) {
                     }
                 }
                 if (method == null) {
@@ -165,6 +166,7 @@ public class ReliableRecipesAPI {
                         EXTRACT_METHODS.put(objClass, method);
                         break;
                     } catch (NoSuchMethodException ignored) {
+                    } catch (Throwable ignored) {
                     }
                 }
                 if (method == null) {
