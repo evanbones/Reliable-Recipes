@@ -30,9 +30,12 @@ public class RecipeModifier {
             List<Field> fields = new ArrayList<>();
             Class<?> current = c;
             while (current != Object.class && current != null) {
-                for (Field field : current.getDeclaredFields()) {
-                    field.setAccessible(true);
-                    fields.add(field);
+                try {
+                    for (Field field : current.getDeclaredFields()) {
+                        field.setAccessible(true);
+                        fields.add(field);
+                    }
+                } catch (Throwable ignored) {
                 }
                 current = current.getSuperclass();
             }

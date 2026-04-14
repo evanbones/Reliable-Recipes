@@ -1,3 +1,3 @@
 ### Fixed
 
-- Performance improvements.
+- Fixed crash with certain mods loading missing dependencies.
