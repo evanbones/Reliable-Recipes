@@ -1,3 +1,3 @@
 ### Fixed
 
-- Fixed crash with certain mods loading missing dependencies.
+- Fixed issues with EMI.

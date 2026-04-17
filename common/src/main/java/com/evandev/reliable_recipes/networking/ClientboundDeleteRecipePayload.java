@@ -5,6 +5,7 @@ import com.evandev.reliable_recipes.client.SharedToastOverlay;
 import com.evandev.reliable_recipes.config.ModConfig;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import dev.emi.emi.runtime.EmiReloadManager;
+import dev.emi.emi.screen.RecipeScreen;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -46,6 +47,9 @@ public record ClientboundDeleteRecipePayload(ResourceLocation recipeId) implemen
 
         if (config.reloadEmi) {
             EmiReloadManager.reload();
+            if (Minecraft.getInstance().screen instanceof RecipeScreen) {
+                Minecraft.getInstance().screen.onClose();
+            }
         }
 
         if (config.showChatMessages && client.player != null) {
