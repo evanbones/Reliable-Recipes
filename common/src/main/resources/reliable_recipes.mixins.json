@@ -21,7 +21,6 @@
   ],
   "client": [
     "emi.EmiRecipeScreenMixin",
-    "emi.EmiReloadMixin",
     "minecraft.ClientPacketListenerMixin"
   ],
   "server": [],
