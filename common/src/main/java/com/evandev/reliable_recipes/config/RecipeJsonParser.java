@@ -132,23 +132,21 @@ public class RecipeJsonParser {
                         yield r -> m.test(r.getId().toString());
                     }
                     case "input" -> {
-                        Predicate<String> matcher = getStringMatcher(criterion);
+                        Predicate<ItemStack> matcher = getItemStackMatcher(criterion);
                         yield r -> r.getIngredients().stream().anyMatch(ing -> {
                             for (ItemStack stack : ing.getItems()) {
-                                ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
-                                if (matcher.test(id.toString())) return true;
+                                if (matcher.test(stack)) return true;
                             }
                             return false;
                         });
                     }
                     case "output" -> {
-                        Predicate<String> m = getStringMatcher(criterion);
+                        Predicate<ItemStack> m = getItemStackMatcher(criterion);
                         yield r -> {
                             try {
                                 ItemStack out = r.getResultItem(net.minecraft.core.RegistryAccess.EMPTY);
                                 if (out.isEmpty()) return false;
-                                ResourceLocation id = BuiltInRegistries.ITEM.getKey(out.getItem());
-                                return m.test(id.toString());
+                                return m.test(out);
                             } catch (Exception e) {
                                 return false;
                             }
@@ -180,6 +178,35 @@ public class RecipeJsonParser {
             }
         }
         return str::equals;
+    }
+
+    private static Predicate<ItemStack> getItemStackMatcher(JsonElement element) {
+        if (element.isJsonArray()) {
+            Predicate<ItemStack> p = s -> false;
+            for (JsonElement e : element.getAsJsonArray()) p = p.or(getItemStackMatcher(e));
+            return p;
+        }
+        String str = element.getAsString();
+
+        if (str.startsWith("#")) {
+            TagKey<Item> tagKey = TagKey.create(Registries.ITEM, new ResourceLocation(str.substring(1)));
+            return stack -> stack.is(tagKey);
+        } else if (str.startsWith("/") && str.endsWith("/") && str.length() > 2) {
+            try {
+                Pattern pattern = Pattern.compile(str.substring(1, str.length() - 1));
+                return stack -> {
+                    ResourceLocation key = BuiltInRegistries.ITEM.getKey(stack.getItem());
+                    return pattern.matcher(key.toString()).matches();
+                };
+            } catch (Exception e) {
+                Constants.LOG.warn("Invalid regex pattern in filter: {}", str);
+                return s -> false;
+            }
+        }
+        return stack -> {
+            ResourceLocation key = BuiltInRegistries.ITEM.getKey(stack.getItem());
+            return str.equals(key.toString());
+        };
     }
 
     private static Ingredient parseIngredient(JsonElement json) {
