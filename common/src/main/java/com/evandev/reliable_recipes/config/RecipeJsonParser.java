@@ -138,24 +138,18 @@ public class RecipeJsonParser {
                         yield r -> m.test(r.id().identifier().toString());
                     }
                     case "input" -> {
-                        Predicate<String> matcher = getStringMatcher(criterion);
+                        Predicate<ItemStack> matcher = getItemStackMatcher(criterion);
                         yield r -> r.value().placementInfo().ingredients().stream().anyMatch(ing -> {
-                            return ing.items().anyMatch(holder -> {
-                                Identifier id = BuiltInRegistries.ITEM.getKey(holder.value());
-                                return matcher.test(id.toString());
-                            });
+                            return ing.items().anyMatch(holder -> matcher.test(new ItemStack(holder)));
                         });
                     }
                     case "output" -> {
-                        Predicate<String> m = getStringMatcher(criterion);
+                        Predicate<ItemStack> m = getItemStackMatcher(criterion);
                         yield r -> {
                             try {
                                 List<ItemStack> outputs = ReliableRecipesAPI.getRecipeResults(r.value());
                                 if (outputs.isEmpty()) return false;
-                                return outputs.stream().anyMatch(out -> {
-                                    Identifier id = BuiltInRegistries.ITEM.getKey(out.getItem());
-                                    return m.test(id.toString());
-                                });
+                                return outputs.stream().anyMatch(m);
                             } catch (Exception e) {
                                 Constants.LOG.error("Failed to parse output for filter on recipe {}: {}", r.id().identifier(), e.getMessage());
                                 return false;
@@ -188,6 +182,30 @@ public class RecipeJsonParser {
             }
         }
         return str::equals;
+    }
+
+    private static Predicate<ItemStack> getItemStackMatcher(JsonElement element) {
+        if (element.isJsonArray()) {
+            Predicate<ItemStack> p = s -> false;
+            for (JsonElement e : element.getAsJsonArray()) p = p.or(getItemStackMatcher(e));
+            return p;
+        }
+        String str = element.getAsString();
+
+        if (str.startsWith("#")) {
+            TagKey<Item> tagKey = TagKey.create(Registries.ITEM, Identifier.parse(str.substring(1)));
+            return stack -> stack.is(tagKey);
+        } else if (str.startsWith("/") && str.endsWith("/") && str.length() > 2) {
+            try {
+                Pattern pattern = Pattern.compile(str.substring(1, str.length() - 1));
+                return stack -> pattern.matcher(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()).matches();
+            } catch (Exception e) {
+                Constants.LOG.warn("Invalid regex pattern in filter: {}", str);
+                return s -> false;
+            }
+        }
+        // Handle Exact Match
+        return stack -> str.equals(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
     }
 
     private static Optional<Ingredient> parseIngredient(JsonElement json) {
