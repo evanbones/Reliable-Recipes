@@ -1,5 +1,7 @@
 package com.evandev.reliable_recipes.mixin.minecraft;
 
+import com.evandev.reliable_recipes.compat.RrvCompat;
+import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.recipe.TagModifier;
 import net.minecraft.server.ReloadableServerRegistries;
@@ -29,5 +31,9 @@ public abstract class ReloadableServerResourcesMixin {
 
         RecipeModifier.reset();
         RecipeModifier.apply(this.getRecipeManager(), this.fullRegistries().lookup());
+
+        if (Services.PLATFORM.isModLoaded("rrv")) {
+            RrvCompat.syncRecipesToAllClients();
+        }
     }
 }

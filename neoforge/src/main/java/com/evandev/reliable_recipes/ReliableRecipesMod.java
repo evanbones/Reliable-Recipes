@@ -1,11 +1,8 @@
 package com.evandev.reliable_recipes;
 
-import cc.cassian.rrv.common.recipe.ClientRecipeManager;
 import com.evandev.reliable_recipes.command.UndoCommand;
 import com.evandev.reliable_recipes.config.ClothConfigIntegration;
-import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
-import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
-import com.evandev.reliable_recipes.networking.DeleteRecipeByOutputPayload;
+import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -58,32 +55,12 @@ public class ReliableRecipesMod {
         final PayloadRegistrar registrar = event.registrar("1");
 
         registrar.playToServer(
-                DeleteRecipeByOutputPayload.TYPE,
-                DeleteRecipeByOutputPayload.STREAM_CODEC,
+                DeleteRecipePayload.TYPE,
+                DeleteRecipePayload.STREAM_CODEC,
                 (payload, context) -> {
                     context.enqueueWork(() -> {
                         ServerPlayer player = (ServerPlayer) context.player();
-                        DeleteRecipeByOutputPayload.handle(payload.output(), player.level().getServer(), player);
-                    });
-                }
-        );
-
-        registrar.playToClient(
-                ClientboundRemoveRecipePayload.TYPE,
-                ClientboundRemoveRecipePayload.STREAM_CODEC,
-                (payload, context) -> {
-                    context.enqueueWork(() -> {
-                        ClientRecipeManager.INSTANCE.requestServerRrvData();
-                    });
-                }
-        );
-
-        registrar.playToClient(
-                ClientboundAddRecipePayload.TYPE,
-                ClientboundAddRecipePayload.STREAM_CODEC,
-                (payload, context) -> {
-                    context.enqueueWork(() -> {
-                        ClientRecipeManager.INSTANCE.requestServerRrvData();
+                        DeleteRecipePayload.handle(payload.recipeKey(), player.level().getServer(), player);
                     });
                 }
         );

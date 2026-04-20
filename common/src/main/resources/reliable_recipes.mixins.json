@@ -11,13 +11,11 @@
     "minecraft.ItemCombinerMenuMixin",
     "minecraft.ReloadableServerResourcesMixin",
     "minecraft.RepairItemRecipeMixin",
-    "rrv.RecipeViewMenuAccessor",
-    "rrv.ServerRecipeManagerMixin"
+    "rrv.RecipeViewMenuAccessor"
   ],
   "client": [
     "minecraft.ClientPacketListenerMixin",
-    "rrv.RrvRecipeScreenMixin",
-    "rrv.RrvReloadMixin"
+    "rrv.RrvRecipeScreenMixin"
   ],
   "server": [],
   "injectors": {

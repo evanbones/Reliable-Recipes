@@ -5,10 +5,9 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 public record ClientboundAddRecipePayload(RecipeHolder<?> recipeHolder) implements CustomPacketPayload {
-
     public static final Type<ClientboundAddRecipePayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath("reliable_recipes", "add_recipe"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ClientboundAddRecipePayload> STREAM_CODEC = StreamCodec.composite(
@@ -18,7 +17,7 @@ public record ClientboundAddRecipePayload(RecipeHolder<?> recipeHolder) implemen
     );
 
     @Override
-    public @NonNull Type<? extends CustomPacketPayload> type() {
+    public @NotNull Type<? extends CustomPacketPayload> type() {
         return TYPE;
     }
 }

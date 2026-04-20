@@ -52,8 +52,8 @@ public abstract class RrvRecipeScreenMixin extends Screen {
             ReliableClientRecipe recipe = currentDisplay.get(i);
             int guiTop = screen.getTopPos() + menuAccessor.reliableRecipes$guiOffsetTop(i);
 
-            int width = recipe.getViewType().getDisplayWidth();
-            int height = recipe.getViewType().getDisplayHeight();
+            int width = recipe.getType().getDisplayWidth();
+            int height = recipe.getType().getDisplayHeight();
 
             if (mouseX >= guiLeft && mouseX <= guiLeft + width && mouseY >= guiTop && mouseY <= guiTop + height) {
                 return recipe;
