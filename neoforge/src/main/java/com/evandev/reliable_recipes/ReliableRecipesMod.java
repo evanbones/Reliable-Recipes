@@ -1,7 +1,10 @@
 package com.evandev.reliable_recipes;
 
+import com.evandev.reliable_recipes.client.ClientPayloadHandler;
 import com.evandev.reliable_recipes.command.UndoCommand;
 import com.evandev.reliable_recipes.config.ClothConfigIntegration;
+import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
+import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,8 +29,6 @@ public class ReliableRecipesMod {
     public ReliableRecipesMod(IEventBus eventBus) {
         CommonClass.init();
 
-        eventBus.addListener(ReliableRecipesMod::registerPayloadHandlers);
-
         if (ModList.get().isLoaded("cloth_config")) {
             eventBus.register(new Object() {
                 @SubscribeEvent
@@ -51,7 +52,8 @@ public class ReliableRecipesMod {
         UndoCommand.register(event.getDispatcher());
     }
 
-    private static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
+    @SubscribeEvent
+    public static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
         final PayloadRegistrar registrar = event.registrar("1");
 
         registrar.playToServer(
@@ -63,6 +65,18 @@ public class ReliableRecipesMod {
                         DeleteRecipePayload.handle(payload.recipeKey(), player.level().getServer(), player);
                     });
                 }
+        );
+
+        registrar.playToClient(
+                ClientboundRemoveRecipePayload.TYPE,
+                ClientboundRemoveRecipePayload.STREAM_CODEC,
+                ClientPayloadHandler::handleRemove
+        );
+
+        registrar.playToClient(
+                ClientboundAddRecipePayload.TYPE,
+                ClientboundAddRecipePayload.STREAM_CODEC,
+                ClientPayloadHandler::handleAdd
         );
     }
 }
