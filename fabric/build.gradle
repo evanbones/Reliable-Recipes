@@ -10,9 +10,6 @@ dependencies {
         parchment("org.parchmentmc.data:parchment-${parchment_minecraft}:${parchment_version}@zip")
     }
 
-    // Reliable Remover
-    modRuntimeOnly "maven.modrinth:reliable-remover:${reliable_remover_version}-fabric-1.21.1"
-
     // EMI
     modImplementation "dev.emi:emi-fabric:${emi_version}"
 

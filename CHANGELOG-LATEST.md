@@ -1,3 +1,3 @@
-### Added
+### Fixed
 
-- Added support for item tags in `input` and `output` filters.
+- Performance improvements with the EMI plugin.
