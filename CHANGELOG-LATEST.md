@@ -1,3 +1,3 @@
-### Fixed
+### Changed
 
-- Performance improvements with the EMI plugin.
+- All rules now properly support regular expressions when escaped with forward slashes (`/ /`).

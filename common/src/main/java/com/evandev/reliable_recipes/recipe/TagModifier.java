@@ -38,39 +38,37 @@ public class TagModifier {
             try {
                 switch (rule.action()) {
                     case REMOVE_ALL_TAGS -> {
-                        if (rule.items() == null) continue;
-                        for (ResourceLocation id : rule.items()) {
-                            T object = registry.get(id);
-                            if (object != null) {
+                        for (T object : registry) {
+                            ResourceLocation id = registry.getKey(object);
+                            if (id != null && rule.itemMatcher().test(id)) {
                                 removalCount += removeAllTagsFrom(registry, object);
                             }
                         }
                     }
                     case REMOVE_FROM_TAG -> {
-                        if (rule.tags() == null || rule.items() == null) continue;
-                        for (ResourceLocation tagId : rule.tags()) {
-                            TagKey<T> key = TagKey.create(registry.key(), tagId);
-                            var vanillaTag = registry.getTag(key).orElse(null);
-
-                            for (ResourceLocation id : rule.items()) {
-                                T object = registry.get(id);
-                                if (object != null && vanillaTag != null && vanillaTag.contains(registry.wrapAsHolder(object))) {
-                                    removeFromTag(vanillaTag, object);
-                                    removalCount++;
+                        for (var pair : registry.getTags().toList()) {
+                            ResourceLocation tagId = pair.getFirst().location();
+                            if (rule.tagMatcher().test(tagId)) {
+                                var vanillaTag = pair.getSecond();
+                                for (T object : registry) {
+                                    ResourceLocation id = registry.getKey(object);
+                                    if (id != null && rule.itemMatcher().test(id) && vanillaTag.contains(registry.wrapAsHolder(object))) {
+                                        removeFromTag(vanillaTag, object);
+                                        removalCount++;
+                                    }
                                 }
                             }
                         }
                     }
                     case CLEAR_TAG -> {
-                        if (rule.tags() == null) continue;
-                        for (ResourceLocation tagId : rule.tags()) {
-                            TagKey<T> key = TagKey.create(registry.key(), tagId);
-                            var vanillaTag = registry.getTag(key).orElse(null);
-
-                            if (vanillaTag != null && vanillaTag.size() > 0) {
-                                Constants.LOG.info("TagModifier: Clearing tag '{}' (contained {} items)", tagId, vanillaTag.size());
-                                removalCount += vanillaTag.size();
-                                clearTag(vanillaTag);
+                        for (var pair : registry.getTags().toList()) {
+                            ResourceLocation tagId = pair.getFirst().location();
+                            if (rule.tagMatcher().test(tagId)) {
+                                var vanillaTag = pair.getSecond();
+                                if (vanillaTag != null && vanillaTag.size() > 0) {
+                                    removalCount += vanillaTag.size();
+                                    clearTag(vanillaTag);
+                                }
                             }
                         }
                     }
@@ -79,7 +77,6 @@ public class TagModifier {
                 Constants.LOG.error("Error processing {} tag rule: {}", debugName, rule, e);
             }
         }
-
         if (removalCount > 0) {
             Constants.LOG.info("TagModifier removed {} {}-tag associations.", removalCount, debugName);
         }
