@@ -44,7 +44,7 @@ public class RecipeJsonParser {
             case "remove", "remove_recipe" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
             case "prevent_repair" -> {
                 Optional<Ingredient> target = parseIngredient(mod.get("target"));
-                yield new RecipeRule(RecipeRule.Action.PREVENT_REPAIR, r -> false, target);
+                yield new RecipeRule(RecipeRule.Action.PREVENT_REPAIR, _ -> false, target);
             }
             case "replace_input" -> {
                 String target = mod.get("target").getAsString();
@@ -82,10 +82,13 @@ public class RecipeJsonParser {
         }
 
         List<Identifier> tags = new ArrayList<>();
-        if (mod.has("tags")) {
-            mod.get("tags").getAsJsonArray().forEach(e -> tags.add(Identifier.parse(e.getAsString())));
-        } else if (mod.has("tag")) {
-            tags.add(Identifier.parse(mod.get("tag").getAsString()));
+        JsonElement tagEl = mod.has("tag") ? mod.get("tag") : mod.get("tags");
+        if (tagEl != null) {
+            if (tagEl.isJsonArray()) {
+                tagEl.getAsJsonArray().forEach(e -> tags.add(Identifier.parse(e.getAsString())));
+            } else {
+                tags.add(Identifier.parse(tagEl.getAsString()));
+            }
         }
 
         return switch (actionStr) {
@@ -100,7 +103,7 @@ public class RecipeJsonParser {
         if (json.isJsonObject()) {
             JsonObject obj = json.getAsJsonObject();
 
-            Predicate<RecipeHolder<?>> combined = r -> true;
+            Predicate<RecipeHolder<?>> combined = _ -> true;
             for (String key : obj.keySet()) {
                 if (IGNORED_KEYS.contains(key)) continue;
 
@@ -108,12 +111,12 @@ public class RecipeJsonParser {
                 Predicate<RecipeHolder<?>> check = switch (key) {
                     case "not" -> parseFilter(criterion).negate();
                     case "or" -> {
-                        Predicate<RecipeHolder<?>> p = r -> false;
+                        Predicate<RecipeHolder<?>> p = _ -> false;
                         for (JsonElement e : criterion.getAsJsonArray()) p = p.or(parseFilter(e));
                         yield p;
                     }
                     case "and" -> {
-                        Predicate<RecipeHolder<?>> p = r -> true;
+                        Predicate<RecipeHolder<?>> p = _ -> true;
                         for (JsonElement e : criterion.getAsJsonArray()) p = p.and(parseFilter(e));
                         yield p;
                     }
@@ -156,18 +159,18 @@ public class RecipeJsonParser {
                             }
                         };
                     }
-                    default -> r -> true;
+                    default -> _ -> true;
                 };
                 combined = combined.and(check);
             }
             return combined;
         }
-        return r -> true;
+        return _ -> true;
     }
 
     private static Predicate<String> getStringMatcher(JsonElement element) {
         if (element.isJsonArray()) {
-            Predicate<String> p = s -> false;
+            Predicate<String> p = _ -> false;
             for (JsonElement e : element.getAsJsonArray()) p = p.or(getStringMatcher(e));
             return p;
         }
@@ -178,7 +181,7 @@ public class RecipeJsonParser {
                 return s -> pattern.matcher(s).matches();
             } catch (Exception e) {
                 Constants.LOG.warn("Invalid regex pattern in filter: {}", str);
-                return s -> false;
+                return _ -> false;
             }
         }
         return str::equals;
@@ -186,7 +189,7 @@ public class RecipeJsonParser {
 
     private static Predicate<ItemStack> getItemStackMatcher(JsonElement element) {
         if (element.isJsonArray()) {
-            Predicate<ItemStack> p = s -> false;
+            Predicate<ItemStack> p = _ -> false;
             for (JsonElement e : element.getAsJsonArray()) p = p.or(getItemStackMatcher(e));
             return p;
         }
@@ -201,7 +204,7 @@ public class RecipeJsonParser {
                 return stack -> pattern.matcher(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()).matches();
             } catch (Exception e) {
                 Constants.LOG.warn("Invalid regex pattern in filter: {}", str);
-                return s -> false;
+                return _ -> false;
             }
         }
         // Handle Exact Match

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-04-23
+
+### Fixed
+
+- Fixed block tag removals not syncing properly.
+- Improved tag modification performance.
+
+## [1.11.0] - 2026-04-22
+
+### Changed
+
+- All rules now properly support regular expressions when escaped with forward slashes (`/ /`).
+
+## [1.10.1] - 2026-04-21
+
+### Fixed
+
+- Performance improvements with the EMI plugin.
+
 ## [1.10.0] - 2026-04-19
 
 ### Added

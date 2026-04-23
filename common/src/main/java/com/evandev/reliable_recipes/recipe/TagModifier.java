@@ -4,6 +4,7 @@ import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import com.evandev.reliable_recipes.config.ModConfig;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
+import com.evandev.reliable_recipes.mixin.accessor.HolderReferenceAccessor;
 import com.evandev.reliable_recipes.mixin.accessor.HolderSetNamedAccessor;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -15,10 +16,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TagModifier {
 
@@ -32,8 +31,9 @@ public class TagModifier {
     }
 
     private static <T> void applyToRegistry(Registry<T> registry, String debugName) {
-        int removalCount = 0;
+        AtomicInteger removalCount = new AtomicInteger();
         List<TagRule> rules = RecipeConfigIO.loadTagRules();
+        Map<Object, Set<T>> batchedRemovals = new HashMap<>();
 
         for (TagRule rule : rules) {
             try {
@@ -43,7 +43,12 @@ public class TagModifier {
                         for (Identifier id : rule.items()) {
                             T object = registry.get(id).map(Holder.Reference::value).orElse(null);
                             if (object != null) {
-                                removalCount += removeAllTagsFrom(registry, object);
+                                var holder = registry.wrapAsHolder(object);
+                                for (TagKey<T> key : holder.tags().toList()) {
+                                    registry.get(key).ifPresent(tag ->
+                                            batchedRemovals.computeIfAbsent(tag, _ -> new HashSet<>()).add(object)
+                                    );
+                                }
                             }
                         }
                     }
@@ -51,28 +56,25 @@ public class TagModifier {
                         if (rule.tags() == null || rule.items() == null) continue;
                         for (Identifier tagId : rule.tags()) {
                             TagKey<T> key = TagKey.create(registry.key(), tagId);
-                            var vanillaTag = registry.get(key).orElse(null);
-
-                            for (Identifier id : rule.items()) {
-                                T object = registry.get(id).map(Holder.Reference::value).orElse(null);
-                                if (object != null && vanillaTag != null && vanillaTag.contains(registry.wrapAsHolder(object))) {
-                                    removeFromTag(vanillaTag, object);
-                                    removalCount++;
+                            registry.get(key).ifPresent(vanillaTag -> {
+                                for (Identifier id : rule.items()) {
+                                    registry.get(id).map(Holder.Reference::value).ifPresent(object -> batchedRemovals.computeIfAbsent(vanillaTag, _ -> new HashSet<>()).add(object));
                                 }
-                            }
+                            });
                         }
                     }
                     case CLEAR_TAG -> {
                         if (rule.tags() == null) continue;
                         for (Identifier tagId : rule.tags()) {
                             TagKey<T> key = TagKey.create(registry.key(), tagId);
-                            var vanillaTag = registry.get(key).orElse(null);
-
-                            if (vanillaTag != null && vanillaTag.size() > 0) {
-                                Constants.LOG.info("TagModifier: Clearing tag '{}' (contained {} items)", tagId, vanillaTag.size());
-                                removalCount += vanillaTag.size();
-                                clearTag(vanillaTag);
-                            }
+                            registry.get(key).ifPresent(vanillaTag -> {
+                                int size = vanillaTag.size();
+                                if (size > 0) {
+                                    Constants.LOG.info("TagModifier: Clearing tag '{}' (contained {} items)", tagId, size);
+                                    removalCount.addAndGet(size);
+                                    clearTag(vanillaTag);
+                                }
+                            });
                         }
                     }
                 }
@@ -81,7 +83,11 @@ public class TagModifier {
             }
         }
 
-        if (removalCount > 0) {
+        for (Map.Entry<Object, Set<T>> entry : batchedRemovals.entrySet()) {
+            removalCount.addAndGet(batchRemoveFromTag(entry.getKey(), entry.getValue()));
+        }
+
+        if (removalCount.get() > 0) {
             Constants.LOG.info("TagModifier removed {} {}-tag associations.", removalCount, debugName);
         }
     }
@@ -121,68 +127,78 @@ public class TagModifier {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private static <T> int removeHiddenValuesFromTags(Registry<T> registry, Set<T> hiddenValues) {
-        int count = 0;
         List<String> ignoredTags = ModConfig.get().ignoredTags;
+        Map<Object, Set<T>> batchedRemovals = new HashMap<>();
 
-        for (HolderSet.Named<T> tagSet : registry.getTags().toList()) {
-            Identifier tagId = tagSet.key().location();
-
-            if (ignoredTags != null && ignoredTags.contains(tagId.toString())) {
-                continue;
-            }
-
-            if (tagSet instanceof HolderSetNamedAccessor accessor) {
-                List<Holder<T>> currentContents = (List<Holder<T>>) (Object) accessor.getContents();
-
-                if (currentContents != null && !currentContents.isEmpty()) {
-                    List<Holder<T>> mutableContents = new ArrayList<>(currentContents);
-                    int initialSize = mutableContents.size();
-
-                    if (mutableContents.removeIf(h -> hiddenValues.contains(h.value()))) {
-                        accessor.setContents((List<Holder<?>>) (Object) mutableContents);
-                        count += (initialSize - mutableContents.size());
-                    }
+        for (T hiddenValue : hiddenValues) {
+            var holder = registry.wrapAsHolder(hiddenValue);
+            for (TagKey<T> tagKey : holder.tags().toList()) {
+                if (ignoredTags != null && ignoredTags.contains(tagKey.location().toString())) {
+                    continue;
                 }
+                registry.get(tagKey).ifPresent(tag ->
+                        batchedRemovals.computeIfAbsent(tag, _ -> new HashSet<>()).add(hiddenValue)
+                );
             }
         }
+
+        int count = 0;
+        for (Map.Entry<Object, Set<T>> entry : batchedRemovals.entrySet()) {
+            count += batchRemoveFromTag(entry.getKey(), entry.getValue());
+        }
         return count;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> int batchRemoveFromTag(Object tag, Set<T> valuesToRemove) {
+        if (valuesToRemove.isEmpty() || !(tag instanceof HolderSet.Named<?> namedTag) || !(tag instanceof HolderSetNamedAccessor accessor)) {
+            return 0;
+        }
+
+        List<Holder<T>> currentContents = (List<Holder<T>>) (Object) accessor.getContents();
+        if (currentContents == null) return 0;
+
+        List<Holder<T>> mutableContents = new ArrayList<>(currentContents);
+        List<Holder<T>> toRemove = new ArrayList<>();
+
+        for (Holder<T> holder : mutableContents) {
+            if (valuesToRemove.contains(holder.value())) {
+                toRemove.add(holder);
+            }
+        }
+
+        if (!toRemove.isEmpty()) {
+            mutableContents.removeAll(toRemove);
+            accessor.setContents((List<Holder<?>>) (Object) mutableContents);
+
+            TagKey<?> tagKey = namedTag.key();
+            for (Holder<T> holder : toRemove) {
+                if (holder instanceof Holder.Reference<?> ref && ref instanceof HolderReferenceAccessor refAccessor) {
+                    Set<TagKey<?>> itemTags = new HashSet<>(refAccessor.getTags());
+                    itemTags.remove(tagKey);
+                    refAccessor.setTags(Set.copyOf(itemTags));
+                }
+            }
+            return toRemove.size();
+        }
+        return 0;
     }
 
     private static void clearTag(Object tag) {
-        if (tag instanceof HolderSetNamedAccessor accessor) {
-            accessor.setContents(new ArrayList<>());
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> void removeFromTag(Object tag, T value) {
-        if (tag instanceof HolderSetNamedAccessor accessor) {
-            List<Holder<T>> currentContents = (List<Holder<T>>) (Object) accessor.getContents();
-            if (currentContents != null) {
-                List<Holder<T>> mutableContents = new ArrayList<>(currentContents);
-                if (mutableContents.removeIf(holder -> holder.value() == value)) {
-                    accessor.setContents((List<Holder<?>>) (Object) mutableContents);
+        if (tag instanceof HolderSet.Named<?> namedTag && tag instanceof HolderSetNamedAccessor accessor) {
+            List<Holder<?>> contents = accessor.getContents();
+            if (contents != null) {
+                TagKey<?> tagKey = namedTag.key();
+                for (Holder<?> holder : contents) {
+                    if (holder instanceof Holder.Reference<?> ref && ref instanceof HolderReferenceAccessor refAccessor) {
+                        Set<TagKey<?>> itemTags = new HashSet<>(refAccessor.getTags());
+                        itemTags.remove(tagKey);
+                        refAccessor.setTags(Set.copyOf(itemTags));
+                    }
                 }
             }
+            accessor.setContents(new ArrayList<>());
         }
-    }
-
-    private static <T> int removeAllTagsFrom(Registry<T> registry, T value) {
-        if (value == null) return 0;
-        int count = 0;
-
-        var holder = registry.wrapAsHolder(value);
-        var tags = holder.tags().toList();
-
-        for (TagKey<T> key : tags) {
-            var vanillaTag = registry.get(key).orElse(null);
-            if (vanillaTag != null) {
-                removeFromTag(vanillaTag, value);
-                count++;
-            }
-        }
-        return count;
     }
 }

@@ -6,6 +6,7 @@
   "compatibilityLevel": "JAVA_18",
   "mixins": [
     "accessor.HolderSetNamedAccessor",
+    "accessor.HolderReferenceAccessor",
     "accessor.RecipeManagerAccessor",
     "minecraft.GrindstoneMenuMixin",
     "minecraft.ItemCombinerMenuMixin",
