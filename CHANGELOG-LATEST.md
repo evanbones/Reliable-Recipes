@@ -1,3 +1,4 @@
-### Changed
+### Fixed
 
-- All rules now properly support regular expressions when escaped with forward slashes (`/ /`).
+- Fixed block tag removals not syncing properly.
+- Improved tag modification performance.
