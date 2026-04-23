@@ -72,25 +72,29 @@ public class RecipeJsonParser {
             return null;
         }
 
-        List<ResourceLocation> items = new ArrayList<>();
+        final Predicate<String> itemStringMatcher;
         JsonElement itemEl = mod.has("id") ? mod.get("id") : mod.get("items");
         if (itemEl != null) {
-            if (itemEl.isJsonArray())
-                itemEl.getAsJsonArray().forEach(e -> items.add(new ResourceLocation(e.getAsString())));
-            else items.add(new ResourceLocation(itemEl.getAsString()));
+            itemStringMatcher = getStringMatcher(itemEl);
+        } else {
+            itemStringMatcher = s -> false;
         }
+        Predicate<ResourceLocation> itemMatcher = rl -> itemStringMatcher.test(rl.toString());
 
-        List<ResourceLocation> tags = new ArrayList<>();
-        if (mod.has("tags")) {
-            mod.get("tags").getAsJsonArray().forEach(e -> tags.add(new ResourceLocation(e.getAsString())));
-        } else if (mod.has("tag")) {
-            tags.add(new ResourceLocation(mod.get("tag").getAsString()));
+        final Predicate<String> tagStringMatcher;
+        JsonElement tagEl = mod.has("tags") ? mod.get("tags") : mod.get("tag");
+        if (tagEl != null) {
+            tagStringMatcher = getStringMatcher(tagEl);
+        } else {
+            tagStringMatcher = s -> false;
         }
+        Predicate<ResourceLocation> tagMatcher = rl -> tagStringMatcher.test(rl.toString());
 
         return switch (actionStr) {
-            case "remove_all_tags", "remove_tag" -> new TagRule(TagRule.Action.REMOVE_ALL_TAGS, items, null);
-            case "remove_from_tag" -> new TagRule(TagRule.Action.REMOVE_FROM_TAG, items, tags);
-            case "clear_tag" -> new TagRule(TagRule.Action.CLEAR_TAG, null, tags);
+            case "remove_all_tags", "remove_tag" ->
+                    new TagRule(TagRule.Action.REMOVE_ALL_TAGS, itemMatcher, rl -> false);
+            case "remove_from_tag" -> new TagRule(TagRule.Action.REMOVE_FROM_TAG, itemMatcher, tagMatcher);
+            case "clear_tag" -> new TagRule(TagRule.Action.CLEAR_TAG, rl -> false, tagMatcher);
             default -> throw new IllegalArgumentException("Unknown tag action: " + actionStr);
         };
     }
@@ -234,6 +238,26 @@ public class RecipeJsonParser {
         if (str.startsWith("#")) {
             return Ingredient.of(TagKey.create(Registries.ITEM, new ResourceLocation(str.substring(1))));
         }
+
+        if (str.startsWith("/") && str.endsWith("/") && str.length() > 2) {
+            try {
+                Pattern pattern = Pattern.compile(str.substring(1, str.length() - 1));
+                List<ItemStack> matchingItems = new ArrayList<>();
+
+                for (Item item : BuiltInRegistries.ITEM) {
+                    ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
+                    if (pattern.matcher(key.toString()).matches()) {
+                        matchingItems.add(new ItemStack(item));
+                    }
+                }
+
+                return matchingItems.isEmpty() ? Ingredient.EMPTY : Ingredient.of(matchingItems.stream());
+            } catch (Exception e) {
+                Constants.LOG.warn("Invalid regex pattern in ingredient: {}", str);
+                return Ingredient.EMPTY;
+            }
+        }
+
         Item item = BuiltInRegistries.ITEM.get(new ResourceLocation(str));
         return item != Items.AIR ? Ingredient.of(item) : Ingredient.EMPTY;
     }
