@@ -1,4 +1,3 @@
-### Fixed
+### Changed
 
-- Fixed block tag removals not syncing properly.
-- Improved tag modification performance.
+- Now requires latest version of RRV for the item viewer integration.

@@ -43,14 +43,13 @@ public abstract class RrvRecipeScreenMixin extends Screen {
     @Unique
     private ReliableClientRecipe reliableRecipes$getHoveredRecipe(double mouseX, double mouseY) {
         RecipeViewScreen screen = (RecipeViewScreen) (Object) this;
-        RecipeViewMenuAccessor menuAccessor = (RecipeViewMenuAccessor) screen.getMenu();
 
-        int guiLeft = screen.getLeftPos() + menuAccessor.reliableRecipes$guiOffsetLeft();
-        List<ReliableClientRecipe> currentDisplay = menuAccessor.reliableRecipes$getCurrentDisplay();
+        int guiLeft = screen.getLeftPos() + screen.getMenu().guiOffsetLeft();
+        List<ReliableClientRecipe> currentDisplay = screen.getMenu().getCurrentDisplay();
 
         for (int i = 0; i < currentDisplay.size(); i++) {
             ReliableClientRecipe recipe = currentDisplay.get(i);
-            int guiTop = screen.getTopPos() + menuAccessor.reliableRecipes$guiOffsetTop(i);
+            int guiTop = screen.getTopPos() + screen.getMenu().guiOffsetTop(i);
 
             int width = recipe.getType().getDisplayWidth();
             int height = recipe.getType().getDisplayHeight();

@@ -11,8 +11,7 @@
     "minecraft.GrindstoneMenuMixin",
     "minecraft.ItemCombinerMenuMixin",
     "minecraft.ReloadableServerResourcesMixin",
-    "minecraft.RepairItemRecipeMixin",
-    "rrv.RecipeViewMenuAccessor"
+    "minecraft.RepairItemRecipeMixin"
   ],
   "client": [
     "minecraft.ClientPacketListenerMixin",
