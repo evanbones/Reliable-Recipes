@@ -3,10 +3,14 @@ package com.evandev.reliable_recipes.recipe;
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
+import com.evandev.reliable_recipes.mixin.accessor.HolderReferenceAccessor;
 import com.evandev.reliable_recipes.mixin.accessor.RecipeManagerAccessor;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.HolderSet;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
@@ -16,6 +20,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeMap;
+import net.minecraft.world.item.enchantment.Repairable;
 
 import java.util.*;
 
@@ -32,14 +37,39 @@ public class RecipeModifier {
         for (RecipeRule rule : rules) {
 
             if (rule.getAction() == RecipeRule.Action.PREVENT_REPAIR) {
+                rule.getTargetInput().ifPresent(target -> {
+                    for (Item item : BuiltInRegistries.ITEM) {
+                        if (target.test(item.getDefaultInstance())) {
+                            DataComponentMap oldMap = item.components();
+                            DataComponentMap newMap = DataComponentMap.builder()
+                                    .addAll(oldMap)
+                                    .set(DataComponents.REPAIRABLE, null)
+                                    .build();
+
+                            ((HolderReferenceAccessor) item.builtInRegistryHolder()).setComponents(newMap);
+                        }
+                    }
+                });
+
                 ReliableRecipesAPI.registerRepairBlocker(stack ->
                         rule.getTargetInput().map(ing -> ing.test(stack)).orElse(false)
                 );
             } else if (rule.getAction() == RecipeRule.Action.SET_REPAIR_MATERIAL) {
                 rule.getTargetInput().ifPresent(target -> {
                     rule.getNewInput().ifPresent(material -> {
+                        HolderSet<Item> materialHolderSet = HolderSet.direct(material.items().toList());
+                        Repairable newRepairableComponent = new Repairable(materialHolderSet);
+
                         for (Item item : BuiltInRegistries.ITEM) {
                             if (target.test(item.getDefaultInstance())) {
+                                DataComponentMap oldMap = item.components();
+                                DataComponentMap newMap = DataComponentMap.builder()
+                                        .addAll(oldMap)
+                                        .set(DataComponents.REPAIRABLE, newRepairableComponent)
+                                        .build();
+
+                                ((HolderReferenceAccessor) item.builtInRegistryHolder()).setComponents(newMap);
+
                                 ReliableRecipesAPI.registerCustomRepairMaterial(item, material);
                             }
                         }

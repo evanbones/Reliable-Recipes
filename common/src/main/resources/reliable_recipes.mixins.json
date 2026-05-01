@@ -9,10 +9,8 @@
     "accessor.HolderSetNamedAccessor",
     "accessor.RecipeManagerAccessor",
     "minecraft.GrindstoneMenuMixin",
-    "minecraft.ItemStackMixin",
     "minecraft.ReloadableServerResourcesMixin",
-    "minecraft.RepairItemRecipeMixin",
-    "rrv.RrvBuiltInIntegrationMixin"
+    "minecraft.RepairItemRecipeMixin"
   ],
   "client": [
     "minecraft.ClientPacketListenerMixin",

@@ -23,9 +23,6 @@
     ],
     "modmenu": [
       "com.evandev.reliable_recipes.compat.ModMenuIntegration"
-    ],
-    "rrv_client": [
-      "com.evandev.reliable_recipes.compat.ReliableRecipesRrvPlugin"
     ]
   },
   "mixins": [
