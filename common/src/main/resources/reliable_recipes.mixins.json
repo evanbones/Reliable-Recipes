@@ -5,13 +5,14 @@
   "plugin": "com.evandev.reliable_recipes.mixin.ReliableRecipesMixinPlugin",
   "compatibilityLevel": "JAVA_18",
   "mixins": [
-    "accessor.HolderSetNamedAccessor",
     "accessor.HolderReferenceAccessor",
+    "accessor.HolderSetNamedAccessor",
     "accessor.RecipeManagerAccessor",
     "minecraft.GrindstoneMenuMixin",
-    "minecraft.ItemCombinerMenuMixin",
+    "minecraft.ItemStackMixin",
     "minecraft.ReloadableServerResourcesMixin",
-    "minecraft.RepairItemRecipeMixin"
+    "minecraft.RepairItemRecipeMixin",
+    "rrv.RrvBuiltInIntegrationMixin"
   ],
   "client": [
     "minecraft.ClientPacketListenerMixin",

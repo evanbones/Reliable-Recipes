@@ -28,8 +28,6 @@ public abstract class ReloadableServerResourcesMixin {
     )
     private void reliableRecipes$onTagsLoaded(CallbackInfo ci) {
         TagModifier.apply();
-
-        RecipeModifier.reset();
         RecipeModifier.apply(this.getRecipeManager(), this.fullRegistries().lookup());
 
         if (Services.PLATFORM.isModLoaded("rrv")) {

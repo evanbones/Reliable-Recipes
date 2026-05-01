@@ -1,7 +1,9 @@
 package com.evandev.reliable_recipes.api;
 
 import net.minecraft.util.context.ContextMap;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.display.RecipeDisplay;
 import net.minecraft.world.item.crafting.display.SlotDisplay;
@@ -18,6 +20,7 @@ public class ReliableRecipesAPI {
     private static final Map<String, String> REPLACEMENTS = new HashMap<>();
     private static final List<Predicate<ItemStack>> REPAIR_BLOCKERS = new ArrayList<>();
     private static final List<Predicate<ItemStack>> ITEM_HIDERS = new ArrayList<>();
+    private static final Map<Item, Ingredient> CUSTOM_REPAIR_MATERIALS = new HashMap<>();
 
     /**
      * Determines whether item hiding functionality is currently enabled and capable.
@@ -122,5 +125,17 @@ public class ReliableRecipesAPI {
      */
     public static void clearRepairBlockers() {
         REPAIR_BLOCKERS.clear();
+    }
+
+    public static void registerCustomRepairMaterial(Item item, Ingredient material) {
+        CUSTOM_REPAIR_MATERIALS.put(item, material);
+    }
+
+    public static Ingredient getCustomRepairMaterial(Item item) {
+        return CUSTOM_REPAIR_MATERIALS.get(item);
+    }
+
+    public static void clearCustomRepairMaterials() {
+        CUSTOM_REPAIR_MATERIALS.clear();
     }
 }

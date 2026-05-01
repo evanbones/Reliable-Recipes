@@ -7,8 +7,10 @@ import com.evandev.reliable_recipes.mixin.accessor.RecipeManagerAccessor;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -22,18 +24,38 @@ public class RecipeModifier {
     private static final Map<ResourceKey<Recipe<?>>, RecipeHolder<?>> DELETED_RECIPES_CACHE = new HashMap<>();
     private static boolean hasBeenApplied = false;
 
-    public static void apply(RecipeManager manager, HolderLookup.Provider registries) {
-        if (hasBeenApplied) return;
-        hasBeenApplied = true;
+    public static void applyGlobalRules() {
+        ReliableRecipesAPI.clearRepairBlockers();
+        ReliableRecipesAPI.clearCustomRepairMaterials();
 
         List<RecipeRule> rules = new ArrayList<>(RecipeConfigIO.loadRules());
         for (RecipeRule rule : rules) {
+
             if (rule.getAction() == RecipeRule.Action.PREVENT_REPAIR) {
                 ReliableRecipesAPI.registerRepairBlocker(stack ->
                         rule.getTargetInput().map(ing -> ing.test(stack)).orElse(false)
                 );
+            } else if (rule.getAction() == RecipeRule.Action.SET_REPAIR_MATERIAL) {
+                rule.getTargetInput().ifPresent(target -> {
+                    rule.getNewInput().ifPresent(material -> {
+                        for (Item item : BuiltInRegistries.ITEM) {
+                            if (target.test(item.getDefaultInstance())) {
+                                ReliableRecipesAPI.registerCustomRepairMaterial(item, material);
+                            }
+                        }
+                    });
+                });
             }
         }
+    }
+
+    public static void apply(RecipeManager manager, HolderLookup.Provider registries) {
+        applyGlobalRules();
+
+        if (hasBeenApplied) return;
+        hasBeenApplied = true;
+
+        List<RecipeRule> rules = new ArrayList<>(RecipeConfigIO.loadRules());
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
         RecipeMap currentMap = managerAccessor.reliableRecipes$getRecipeMap();
@@ -145,11 +167,5 @@ public class RecipeModifier {
         } catch (Exception ignored) {
         }
         return false;
-    }
-
-    public static void reset() {
-        hasBeenApplied = false;
-        DELETED_RECIPES_CACHE.clear();
-        ReliableRecipesAPI.clearRepairBlockers();
     }
 }

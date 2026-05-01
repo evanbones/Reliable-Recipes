@@ -13,28 +13,39 @@ public class RecipeRule {
     private final Optional<Ingredient> targetInput;
     private final String replaceTargetStr;
     private final JsonElement replaceWithEl;
+    private final Optional<Ingredient> newInput;
 
     // Removals
     public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter) {
-        this(action, filter, Optional.empty(), null, null);
+        this(action, filter, Optional.empty(), Optional.empty(), null, null);
     }
 
     // Prevent Repair
     public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> target) {
-        this(action, filter, target, null, null);
+        this(action, filter, target, Optional.empty(), null, null);
+    }
+
+    // Set Repair Material
+    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> target, Optional<Ingredient> material) {
+        this(action, filter, target, material, null, null);
     }
 
     // Replacements
     public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, String targetStr, JsonElement replacementEl) {
-        this(action, filter, Optional.empty(), targetStr, replacementEl);
+        this(action, filter, Optional.empty(), Optional.empty(), targetStr, replacementEl);
     }
 
-    private RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> targetInput, String targetStr, JsonElement replacementEl) {
+    private RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> targetInput, Optional<Ingredient> newInput, String targetStr, JsonElement replacementEl) {
         this.action = action;
         this.filter = filter;
         this.targetInput = targetInput;
+        this.newInput = newInput;
         this.replaceTargetStr = targetStr;
         this.replaceWithEl = replacementEl;
+    }
+
+    public Optional<Ingredient> getNewInput() {
+        return newInput;
     }
 
     public boolean test(RecipeHolder<?> holder) {
@@ -57,5 +68,5 @@ public class RecipeRule {
         return replaceWithEl;
     }
 
-    public enum Action {REMOVE, REPLACE_INPUT, REPLACE_OUTPUT, PREVENT_REPAIR}
+    public enum Action {REMOVE, REPLACE_INPUT, REPLACE_OUTPUT, PREVENT_REPAIR, SET_REPAIR_MATERIAL}
 }

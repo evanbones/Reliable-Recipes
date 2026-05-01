@@ -1,5 +1,6 @@
 package com.evandev.reliable_recipes.mixin.minecraft;
 
+import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.recipe.TagModifier;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket;
@@ -14,5 +15,6 @@ public class ClientPacketListenerMixin {
     @Inject(method = "handleUpdateTags", at = @At("RETURN"))
     private void reliableRecipes$onTagsUpdated(ClientboundUpdateTagsPacket packet, CallbackInfo ci) {
         TagModifier.apply();
+        RecipeModifier.applyGlobalRules();
     }
 }
