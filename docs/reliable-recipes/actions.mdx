@@ -86,6 +86,25 @@ Allows you to block specific items from being repaired across all standard Minec
 
 ```
 
+## Action: `set_repair_material`
+
+Allows you to completely override the item required to repair a specific tool or weapon in the Anvil.
+
+* **`target`**: The item ID (e.g., `"minecraft:diamond_sword"`) or tag to modify.
+* **`material`**: The new item ID (e.g., `"minecraft:dirt"`) or tag to use as the valid repair material.
+
+**Example: Change a repair material**
+Make a Diamond Sword repairable with Dirt instead of Diamonds.
+
+```json
+{
+  "action": "set_repair_material",
+  "target": "minecraft:diamond_sword",
+  "material": "minecraft:dirt"
+}
+
+```
+
 ## Global Repair Removal
 
 If you want to disable the vanilla crafting grid repair feature for **all** items while still allowing Anvil or Grindstone repairs, you can use the standard `remove_recipe` action instead:

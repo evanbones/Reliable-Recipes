@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-04-30
+
+### Added
+
+- Added a `set_repair_material` action to change repair materials.
+
+### Fixed
+
+- Fixed `prevent_repair` not syncing until running /reload.
+- General improvements to `prevent_repair`.
+
+## [1.12.0] - 2026-04-30
+
+### Fixed
+
+- Fixed block tag removals not syncing properly.
+- Improved tag modification performance.
+
 ## [1.11.0] - 2026-04-22
 
 ### Changed

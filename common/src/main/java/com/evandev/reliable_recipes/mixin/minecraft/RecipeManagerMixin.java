@@ -29,8 +29,6 @@ public class RecipeManagerMixin {
             at = @At("HEAD")
     )
     private void reliableRecipes$filterJsonAndReset(Map<ResourceLocation, JsonElement> object, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
-        RecipeModifier.reset();
-
         if (!ReliableRecipesAPI.hasItemHidingCapabilities()) return;
 
         Map<ResourceLocation, JsonElement> filteredMap = new HashMap<>();

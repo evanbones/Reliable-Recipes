@@ -58,6 +58,12 @@ public class RecipeJsonParser {
                 }
                 yield new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, filter, new ItemStack(item));
             }
+            case "set_repair_material" -> {
+                Ingredient target = parseIngredient(mod.get("target"));
+                JsonElement matEl = mod.has("material") ? mod.get("material") : mod.get("replacement");
+                Ingredient material = parseIngredient(matEl);
+                yield new RecipeRule(RecipeRule.Action.SET_REPAIR_MATERIAL, r -> false, target, material);
+            }
             default -> {
                 Constants.LOG.warn("Unknown recipe action: {}", actionStr);
                 yield null;
@@ -68,7 +74,7 @@ public class RecipeJsonParser {
     public static TagRule parseTagRule(JsonObject mod) {
         String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
 
-        if (Set.of("remove", "remove_recipe", "replace_input", "replace_output", "prevent_repair").contains(actionStr)) {
+        if (Set.of("remove", "remove_recipe", "replace_input", "replace_output", "prevent_repair", "set_repair_material").contains(actionStr)) {
             return null;
         }
 
