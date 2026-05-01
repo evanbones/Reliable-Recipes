@@ -1,7 +1,6 @@
 package com.evandev.reliable_recipes.mixin.minecraft;
 
 import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
-import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.core.registries.BuiltInRegistries;
