@@ -3,6 +3,7 @@ package com.evandev.reliable_recipes.api;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 
 import java.lang.reflect.Method;
@@ -23,6 +24,7 @@ public class ReliableRecipesAPI {
     private static final Map<Class<?>, Method> EXTRACT_METHODS = new ConcurrentHashMap<>();
     private static final Set<Class<?>> NO_EXTRACT_METHODS = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+    private static final Map<Item, Ingredient> CUSTOM_REPAIR_MATERIALS = new HashMap<>();
 
     /**
      * Registers an item to be replaced by another item globally in recipes.
@@ -95,6 +97,18 @@ public class ReliableRecipesAPI {
         return !ITEM_HIDERS.isEmpty() || !CONTEXTUAL_HIDERS.isEmpty();
     }
 
+    public static void registerCustomRepairMaterial(Item item, Ingredient material) {
+        CUSTOM_REPAIR_MATERIALS.put(item, material);
+    }
+
+    public static Ingredient getCustomRepairMaterial(Item item) {
+        return CUSTOM_REPAIR_MATERIALS.get(item);
+    }
+
+    public static void clearCustomRepairMaterials() {
+        CUSTOM_REPAIR_MATERIALS.clear();
+    }
+
     /**
      * Extracts all possible result ItemStacks from a given recipe using reflection.
      */
@@ -118,7 +132,6 @@ public class ReliableRecipesAPI {
                         method = recipeClass.getMethod(name);
                         RECIPE_OUTPUT_METHODS.put(recipeClass, method);
                         break;
-                    } catch (NoSuchMethodException ignored) {
                     } catch (Throwable ignored) {
                     }
                 }
@@ -165,7 +178,6 @@ public class ReliableRecipesAPI {
                         method = objClass.getMethod(m);
                         EXTRACT_METHODS.put(objClass, method);
                         break;
-                    } catch (NoSuchMethodException ignored) {
                     } catch (Throwable ignored) {
                     }
                 }

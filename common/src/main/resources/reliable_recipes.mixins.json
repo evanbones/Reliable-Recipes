@@ -14,8 +14,9 @@
     "accessor.ShapedRecipeAccessor",
     "accessor.ShapelessRecipeAccessor",
     "accessor.SingleItemRecipeAccessor",
+    "minecraft.AnvilMenuMixin",
     "minecraft.GrindstoneMenuMixin",
-    "minecraft.ItemCombinerMenuMixin",
+    "minecraft.ItemMixin",
     "minecraft.RecipeManagerMixin",
     "minecraft.ReloadableServerResourcesMixin",
     "minecraft.RepairItemRecipeMixin"

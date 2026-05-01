@@ -28,14 +28,12 @@ public class RecipeManagerMixin {
             method = "apply(Ljava/util/Map;Lnet/minecraft/server/packs/resources/ResourceManager;Lnet/minecraft/util/profiling/ProfilerFiller;)V",
             at = @At("HEAD")
     )
-    private void reliableRecipes$filterJsonAndReset(Map<ResourceLocation, JsonElement> map, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
-        RecipeModifier.reset();
-
+    private void reliableRecipes$filterJsonAndReset(Map<ResourceLocation, JsonElement> object, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
         if (!ReliableRecipesAPI.hasItemHidingCapabilities()) return;
 
         Map<ResourceLocation, JsonElement> filteredMap = new HashMap<>();
 
-        for (Map.Entry<ResourceLocation, JsonElement> entry : map.entrySet()) {
+        for (Map.Entry<ResourceLocation, JsonElement> entry : object.entrySet()) {
             ResourceLocation id = entry.getKey();
             JsonElement jsonElement = entry.getValue();
 
@@ -46,8 +44,8 @@ public class RecipeManagerMixin {
             filteredMap.put(id, jsonElement);
         }
 
-        map.clear();
-        map.putAll(filteredMap);
+        object.clear();
+        object.putAll(filteredMap);
     }
 
     @Unique

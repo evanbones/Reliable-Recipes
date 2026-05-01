@@ -4,10 +4,13 @@ import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import dev.emi.emi.api.EmiEntrypoint;
 import dev.emi.emi.api.EmiPlugin;
 import dev.emi.emi.api.EmiRegistry;
+import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,13 +25,26 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
                 if (recipe == null || recipe.getCategory() == null) return false;
                 boolean isRepairRecipe = isRepairCategory(recipe.getCategory().getId());
 
+                if (isRepairRecipe) {
+                    List<EmiStack> outputs = recipe.getOutputs();
+                    if (outputs != null && outputs.size() == 1) {
+                        ItemStack outStack = outputs.getFirst().getItemStack();
+                        if (outStack != null && !outStack.isEmpty()) {
+                            Ingredient customMat = ReliableRecipesAPI.getCustomRepairMaterial(outStack.getItem());
+                            if (customMat != null && !customMat.isEmpty()) {
+                                applyCustomRepairMaterial(recipe, customMat, outStack.getItem());
+                            }
+                        }
+                    }
+                }
+
                 List<EmiStack> outputs = recipe.getOutputs();
                 if (outputs == null || outputs.isEmpty()) return false;
 
                 List<EmiIngredient> inputs = recipe.getInputs();
                 List<EmiIngredient> catalysts = recipe.getCatalysts();
-
                 List<ItemStack> allInputStacks = new ArrayList<>();
+
                 if (inputs != null) {
                     for (EmiIngredient input : inputs) {
                         if (input == null) continue;
@@ -121,12 +137,60 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
                         }
                     }
                 }
-
                 return false;
             } catch (Exception e) {
                 return false;
             }
         });
+    }
+
+    private void applyCustomRepairMaterial(EmiRecipe recipe, Ingredient customMat, Item toolItem) {
+        EmiIngredient newEmiMat = EmiIngredient.of(customMat);
+        Class<?> clazz = recipe.getClass();
+
+        while (clazz != Object.class && clazz != null) {
+            for (java.lang.reflect.Field field : clazz.getDeclaredFields()) {
+                try {
+                    field.setAccessible(true);
+                    Object val = field.get(recipe);
+
+                    if (val instanceof EmiIngredient emiIng) {
+                        if (!isToolIngredient(emiIng, toolItem)) {
+                            field.set(recipe, newEmiMat);
+                        }
+                    } else if (val instanceof List<?> list) {
+                        if (!list.isEmpty() && list.getFirst() instanceof EmiIngredient) {
+                            List<EmiIngredient> newList = new ArrayList<>();
+                            boolean changed = false;
+
+                            for (Object obj : list) {
+                                EmiIngredient emiIng = (EmiIngredient) obj;
+                                if (!isToolIngredient(emiIng, toolItem)) {
+                                    newList.add(newEmiMat);
+                                    changed = true;
+                                } else {
+                                    newList.add(emiIng);
+                                }
+                            }
+                            if (changed) {
+                                field.set(recipe, newList);
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            clazz = clazz.getSuperclass();
+        }
+    }
+
+    private boolean isToolIngredient(EmiIngredient emiIng, Item toolItem) {
+        for (EmiStack s : emiIng.getEmiStacks()) {
+            if (s.getItemStack() != null && s.getItemStack().getItem() == toolItem) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isHidden(EmiStack emiStack) {

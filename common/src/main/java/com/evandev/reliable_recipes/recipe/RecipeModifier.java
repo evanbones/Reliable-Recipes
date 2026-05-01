@@ -44,6 +44,8 @@ public class RecipeModifier {
     }
 
     public static void apply(RecipeManager manager) {
+        reset();
+
         if (hasBeenApplied) return;
         hasBeenApplied = true;
 
@@ -52,6 +54,12 @@ public class RecipeModifier {
         for (RecipeRule rule : rules) {
             if (rule.getAction() == RecipeRule.Action.PREVENT_REPAIR) {
                 ReliableRecipesAPI.registerRepairBlocker(stack -> rule.getTargetInput().test(stack));
+            } else if (rule.getAction() == RecipeRule.Action.SET_REPAIR_MATERIAL) {
+                for (Item item : BuiltInRegistries.ITEM) {
+                    if (rule.getTargetInput().test(item.getDefaultInstance())) {
+                        ReliableRecipesAPI.registerCustomRepairMaterial(item, rule.getNewInput());
+                    }
+                }
             }
         }
 
@@ -287,5 +295,6 @@ public class RecipeModifier {
         hasBeenApplied = false;
         DELETED_RECIPES_CACHE.clear();
         ReliableRecipesAPI.clearRepairBlockers();
+        ReliableRecipesAPI.clearCustomRepairMaterials();
     }
 }
