@@ -44,7 +44,6 @@ public class ConfigMigrator {
         if (!rootElement.isJsonObject()) return;
         JsonObject root = rootElement.getAsJsonObject();
         boolean changed = false;
-
         JsonArray newFlatRoot = new JsonArray();
 
         if (root.has("recipe_modifications")) {
@@ -58,7 +57,6 @@ public class ConfigMigrator {
                         }
                         mod.remove("filter");
                     }
-
                     if (mod.has("action") && mod.get("action").getAsString().equals("remove")) {
                         mod.addProperty("action", "remove_recipe");
                     }
@@ -66,9 +64,7 @@ public class ConfigMigrator {
                     changed = true;
                 }
             }
-        }
-
-        if (root.has("tag_modifications")) {
+        } else if (root.has("tag_modifications")) {
             for (JsonElement el : root.getAsJsonArray("tag_modifications")) {
                 if (el.isJsonObject()) {
                     JsonObject mod = el.getAsJsonObject();
@@ -83,6 +79,9 @@ public class ConfigMigrator {
                     changed = true;
                 }
             }
+        } else {
+            newFlatRoot.add(root);
+            changed = true;
         }
 
         if (changed) {
