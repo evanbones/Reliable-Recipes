@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RecipeModifier {
     private static final Map<ResourceLocation, RecipeHolder<?>> DELETED_RECIPES_CACHE = new HashMap<>();
     private static final Map<Class<?>, List<Field>> CLASS_FIELD_CACHE = new ConcurrentHashMap<>();
-    private static boolean hasBeenApplied = false;
 
     private static List<Field> getCachedFields(Class<?> clazz) {
         return CLASS_FIELD_CACHE.computeIfAbsent(clazz, c -> {
@@ -45,9 +44,6 @@ public class RecipeModifier {
 
     public static void apply(RecipeManager manager) {
         reset();
-
-        if (hasBeenApplied) return;
-        hasBeenApplied = true;
 
         List<RecipeRule> rules = new ArrayList<>(RecipeConfigIO.loadRules());
 
@@ -292,7 +288,6 @@ public class RecipeModifier {
     }
 
     public static void reset() {
-        hasBeenApplied = false;
         DELETED_RECIPES_CACHE.clear();
         ReliableRecipesAPI.clearRepairBlockers();
         ReliableRecipesAPI.clearCustomRepairMaterials();

@@ -21,10 +21,8 @@ public class RecipeConfigIO {
 
     public static List<RecipeRule> loadRules() {
         ConfigMigrator.migrateConfigsIfNeeded();
-
         List<RecipeRule> rules = new ArrayList<>();
         List<JsonElement> configs = loadAllConfigs();
-
         for (JsonElement config : configs) {
             if (config.isJsonArray()) {
                 for (JsonElement element : config.getAsJsonArray()) {
@@ -40,6 +38,9 @@ public class RecipeConfigIO {
                         if (rule != null) rules.add(rule);
                     }
                 }
+            } else if (config.isJsonObject()) {
+                RecipeRule rule = RecipeJsonParser.parseRule(config.getAsJsonObject());
+                if (rule != null) rules.add(rule);
             }
         }
         return rules;
@@ -48,7 +49,6 @@ public class RecipeConfigIO {
     public static List<TagRule> loadTagRules() {
         List<TagRule> rules = new ArrayList<>();
         List<JsonElement> configs = loadAllConfigs();
-
         for (JsonElement config : configs) {
             if (config.isJsonArray()) {
                 for (JsonElement element : config.getAsJsonArray()) {
@@ -64,6 +64,9 @@ public class RecipeConfigIO {
                         if (rule != null) rules.add(rule);
                     }
                 }
+            } else if (config.isJsonObject()) {
+                TagRule rule = RecipeJsonParser.parseTagRule(config.getAsJsonObject());
+                if (rule != null) rules.add(rule);
             }
         }
         return rules;
