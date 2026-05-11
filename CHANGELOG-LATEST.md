@@ -1,4 +1,3 @@
-### Changed
+### Fixed
 
-- Improved recipe rule parser.
-- Code cleanups.
+- Hopefully fix crash with EMI.

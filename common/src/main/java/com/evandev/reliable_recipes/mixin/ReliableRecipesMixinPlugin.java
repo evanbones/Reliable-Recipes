@@ -12,12 +12,12 @@ public class ReliableRecipesMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage) {
-        try {
-            Class.forName("dev.emi.emi.api.recipe.EmiRecipe", false, this.getClass().getClassLoader());
-            isEmiLoaded = true;
-        } catch (ClassNotFoundException e) {
-            isEmiLoaded = false;
-        }
+        isEmiLoaded = checkClass("dev.emi.emi.api.recipe.EmiRecipe");
+    }
+
+    private boolean checkClass(String className) {
+        String path = className.replace('.', '/') + ".class";
+        return this.getClass().getClassLoader().getResource(path) != null;
     }
 
     @Override
@@ -28,6 +28,7 @@ public class ReliableRecipesMixinPlugin implements IMixinConfigPlugin {
         return true;
     }
 
+    // Boilerplate methods
     @Override
     public String getRefMapperConfig() {
         return null;
