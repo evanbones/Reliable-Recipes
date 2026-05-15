@@ -1,4 +1,4 @@
-package com.evandev.reliable_recipes.client;
+package com.evandev.reliable_recipes.compat.emi;
 
 import com.evandev.reliable_recipes.platform.Services;
 import dev.emi.emi.api.recipe.EmiRecipe;

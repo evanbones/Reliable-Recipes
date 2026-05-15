@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-05-14
+
+### Added
+
+- Added partial support for more modded recipes.
+    - If you run into any issues or unsupported recipe types, feel free to make an issue on the GitHub.
+
+### Changed
+
+- Major backend reworks for additional stability and performance.
+
 ## [1.13.2] - 2026-05-10
 
 ### Fixed

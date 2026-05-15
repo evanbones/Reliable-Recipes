@@ -1,7 +1,7 @@
 package com.evandev.reliable_recipes.mixin.minecraft;
 
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
-import com.evandev.reliable_recipes.recipe.TagModifier;
+import com.evandev.reliable_recipes.tag.TagModifier;
 import net.minecraft.server.ReloadableServerResources;
 import net.minecraft.world.item.crafting.RecipeManager;
 import org.spongepowered.asm.mixin.Final;
@@ -24,6 +24,6 @@ public class ReloadableServerResourcesMixin {
     )
     private void reliableRecipes$onTagsLoaded(CallbackInfo ci) {
         TagModifier.apply();
-        RecipeModifier.apply(this.recipes);
+        RecipeModifier.apply();
     }
 }

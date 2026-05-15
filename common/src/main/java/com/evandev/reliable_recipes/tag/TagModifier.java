@@ -1,4 +1,4 @@
-package com.evandev.reliable_recipes.recipe;
+package com.evandev.reliable_recipes.tag;
 
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.api.ReliableRecipesAPI;

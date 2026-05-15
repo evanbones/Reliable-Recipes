@@ -1,6 +1,6 @@
 package com.evandev.reliable_recipes.compat;
 
-import com.evandev.reliable_recipes.config.ClothConfigIntegration;
+import com.evandev.reliable_recipes.compat.clothconfig.ClothConfigIntegration;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 

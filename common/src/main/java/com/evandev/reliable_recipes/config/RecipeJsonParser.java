@@ -2,10 +2,9 @@ package com.evandev.reliable_recipes.config;
 
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
-import com.evandev.reliable_recipes.recipe.TagRule;
+import com.evandev.reliable_recipes.tag.TagRule;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -14,12 +13,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeHolder;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -38,32 +34,26 @@ public class RecipeJsonParser {
 
         if (actionStr.equals("prevent_repair")) {
             Ingredient target = parseIngredient(mod.get("target"));
-            return new RecipeRule(RecipeRule.Action.PREVENT_REPAIR, r -> false, target, Ingredient.EMPTY);
+            return new RecipeRule(RecipeRule.Action.PREVENT_REPAIR, (id, r) -> false, target, Ingredient.EMPTY);
         }
 
-        Predicate<RecipeHolder<?>> filter = mod.has("filter") ? parseFilter(mod.get("filter")) : parseFilter(mod);
+        BiPredicate<ResourceLocation, JsonObject> filter = mod.has("filter") ? parseFilter(mod.get("filter")) : parseFilter(mod);
 
         return switch (actionStr) {
             case "remove", "remove_recipe" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
             case "replace_input" -> {
-                Ingredient target = parseIngredient(mod.get("target"));
-                Ingredient replace = parseIngredient(mod.get("replacement"));
-                yield new RecipeRule(RecipeRule.Action.REPLACE_INPUT, filter, target, replace);
+                List<String> rawTargets = extractStrings(mod.get("target"));
+                yield new RecipeRule(RecipeRule.Action.REPLACE_INPUT, filter, rawTargets, mod.get("replacement"));
             }
             case "replace_output" -> {
-                String idStr = mod.get("replacement").getAsString();
-                Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(idStr));
-                if (item == Items.AIR) {
-                    Constants.LOG.warn("Skipping rule: Invalid replacement item '{}'.", idStr);
-                    yield null;
-                }
-                yield new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, filter, new ItemStack(item));
+                List<String> rawTargets = mod.has("target") ? extractStrings(mod.get("target")) : List.of();
+                yield new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, filter, rawTargets, mod.get("replacement"));
             }
             case "set_repair_material" -> {
                 Ingredient target = parseIngredient(mod.get("target"));
                 JsonElement matEl = mod.has("material") ? mod.get("material") : mod.get("replacement");
                 Ingredient material = parseIngredient(matEl);
-                yield new RecipeRule(RecipeRule.Action.SET_REPAIR_MATERIAL, r -> false, target, material);
+                yield new RecipeRule(RecipeRule.Action.SET_REPAIR_MATERIAL, (id, r) -> false, target, material);
             }
             default -> {
                 Constants.LOG.warn("Unknown recipe action: {}", actionStr);
@@ -106,70 +96,97 @@ public class RecipeJsonParser {
         };
     }
 
-    private static Predicate<RecipeHolder<?>> parseFilter(JsonElement json) {
+    private static BiPredicate<ResourceLocation, JsonObject> parseFilter(JsonElement json) {
         if (json.isJsonObject()) {
             JsonObject obj = json.getAsJsonObject();
+            BiPredicate<ResourceLocation, JsonObject> combined = (id, recipe) -> true;
 
-            Predicate<RecipeHolder<?>> combined = r -> true;
             for (String key : obj.keySet()) {
                 if (IGNORED_KEYS.contains(key)) continue;
 
                 JsonElement criterion = obj.get(key);
-                Predicate<RecipeHolder<?>> check = switch (key) {
-                    case "not" -> parseFilter(criterion).negate();
+                BiPredicate<ResourceLocation, JsonObject> check = switch (key) {
+                    case "not" -> {
+                        BiPredicate<ResourceLocation, JsonObject> inner = parseFilter(criterion);
+                        yield (id, recipe) -> !inner.test(id, recipe);
+                    }
                     case "or" -> {
-                        Predicate<RecipeHolder<?>> p = r -> false;
-                        for (JsonElement e : criterion.getAsJsonArray()) p = p.or(parseFilter(e));
+                        BiPredicate<ResourceLocation, JsonObject> p = (id, recipe) -> false;
+                        for (JsonElement e : criterion.getAsJsonArray()) {
+                            BiPredicate<ResourceLocation, JsonObject> inner = parseFilter(e);
+                            BiPredicate<ResourceLocation, JsonObject> currentP = p;
+                            p = (id, recipe) -> currentP.test(id, recipe) || inner.test(id, recipe);
+                        }
                         yield p;
                     }
                     case "and" -> {
-                        Predicate<RecipeHolder<?>> p = r -> true;
-                        for (JsonElement e : criterion.getAsJsonArray()) p = p.and(parseFilter(e));
+                        BiPredicate<ResourceLocation, JsonObject> p = (id, recipe) -> true;
+                        for (JsonElement e : criterion.getAsJsonArray()) {
+                            BiPredicate<ResourceLocation, JsonObject> inner = parseFilter(e);
+                            BiPredicate<ResourceLocation, JsonObject> currentP = p;
+                            p = (id, recipe) -> currentP.test(id, recipe) && inner.test(id, recipe);
+                        }
                         yield p;
                     }
                     case "type" -> {
                         Predicate<String> m = getStringMatcher(criterion);
-                        yield r -> {
-                            ResourceLocation typeId = BuiltInRegistries.RECIPE_TYPE.getKey(r.value().getType());
-                            return typeId != null && m.test(typeId.toString());
-                        };
+                        yield (id, recipe) -> recipe.has("type") && m.test(recipe.get("type").getAsString());
                     }
                     case "mod" -> {
                         Predicate<String> m = getStringMatcher(criterion);
-                        yield r -> m.test(r.id().getNamespace());
+                        yield (id, recipe) -> m.test(id.getNamespace());
                     }
                     case "id", "pattern", "patterns" -> {
                         Predicate<String> m = getStringMatcher(criterion);
-                        yield r -> m.test(r.id().toString());
+                        yield (id, recipe) -> m.test(id.toString());
                     }
                     case "input" -> {
-                        Predicate<ItemStack> matcher = getItemStackMatcher(criterion);
-                        yield r -> r.value().getIngredients().stream().anyMatch(ing -> {
-                            for (ItemStack stack : ing.getItems()) {
-                                if (matcher.test(stack)) return true;
-                            }
-                            return false;
-                        });
+                        Predicate<String> matcher = getStringMatcher(criterion);
+                        yield (id, recipe) -> jsonContainsValue(recipe, matcher);
                     }
                     case "output" -> {
-                        Predicate<ItemStack> m = getItemStackMatcher(criterion);
-                        yield r -> {
-                            try {
-                                ItemStack out = r.value().getResultItem(RegistryAccess.EMPTY);
-                                if (out.isEmpty()) return false;
-                                return m.test(out);
-                            } catch (Exception e) {
-                                return false;
-                            }
+                        Predicate<String> matcher = getStringMatcher(criterion);
+                        yield (id, recipe) -> {
+                            JsonElement res = recipe.has("result") ? recipe.get("result") :
+                                    (recipe.has("results") ? recipe.get("results") :
+                                            (recipe.has("output") ? recipe.get("output") : null));
+                            return jsonContainsValue(res, matcher);
                         };
                     }
-                    default -> r -> true;
+                    default -> (id, recipe) -> true;
                 };
-                combined = combined.and(check);
+                BiPredicate<ResourceLocation, JsonObject> finalCombined = combined;
+                combined = (id, recipe) -> finalCombined.test(id, recipe) && check.test(id, recipe);
             }
             return combined;
         }
-        return r -> true;
+        return (id, recipe) -> true;
+    }
+
+    private static boolean jsonContainsValue(JsonElement element, Predicate<String> matcher) {
+        if (element == null) return false;
+        if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+            return matcher.test(element.getAsString());
+        }
+        if (element.isJsonArray()) {
+            for (JsonElement e : element.getAsJsonArray()) {
+                if (jsonContainsValue(e, matcher)) return true;
+            }
+        }
+        if (element.isJsonObject()) {
+            JsonObject obj = element.getAsJsonObject();
+            if (obj.has("item") && obj.get("item").isJsonPrimitive() && matcher.test(obj.get("item").getAsString()))
+                return true;
+            if (obj.has("id") && obj.get("id").isJsonPrimitive() && matcher.test(obj.get("id").getAsString()))
+                return true;
+            if (obj.has("tag") && obj.get("tag").isJsonPrimitive() && matcher.test("#" + obj.get("tag").getAsString()))
+                return true;
+
+            for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
+                if (jsonContainsValue(entry.getValue(), matcher)) return true;
+            }
+        }
+        return false;
     }
 
     private static Predicate<String> getStringMatcher(JsonElement element) {
@@ -191,33 +208,17 @@ public class RecipeJsonParser {
         return str::equals;
     }
 
-    private static Predicate<ItemStack> getItemStackMatcher(JsonElement element) {
-        if (element.isJsonArray()) {
-            Predicate<ItemStack> p = s -> false;
-            for (JsonElement e : element.getAsJsonArray()) p = p.or(getItemStackMatcher(e));
-            return p;
-        }
-        String str = element.getAsString();
-
-        if (str.startsWith("#")) {
-            TagKey<Item> tagKey = TagKey.create(Registries.ITEM, ResourceLocation.parse(str.substring(1)));
-            return stack -> stack.is(tagKey);
-        } else if (str.startsWith("/") && str.endsWith("/") && str.length() > 2) {
-            try {
-                Pattern pattern = Pattern.compile(str.substring(1, str.length() - 1));
-                return stack -> {
-                    ResourceLocation key = BuiltInRegistries.ITEM.getKey(stack.getItem());
-                    return pattern.matcher(key.toString()).matches();
-                };
-            } catch (Exception e) {
-                Constants.LOG.warn("Invalid regex pattern in filter: {}", str);
-                return s -> false;
+    private static List<String> extractStrings(JsonElement element) {
+        List<String> list = new ArrayList<>();
+        if (element == null) return list;
+        if (element.isJsonPrimitive()) {
+            list.add(element.getAsString());
+        } else if (element.isJsonArray()) {
+            for (JsonElement e : element.getAsJsonArray()) {
+                if (e.isJsonPrimitive()) list.add(e.getAsString());
             }
         }
-        return stack -> {
-            ResourceLocation key = BuiltInRegistries.ITEM.getKey(stack.getItem());
-            return str.equals(key.toString());
-        };
+        return list;
     }
 
     private static Ingredient parseIngredient(JsonElement json) {

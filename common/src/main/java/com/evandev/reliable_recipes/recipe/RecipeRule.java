@@ -1,43 +1,49 @@
 package com.evandev.reliable_recipes.recipe;
 
-import net.minecraft.world.item.ItemStack;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeHolder;
 
-import java.util.function.Predicate;
+import java.util.List;
+import java.util.function.BiPredicate;
 
 public class RecipeRule {
     private final Action action;
-    private final Predicate<RecipeHolder<?>> filter;
+    private final BiPredicate<ResourceLocation, JsonObject> jsonFilter;
     private final Ingredient targetInput;
     private final Ingredient newInput;
-    private final ItemStack newOutput;
+
+    // Raw strings for JSON mutation
+    private final List<String> rawTargets;
+    private final JsonElement rawReplacement;
 
     // Removals
-    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter) {
-        this(action, filter, Ingredient.EMPTY, Ingredient.EMPTY, ItemStack.EMPTY);
+    public RecipeRule(Action action, BiPredicate<ResourceLocation, JsonObject> filter) {
+        this(action, filter, Ingredient.EMPTY, Ingredient.EMPTY, List.of(), null);
     }
 
-    // Input Replacement
-    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Ingredient target, Ingredient replacement) {
-        this(action, filter, target, replacement, ItemStack.EMPTY);
+    // JSON replacements
+    public RecipeRule(Action action, BiPredicate<ResourceLocation, JsonObject> filter, List<String> rawTargets, JsonElement rawReplacement) {
+        this(action, filter, Ingredient.EMPTY, Ingredient.EMPTY, rawTargets, rawReplacement);
     }
 
-    // Output Replacement
-    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, ItemStack output) {
-        this(action, filter, Ingredient.EMPTY, Ingredient.EMPTY, output);
+    // Repair interactions
+    public RecipeRule(Action action, BiPredicate<ResourceLocation, JsonObject> filter, Ingredient target, Ingredient rep) {
+        this(action, filter, target, rep, List.of(), null);
     }
 
-    private RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Ingredient target, Ingredient rep, ItemStack out) {
+    private RecipeRule(Action action, BiPredicate<ResourceLocation, JsonObject> filter, Ingredient target, Ingredient rep, List<String> rawTargets, JsonElement rawReplacement) {
         this.action = action;
-        this.filter = filter;
+        this.jsonFilter = filter;
         this.targetInput = target;
         this.newInput = rep;
-        this.newOutput = out;
+        this.rawTargets = rawTargets;
+        this.rawReplacement = rawReplacement;
     }
 
-    public boolean test(RecipeHolder<?> holder) {
-        return filter.test(holder);
+    public boolean testJson(ResourceLocation id, JsonObject recipe) {
+        return jsonFilter.test(id, recipe);
     }
 
     public Action getAction() {
@@ -52,8 +58,12 @@ public class RecipeRule {
         return newInput;
     }
 
-    public ItemStack getNewOutput() {
-        return newOutput;
+    public List<String> getRawTargets() {
+        return rawTargets;
+    }
+
+    public JsonElement getRawReplacement() {
+        return rawReplacement;
     }
 
     public enum Action {REMOVE, REPLACE_INPUT, REPLACE_OUTPUT, PREVENT_REPAIR, SET_REPAIR_MATERIAL}

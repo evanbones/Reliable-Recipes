@@ -1,6 +1,6 @@
 package com.evandev.reliable_recipes.mixin.emi;
 
-import com.evandev.reliable_recipes.client.EmiInteractions;
+import com.evandev.reliable_recipes.compat.emi.EmiInteractions;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.widget.Widget;
 import dev.emi.emi.screen.RecipeScreen;

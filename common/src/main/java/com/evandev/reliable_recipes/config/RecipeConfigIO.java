@@ -3,7 +3,7 @@ package com.evandev.reliable_recipes.config;
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
-import com.evandev.reliable_recipes.recipe.TagRule;
+import com.evandev.reliable_recipes.tag.TagRule;
 import com.google.gson.*;
 
 import java.io.File;

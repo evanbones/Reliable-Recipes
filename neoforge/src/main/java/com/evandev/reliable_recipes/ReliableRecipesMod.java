@@ -1,7 +1,7 @@
 package com.evandev.reliable_recipes;
 
 import com.evandev.reliable_recipes.command.UndoCommand;
-import com.evandev.reliable_recipes.config.ClothConfigIntegration;
+import com.evandev.reliable_recipes.compat.clothconfig.ClothConfigIntegration;
 import com.evandev.reliable_recipes.networking.ClientboundDeleteRecipePayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import net.minecraft.client.Minecraft;

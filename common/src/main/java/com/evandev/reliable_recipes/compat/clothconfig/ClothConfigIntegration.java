@@ -1,5 +1,6 @@
-package com.evandev.reliable_recipes.config;
+package com.evandev.reliable_recipes.compat.clothconfig;
 
+import com.evandev.reliable_recipes.config.ModConfig;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
