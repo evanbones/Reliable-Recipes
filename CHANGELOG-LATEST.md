@@ -1,3 +1,3 @@
 ### Fixed
 
-- Fixed recipe replacement hot reloading with Reliable Remover.
+- Hotfix for recipe replacements running too early.
