@@ -299,6 +299,7 @@ public class RecipeModifier {
         DELETED_RECIPES_CACHE.clear();
         ReliableRecipesAPI.clearRepairBlockers();
         ReliableRecipesAPI.clearCustomRepairMaterials();
+        ReliableRecipesAPI.clearItemReplacements();
         cachedRules = null;
     }
 }

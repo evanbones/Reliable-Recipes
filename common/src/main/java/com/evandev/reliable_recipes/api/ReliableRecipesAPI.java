@@ -33,6 +33,13 @@ public class ReliableRecipesAPI {
         ITEM_REPLACEMENTS.put(originalId, replacementId);
     }
 
+    /**
+     * Clears item replacements (for hot reloading).
+     */
+    public static void clearItemReplacements() {
+        ITEM_REPLACEMENTS.clear();
+    }
+
     public static Map<String, String> getReplacements() {
         return ITEM_REPLACEMENTS;
     }
