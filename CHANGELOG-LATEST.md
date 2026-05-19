@@ -1,3 +1,3 @@
 ### Fixed
 
-- Fixed a bug where tags were getting stripped instead of items being removed with Reliable Remover.
+- Fixed issues with `replace_input` and `replace_output`.

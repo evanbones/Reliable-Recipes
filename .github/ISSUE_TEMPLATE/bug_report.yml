@@ -42,6 +42,7 @@ body:
       label: Mod Version
       description: The version of Reliable Recipes you were using
       options:
+        - "2.0.4"
         - "2.0.3"
         - "2.0.2"
         - "2.0.1"
