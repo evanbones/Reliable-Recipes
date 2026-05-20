@@ -1,3 +1,3 @@
 ### Fixed
 
-- Fixed issues with `replace_input` and `replace_output`.
+- Fixed issues tag matching in `replace_input` and `replace_output`.

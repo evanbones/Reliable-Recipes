@@ -124,7 +124,14 @@ public class RecipeModifier {
                     }
                 } else if (child.isJsonPrimitive() && child.getAsJsonPrimitive().isString()) {
                     if (targets.contains(child.getAsString()) && nextContext) {
-                        obj.add(key, rawReplacement.deepCopy());
+                        if (key.equals("tag") && rawReplacement.isJsonPrimitive()) {
+                            String repStr = rawReplacement.getAsString();
+                            obj.remove("tag");
+                            if (repStr.startsWith("#")) obj.addProperty("tag", repStr.substring(1));
+                            else obj.addProperty("item", repStr);
+                        } else {
+                            obj.add(key, rawReplacement.deepCopy());
+                        }
                     }
                 } else {
                     mutateJsonRecursively(child, targets, rawReplacement, action, nextContext);
@@ -212,8 +219,11 @@ public class RecipeModifier {
             return "item";
         if (obj.has("id") && obj.get("id").isJsonPrimitive() && targets.contains(obj.get("id").getAsString()))
             return "id";
-        if (obj.has("tag") && obj.get("tag").isJsonPrimitive() && targets.contains("#" + obj.get("tag").getAsString()))
-            return "tag";
+        if (obj.has("tag") && obj.get("tag").isJsonPrimitive()) {
+            String tagVal = obj.get("tag").getAsString();
+            if (targets.contains("#" + tagVal) || targets.contains(tagVal))
+                return "tag";
+        }
         return null;
     }
 
