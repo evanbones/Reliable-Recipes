@@ -72,7 +72,7 @@ public class RecipeJsonParser {
         final Predicate<String> itemStringMatcher;
         JsonElement itemEl = mod.has("id") ? mod.get("id") : mod.get("items");
         if (itemEl != null) {
-            itemStringMatcher = getStringMatcher(itemEl);
+            itemStringMatcher = getStringMatcher(itemEl, false);
         } else {
             itemStringMatcher = s -> false;
         }
@@ -81,7 +81,7 @@ public class RecipeJsonParser {
         final Predicate<String> tagStringMatcher;
         JsonElement tagEl = mod.has("tags") ? mod.get("tags") : mod.get("tag");
         if (tagEl != null) {
-            tagStringMatcher = getStringMatcher(tagEl);
+            tagStringMatcher = getStringMatcher(tagEl, false);
         } else {
             tagStringMatcher = s -> false;
         }
@@ -129,23 +129,23 @@ public class RecipeJsonParser {
                         yield p;
                     }
                     case "type" -> {
-                        Predicate<String> m = getStringMatcher(criterion);
+                        Predicate<String> m = getStringMatcher(criterion, false);
                         yield (id, recipe) -> recipe.has("type") && m.test(recipe.get("type").getAsString());
                     }
                     case "mod" -> {
-                        Predicate<String> m = getStringMatcher(criterion);
+                        Predicate<String> m = getStringMatcher(criterion, false);
                         yield (id, recipe) -> m.test(id.getNamespace());
                     }
                     case "id", "pattern", "patterns" -> {
-                        Predicate<String> m = getStringMatcher(criterion);
+                        Predicate<String> m = getStringMatcher(criterion, false);
                         yield (id, recipe) -> m.test(id.toString());
                     }
                     case "input" -> {
-                        Predicate<String> matcher = getStringMatcher(criterion);
+                        Predicate<String> matcher = getStringMatcher(criterion, false);
                         yield (id, recipe) -> jsonContainsValue(recipe, matcher);
                     }
                     case "output" -> {
-                        Predicate<String> matcher = getStringMatcher(criterion);
+                        Predicate<String> matcher = getStringMatcher(criterion, true);
                         yield (id, recipe) -> {
                             JsonElement res = recipe.has("result") ? recipe.get("result") :
                                     (recipe.has("results") ? recipe.get("results") :
@@ -189,12 +189,32 @@ public class RecipeJsonParser {
         return false;
     }
 
-    private static Predicate<String> getStringMatcher(JsonElement element) {
+    private static Predicate<String> getStringMatcher(JsonElement element, boolean autoExpandTags) {
         if (element.isJsonArray()) {
             Predicate<String> p = s -> false;
-            for (JsonElement e : element.getAsJsonArray()) p = p.or(getStringMatcher(e));
+            for (JsonElement e : element.getAsJsonArray()) p = p.or(getStringMatcher(e, autoExpandTags));
             return p;
         }
+
+        // Support for {"tag": "#minecraft:wooden_trapdoors", "expand": true}
+        if (element.isJsonObject()) {
+            JsonObject obj = element.getAsJsonObject();
+            if (obj.has("tag")) {
+                String tag = obj.get("tag").getAsString();
+                if (!tag.startsWith("#") && !tag.startsWith("+#")) tag = "#" + tag;
+
+                boolean expand = autoExpandTags;
+                if (obj.has("expand")) {
+                    expand = obj.get("expand").getAsBoolean();
+                }
+                if (expand && !tag.startsWith("+#")) {
+                    tag = tag.replaceFirst("^#", "+#");
+                }
+                return getStringMatcher(new com.google.gson.JsonPrimitive(tag), autoExpandTags);
+            }
+            return s -> false;
+        }
+
         String str = element.getAsString();
         if (str.startsWith("/") && str.endsWith("/") && str.length() > 2) {
             try {
@@ -205,6 +225,45 @@ public class RecipeJsonParser {
                 return s -> false;
             }
         }
+
+        boolean expand = autoExpandTags;
+        String matchStr = str;
+
+        if (str.startsWith("+#")) {
+            expand = true;
+            matchStr = "#" + str.substring(2);
+        }
+
+        if (matchStr.startsWith("#")) {
+            String tagPath = matchStr.substring(1);
+            final boolean doExpand = expand;
+            final String finalMatchStr = matchStr;
+
+            return s -> {
+                if (s.equals(finalMatchStr)) return true;
+                if (s.equals(tagPath)) return true;
+
+                if (doExpand && !s.startsWith("#")) {
+                    try {
+                        ResourceLocation itemId = ResourceLocation.tryParse(s);
+                        if (itemId != null) {
+                            Item item = BuiltInRegistries.ITEM.get(itemId);
+                            if (item != net.minecraft.world.item.Items.AIR) {
+                                ResourceLocation tagId = ResourceLocation.tryParse(tagPath);
+                                if (tagId != null) {
+                                    TagKey<Item> tagKey = TagKey.create(Registries.ITEM, tagId);
+                                    return item.builtInRegistryHolder().is(tagKey);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Ignore malformed ResourceLocations during tag expansion
+                    }
+                }
+                return false;
+            };
+        }
+
         return str::equals;
     }
 
