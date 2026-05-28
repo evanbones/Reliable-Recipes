@@ -1,0 +1,120 @@
+---
+title: Actions
+hide_meta: true
+---
+
+Once you have filtered the recipes you want to change, you need to apply an action to them using the `"action"` property.
+
+## Action: `remove_recipe`
+
+Completely removes the matching recipes from the game.
+You can use arrays to remove large batches of recipes at once.
+
+**Example:** Remove specific recipes by ID.
+
+```json
+[
+  {
+    "action": "remove_recipe",
+    "id": [
+      "minecraft:wooden_pickaxe",
+      "minecraft:wooden_hoe"
+    ]
+  }
+]
+
+```
+
+## Action: `replace_input`
+
+Scans ingredients and replaces a target with a new one.
+
+* **`target`**: The item ID (e.g., `minecraft:stick`) or tag (e.g., `#minecraft:logs`) to find.
+* **`replacement`**: The item or tag to use instead. Can be a single item (`"minecraft:bamboo"`) or an array (`["minecraft:bamboo", "minecraft:stick"]`).
+
+**Example:** Replace Sticks with Bamboo OR Sticks for vanilla recipes.
+
+```json
+[
+  {
+    "action": "replace_input",
+    "target": "minecraft:stick",
+    "replacement": [
+      "minecraft:bamboo",
+      "minecraft:stick"
+    ],
+    "mod": "minecraft"
+  }
+]
+
+```
+
+## Action: `replace_output`
+
+Changes the result of the matching recipes.
+
+* **`replacement`**: The new item ID for the output.
+
+**Example:** Make the Cake recipe craft a Golden Apple instead.
+
+```json
+[
+  {
+    "action": "replace_output",
+    "replacement": "minecraft:golden_apple",
+    "id": "minecraft:cake"
+  }
+]
+
+```
+
+## Action: `prevent_repair`
+
+Allows you to block specific items from being repaired across all standard Minecraft repair methods, including the Crafting Grid, Anvil, and Grindstone.
+
+* **`target`**: The item ID (e.g., `"minecraft:diamond_pickaxe"`) or tag (e.g., `"#minecraft:swords"`) to block from being repaired.
+
+**Example: Block specific item repair**
+
+```json
+[
+  {
+    "action": "prevent_repair",
+    "target": "minecraft:diamond_pickaxe"
+  }
+]
+
+```
+
+## Action: `set_repair_material`
+
+Allows you to completely override the item required to repair a specific tool or weapon in the Anvil.
+
+* **`target`**: The item ID (e.g., `"minecraft:diamond_sword"`) or tag to modify.
+* **`material`**: The new item ID (e.g., `"minecraft:dirt"`) or tag to use as the valid repair material.
+
+**Example: Change a repair material**
+Make a Diamond Sword repairable with Dirt instead of Diamonds.
+
+```json
+{
+  "action": "set_repair_material",
+  "target": "minecraft:diamond_sword",
+  "material": "minecraft:dirt"
+}
+
+```
+
+## Global Repair Removal
+
+If you want to disable the vanilla crafting grid repair feature for **all** items while still allowing Anvil or Grindstone repairs, you can use the standard `remove_recipe` action instead:
+
+```json
+[
+  {
+    "action": "remove_recipe",
+    "id": "minecraft:repair_item"
+  }
+]
+
+```
