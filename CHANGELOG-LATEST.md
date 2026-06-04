@@ -1,3 +1,4 @@
-### Changed
+### Added
 
-- Now requires latest version of RRV for the item viewer integration.
+- Added additional safety checks for modded recipes.
+- Added additional logging for failed recipe mutations.

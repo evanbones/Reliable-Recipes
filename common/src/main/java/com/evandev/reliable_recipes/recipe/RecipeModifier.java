@@ -55,26 +55,24 @@ public class RecipeModifier {
                         rule.getTargetInput().map(ing -> ing.test(stack)).orElse(false)
                 );
             } else if (rule.getAction() == RecipeRule.Action.SET_REPAIR_MATERIAL) {
-                rule.getTargetInput().ifPresent(target -> {
-                    rule.getNewInput().ifPresent(material -> {
-                        HolderSet<Item> materialHolderSet = HolderSet.direct(material.items().toList());
-                        Repairable newRepairableComponent = new Repairable(materialHolderSet);
+                rule.getTargetInput().ifPresent(target -> rule.getNewInput().ifPresent(material -> {
+                    HolderSet<Item> materialHolderSet = HolderSet.direct(material.items().toList());
+                    Repairable newRepairableComponent = new Repairable(materialHolderSet);
 
-                        for (Item item : BuiltInRegistries.ITEM) {
-                            if (target.test(item.getDefaultInstance())) {
-                                DataComponentMap oldMap = item.components();
-                                DataComponentMap newMap = DataComponentMap.builder()
-                                        .addAll(oldMap)
-                                        .set(DataComponents.REPAIRABLE, newRepairableComponent)
-                                        .build();
+                    for (Item item : BuiltInRegistries.ITEM) {
+                        if (target.test(item.getDefaultInstance())) {
+                            DataComponentMap oldMap = item.components();
+                            DataComponentMap newMap = DataComponentMap.builder()
+                                    .addAll(oldMap)
+                                    .set(DataComponents.REPAIRABLE, newRepairableComponent)
+                                    .build();
 
-                                ((HolderReferenceAccessor) item.builtInRegistryHolder()).setComponents(newMap);
+                            ((HolderReferenceAccessor) item.builtInRegistryHolder()).setComponents(newMap);
 
-                                ReliableRecipesAPI.registerCustomRepairMaterial(item, material);
-                            }
+                            ReliableRecipesAPI.registerCustomRepairMaterial(item, material);
                         }
-                    });
-                });
+                    }
+                }));
             }
         }
     }
@@ -97,16 +95,22 @@ public class RecipeModifier {
         for (RecipeHolder<?> recipeHolder : currentMap.values()) {
             boolean shouldRemove = false;
             Recipe<?> recipe = recipeHolder.value();
-            Map<String, JsonElement> replacementsForThisRecipe = new HashMap<>();
 
             try {
+                Map<String, JsonElement> inputReplacements = new HashMap<>();
+                Map<String, JsonElement> outputReplacements = new HashMap<>();
+
                 for (RecipeRule rule : rules) {
                     if (rule.test(recipeHolder)) {
                         if (rule.getAction() == RecipeRule.Action.REMOVE) {
                             shouldRemove = true;
-                        } else if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT || rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
+                        } else if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT) {
                             if (rule.getReplaceTargetStr() != null && rule.getReplaceWithEl() != null && !rule.getReplaceTargetStr().isEmpty()) {
-                                replacementsForThisRecipe.put(rule.getReplaceTargetStr(), rule.getReplaceWithEl());
+                                inputReplacements.put(rule.getReplaceTargetStr(), rule.getReplaceWithEl());
+                            }
+                        } else if (rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
+                            if (rule.getReplaceTargetStr() != null && rule.getReplaceWithEl() != null && !rule.getReplaceTargetStr().isEmpty()) {
+                                outputReplacements.put(rule.getReplaceTargetStr(), rule.getReplaceWithEl());
                             }
                         }
                     }
@@ -116,12 +120,12 @@ public class RecipeModifier {
                     shouldRemove = true;
                 }
 
-                if (!shouldRemove && !replacementsForThisRecipe.isEmpty()) {
+                if (!shouldRemove && (!inputReplacements.isEmpty() || !outputReplacements.isEmpty())) {
                     Optional<JsonElement> encodeResult = Recipe.CODEC.encodeStart(ops, recipe).result();
                     if (encodeResult.isPresent()) {
                         JsonElement json = encodeResult.get();
 
-                        if (RecipeJsonMutator.mutateRecipe(json, replacementsForThisRecipe)) {
+                        if (RecipeJsonMutator.mutateRecipe(json, inputReplacements, outputReplacements)) {
                             Optional<Recipe<?>> decodeResult = Recipe.CODEC.parse(ops, json).result();
                             if (decodeResult.isPresent()) {
                                 recipe = decodeResult.get();
@@ -129,7 +133,7 @@ public class RecipeModifier {
                                 replacedCount++;
                             } else {
                                 Constants.LOG.error("Failed to decode mutated recipe: {}", recipeHolder.id().identifier());
-                                Constants.LOG.error("Mutated JSON was: {}", json);
+                                Constants.LOG.debug("Mutated JSON was: {}", json);
                             }
                         }
                     }
