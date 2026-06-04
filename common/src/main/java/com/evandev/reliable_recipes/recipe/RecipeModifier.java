@@ -129,6 +129,7 @@ public class RecipeModifier {
                                 replacedCount++;
                             } else {
                                 Constants.LOG.error("Failed to decode mutated recipe: {}", recipeHolder.id().identifier());
+                                Constants.LOG.error("Mutated JSON was: {}", json);
                             }
                         }
                     }
