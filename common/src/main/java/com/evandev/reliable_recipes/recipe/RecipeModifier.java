@@ -24,60 +24,70 @@ import java.util.*;
 
 public class RecipeModifier {
     private static final Map<ResourceLocation, RecipeHolder<?>> DELETED_RECIPES_CACHE = new HashMap<>();
+    private static final ThreadLocal<Boolean> MODIFYING_JSON = ThreadLocal.withInitial(() -> false);
     private static List<RecipeRule> cachedRules = null;
+
+    public static boolean isModifyingJson() {
+        return MODIFYING_JSON.get();
+    }
 
     /**
      * Called during datapack load before recipes are parsed.
      */
     public static void modifyRecipesJson(Map<ResourceLocation, JsonElement> map) {
-        cachedRules = new ArrayList<>(RecipeConfigIO.loadRules());
-        Map<ResourceLocation, JsonElement> newMap = new HashMap<>();
-        Map<String, String> globalReplacements = ReliableRecipesAPI.getReplacements();
+        MODIFYING_JSON.set(true);
+        try {
+            cachedRules = new ArrayList<>(RecipeConfigIO.loadRules());
+            Map<ResourceLocation, JsonElement> newMap = new HashMap<>();
+            Map<String, String> globalReplacements = ReliableRecipesAPI.getReplacements();
 
-        for (Map.Entry<ResourceLocation, JsonElement> entry : map.entrySet()) {
-            ResourceLocation id = entry.getKey();
-            JsonElement element = entry.getValue();
+            for (Map.Entry<ResourceLocation, JsonElement> entry : map.entrySet()) {
+                ResourceLocation id = entry.getKey();
+                JsonElement element = entry.getValue();
 
-            if (!element.isJsonObject()) {
-                newMap.put(id, element);
-                continue;
-            }
+                if (!element.isJsonObject()) {
+                    newMap.put(id, element);
+                    continue;
+                }
 
-            JsonObject recipeJson = element.getAsJsonObject();
-            boolean shouldRemove = false;
+                JsonObject recipeJson = element.getAsJsonObject();
+                boolean shouldRemove = false;
 
-            // Evaluate user rules from config
-            for (RecipeRule rule : cachedRules) {
-                if (rule.testJson(id, recipeJson)) {
-                    if (rule.getAction() == RecipeRule.Action.REMOVE) {
-                        shouldRemove = true;
-                        break;
-                    } else if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT || rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
-                        boolean startContext = (rule.getAction() == RecipeRule.Action.REPLACE_INPUT);
-                        mutateJsonRecursively(recipeJson, rule.getRawTargets(), rule.getRawReplacement(), rule.getAction(), startContext);
+                // Evaluate user rules from config
+                for (RecipeRule rule : cachedRules) {
+                    if (rule.testJson(id, recipeJson)) {
+                        if (rule.getAction() == RecipeRule.Action.REMOVE) {
+                            shouldRemove = true;
+                            break;
+                        } else if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT || rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT) {
+                            boolean startContext = (rule.getAction() == RecipeRule.Action.REPLACE_INPUT);
+                            mutateJsonRecursively(recipeJson, rule.getRawTargets(), rule.getRawReplacement(), rule.getAction(), startContext);
+                        }
                     }
                 }
-            }
 
-            if (shouldRemove) continue;
+                if (shouldRemove) continue;
 
-            // Global API Replacements
-            if (!globalReplacements.isEmpty()) {
-                for (Map.Entry<String, String> rep : globalReplacements.entrySet()) {
-                    mutateJsonRecursively(recipeJson, List.of(rep.getKey()), new JsonPrimitive(rep.getValue()), null, true);
+                // Global API Replacements
+                if (!globalReplacements.isEmpty()) {
+                    for (Map.Entry<String, String> rep : globalReplacements.entrySet()) {
+                        mutateJsonRecursively(recipeJson, List.of(rep.getKey()), new JsonPrimitive(rep.getValue()), null, true);
+                    }
                 }
+
+                // Hidden items output check
+                if (ReliableRecipesAPI.hasItemHidingCapabilities() && shouldHideRecipeJson(recipeJson)) {
+                    continue;
+                }
+
+                newMap.put(id, recipeJson);
             }
 
-            // Hidden items output check
-            if (ReliableRecipesAPI.hasItemHidingCapabilities() && shouldHideRecipeJson(recipeJson)) {
-                continue;
-            }
-
-            newMap.put(id, recipeJson);
+            map.clear();
+            map.putAll(newMap);
+        } finally {
+            MODIFYING_JSON.set(false);
         }
-
-        map.clear();
-        map.putAll(newMap);
     }
 
     private static void mutateJsonRecursively(JsonElement parent, List<String> targets, JsonElement rawReplacement, RecipeRule.Action action, boolean isTargetContext) {
