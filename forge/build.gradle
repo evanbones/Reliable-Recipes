@@ -48,6 +48,9 @@ dependencies {
     // Cloth Config
     modImplementation "me.shedaniel.cloth:cloth-config-forge:${cloth_config_version}"
 
+    // Gregtech
+    modCompileOnly "maven.modrinth:gregtechceu-modern:mc1.20.1-7.5.3"
+
     compileOnly project(":common")
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
 }
