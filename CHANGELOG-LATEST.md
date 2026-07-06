@@ -1,3 +1,3 @@
-### Fixed
+### Added
 
-- Improvements to advancement-based filtering.
+- Backported `crafting_transmute` recipe type.
