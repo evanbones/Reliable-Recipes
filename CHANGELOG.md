@@ -5,11 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.14.0] - 2026-07-05
+## [2.2.0] - 2026-07-05
 
 ### Added
 
 - Backported `crafting_transmute` recipe type.
+
+## [2.1.1] - 2026-06-24
+
+### Fixed
+
+- Improvements to advancement-based filtering.
+
+## [2.0.4] - 2026-05-19
+
+### Fixed
+
+- Fixed issues with `replace_input` and `replace_output`.
+
+## [2.0.3] - 2026-05-19
+
+### Fixed
+
+- Fixed a bug where tags were getting stripped instead of items being removed with Reliable Remover.
+
+## [2.0.2] - 2026-05-16
+
+### Fixed
+
+- Hotfix for recipe replacements running too early.
+
+## [2.0.1] - 2026-05-16
+
+### Fixed
+
+- Fixed recipe replacement hot reloading with Reliable Remover.
+
+## [2.0.0] - 2026-05-14
+
+### Added
+
+- Added partial support for more modded recipes.
+  - If you run into any issues or unsupported recipe types, feel free to make an issue on the GitHub.
+
+### Changed
+
+- Major backend reworks for additional stability and performance.
 
 ## [1.13.2] - 2026-05-10
 
@@ -156,7 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Flattened `recipe` and `tag` rules out of nested blocks.
-    - Existing rules will be automatically converted, but refer to the wiki in the future for the new syntax.
+  - Existing rules will be automatically converted, but refer to the wiki in the future for the new syntax.
 
 ### Fixed
 

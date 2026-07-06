@@ -15,16 +15,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ReloadableServerResources.class)
 public class ReloadableServerResourcesMixin {
 
-    @Shadow
-    @Final
-    private RecipeManager recipes;
-
     @Inject(
             method = "updateRegistryTags(Lnet/minecraft/core/RegistryAccess;)V",
             at = @At("RETURN")
     )
     private void reliableRecipes$onTagsLoaded(RegistryAccess registryAccess, CallbackInfo ci) {
         TagModifier.apply();
-        RecipeModifier.apply(this.recipes);
+        RecipeModifier.apply();
     }
 }

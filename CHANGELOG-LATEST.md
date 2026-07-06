@@ -1,3 +1,3 @@
-### Added
+### Changed
 
-- Backported `crafting_transmute` recipe type.
+- Brought 1.20 version up to parity with the 1.21 versions.
