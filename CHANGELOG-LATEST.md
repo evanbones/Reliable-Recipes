@@ -1,3 +1,3 @@
-### Fixed
+### Added
 
-- Hopefully fix crash with EMI.
+- Backported `crafting_transmute` recipe type.
