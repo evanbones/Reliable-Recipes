@@ -231,7 +231,7 @@ public class TransmuteRecipe implements CraftingRecipe {
 
     @Override
     public @NotNull RecipeType<?> getType() {
-        return TYPE;
+        return RecipeType.CRAFTING;
     }
 
     @Override
