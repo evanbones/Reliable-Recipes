@@ -19,6 +19,10 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.neoforged.neoforge.registries.RegisterEvent;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import com.evandev.reliable_recipes.recipe.TransmuteRecipe;
 import org.jetbrains.annotations.NotNull;
 
 @Mod(Constants.MOD_ID)
@@ -29,6 +33,7 @@ public class ReliableRecipesMod {
         CommonClass.init();
 
         eventBus.addListener(ReliableRecipesMod::registerPayloadHandlers);
+        eventBus.addListener(ReliableRecipesMod::onRegister);
 
         if (ModList.get().isLoaded("cloth_config")) {
             eventBus.register(new Object() {
@@ -65,5 +70,13 @@ public class ReliableRecipesMod {
                 ClientboundDeleteRecipePayload.STREAM_CODEC,
                 (payload, context) -> ClientboundDeleteRecipePayload.handle(payload.recipeId(), Minecraft.getInstance())
         );
+    }
+
+    private static void onRegister(RegisterEvent event) {
+        if (event.getRegistryKey().equals(Registries.RECIPE_SERIALIZER)) {
+            event.register(Registries.RECIPE_SERIALIZER, ResourceLocation.withDefaultNamespace("crafting_transmute"), () -> TransmuteRecipe.SERIALIZER);
+        } else if (event.getRegistryKey().equals(Registries.RECIPE_TYPE)) {
+            event.register(Registries.RECIPE_TYPE, ResourceLocation.withDefaultNamespace("crafting_transmute"), () -> TransmuteRecipe.TYPE);
+        }
     }
 }
