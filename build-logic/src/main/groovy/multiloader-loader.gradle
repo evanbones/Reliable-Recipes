@@ -55,6 +55,7 @@ publishMods {
         projectId = "1414959"
         minecraftVersions.add(project.minecraft_version)
 
+        optional("rrv")
         requires("yacl")
     }
 
@@ -63,6 +64,7 @@ publishMods {
         projectId = "Hl4ARA1z"
         minecraftVersions.add(project.minecraft_version)
 
+        optional("rrv")
         requires("yacl")
     }
 }
