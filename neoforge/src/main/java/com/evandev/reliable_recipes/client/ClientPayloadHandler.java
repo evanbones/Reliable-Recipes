@@ -13,8 +13,8 @@ public class ClientPayloadHandler {
             Constants.LOG.info("Received recipe removal notification for: {}", payload.recipeKey().identifier());
 
             Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.screen != null && minecraft.screen.getClass().getName().contains("RecipeViewScreen")) {
-                minecraft.screen.onClose();
+            if (minecraft.gui.screen() != null && minecraft.gui.screen().getClass().getName().contains("RecipeViewScreen")) {
+                minecraft.gui.screen().onClose();
             }
         });
     }
@@ -24,8 +24,8 @@ public class ClientPayloadHandler {
             Constants.LOG.info("Received recipe restoration notification for: {}", payload.recipeHolder().id());
 
             Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.screen != null && minecraft.screen.getClass().getName().contains("RecipeViewScreen")) {
-                minecraft.screen.onClose();
+            if (minecraft.gui.screen() != null && minecraft.gui.screen().getClass().getName().contains("RecipeViewScreen")) {
+                minecraft.gui.screen().onClose();
             }
         });
     }

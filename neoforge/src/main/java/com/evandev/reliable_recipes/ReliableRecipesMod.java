@@ -2,7 +2,7 @@ package com.evandev.reliable_recipes;
 
 import com.evandev.reliable_recipes.client.ClientPayloadHandler;
 import com.evandev.reliable_recipes.command.UndoCommand;
-import com.evandev.reliable_recipes.config.ClothConfigIntegration;
+import com.evandev.reliable_recipes.config.YaclConfigIntegration;
 import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
 import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
@@ -29,22 +29,20 @@ public class ReliableRecipesMod {
     public ReliableRecipesMod(IEventBus eventBus) {
         CommonClass.init();
 
-        if (ModList.get().isLoaded("cloth_config")) {
-            eventBus.register(new Object() {
-                @SubscribeEvent
-                public void onConstructMod(FMLConstructModEvent event) {
-                    ModLoadingContext.get().registerExtensionPoint(
-                            IConfigScreenFactory.class,
-                            () -> new IConfigScreenFactory() {
-                                @Override
-                                public @NotNull Screen createScreen(@NotNull ModContainer modContainer, @NotNull Screen parent) {
-                                    return ClothConfigIntegration.createScreen(parent);
-                                }
+        eventBus.register(new Object() {
+            @SubscribeEvent
+            public void onConstructMod(FMLConstructModEvent event) {
+                ModLoadingContext.get().registerExtensionPoint(
+                        IConfigScreenFactory.class,
+                        () -> new IConfigScreenFactory() {
+                            @Override
+                            public @NotNull Screen createScreen(@NotNull ModContainer modContainer, @NotNull Screen parent) {
+                                return YaclConfigIntegration.createScreen(parent);
                             }
-                    );
-                }
-            });
-        }
+                        }
+                );
+            }
+        });
     }
 
     @SubscribeEvent

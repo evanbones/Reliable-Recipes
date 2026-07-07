@@ -1,4 +1,4 @@
-### Added
+### Changed
 
-- Added additional safety checks for modded recipes.
-- Added additional logging for failed recipe mutations.
+- Ported to 26.2.
+- Switched to YACL instead of Cloth Config.

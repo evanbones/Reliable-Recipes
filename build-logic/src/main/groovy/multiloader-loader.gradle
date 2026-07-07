@@ -53,20 +53,16 @@ publishMods {
     curseforge {
         accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
         projectId = "1414959"
-        minecraftVersions.add("26.1")
-        minecraftVersions.add("26.1.1")
-        minecraftVersions.add("26.1.2")
+        minecraftVersions.add(project.minecraft_version)
 
-        optional { slug = "cloth-config" }
+        requires("yacl")
     }
 
     modrinth {
         accessToken = providers.environmentVariable("MODRINTH_TOKEN")
         projectId = "Hl4ARA1z"
-        minecraftVersions.add("26.1")
-        minecraftVersions.add("26.1.1")
-        minecraftVersions.add("26.1.2")
+        minecraftVersions.add(project.minecraft_version)
 
-        optional { slug = "cloth-config" }
+        requires("yacl")
     }
 }

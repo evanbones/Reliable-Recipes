@@ -17,15 +17,19 @@ neoForge {
         }
         client {
             client()
-            gameDirectory = this.mkdir(this.file("runs/client"))
+            gameDirectory = this.mkdir(this.file('runs/client'))
+        }
+        data {
+            clientData()
+            gameDirectory = this.mkdir(this.file('runs/data'))
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
         }
         server {
             server()
-            this.file("runs/server").createParentDirectories()
-            gameDirectory = this.mkdir(this.file("runs/server"))
+            this.file('runs/server').createParentDirectories()
+            gameDirectory = this.mkdir(this.file('runs/server'))
         }
     }
-
     mods {
         "${mod_id}" {
             sourceSet sourceSets.main
@@ -39,8 +43,8 @@ dependencies {
     // RRV
     implementation("cc.cassian.rrv:reliable-recipe-viewer-neoforge:${rrv_version}")
 
-    // Cloth Config
-    implementation "me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}"
+    // YACL
+    implementation "dev.isxander:yet-another-config-lib:${yacl_version}-neoforge"
 }
 
 def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)

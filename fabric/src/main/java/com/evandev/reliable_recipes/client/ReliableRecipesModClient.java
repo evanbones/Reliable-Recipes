@@ -21,8 +21,8 @@ public class ReliableRecipesModClient implements ClientModInitializer {
             context.client().execute(() -> {
                 Constants.LOG.info("Received recipe removal notification for: {}", payload.recipeKey().identifier());
 
-                if (context.client().screen != null && context.client().screen.getClass().getName().contains("RecipeViewScreen")) {
-                    context.client().screen.onClose();
+                if (context.client().gui.screen() != null && context.client().gui.screen().getClass().getName().contains("RecipeViewScreen")) {
+                    context.client().gui.screen().onClose();
                 }
             });
         });
@@ -31,8 +31,8 @@ public class ReliableRecipesModClient implements ClientModInitializer {
             context.client().execute(() -> {
                 Constants.LOG.info("Received recipe restoration notification for: {}", payload.recipeHolder().id().identifier());
 
-                if (context.client().screen != null && context.client().screen.getClass().getName().contains("RecipeViewScreen")) {
-                    context.client().screen.onClose();
+                if (context.client().gui.screen() != null && context.client().gui.screen().getClass().getName().contains("RecipeViewScreen")) {
+                    context.client().gui.screen().onClose();
                 }
             });
         });

@@ -33,8 +33,8 @@ public class SharedToastOverlay {
 
         Minecraft mc = Minecraft.getInstance();
 
-        boolean isInventory = mc.screen instanceof InventoryScreen
-                || mc.screen instanceof CreativeModeInventoryScreen;
+        boolean isInventory = mc.gui.screen() instanceof InventoryScreen
+                || mc.gui.screen() instanceof CreativeModeInventoryScreen;
 
         if (!isInventory) return;
 

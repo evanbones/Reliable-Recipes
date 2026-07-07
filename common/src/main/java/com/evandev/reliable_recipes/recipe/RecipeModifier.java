@@ -27,7 +27,7 @@ import java.util.*;
 public class RecipeModifier {
 
     private static final Map<ResourceKey<Recipe<?>>, RecipeHolder<?>> DELETED_RECIPES_CACHE = new HashMap<>();
-    private static boolean hasBeenApplied = false;
+    private static RecipeManager lastAppliedManager = null;
 
     public static void applyGlobalRules() {
         ReliableRecipesAPI.clearRepairBlockers();
@@ -80,8 +80,8 @@ public class RecipeModifier {
     public static void apply(RecipeManager manager, HolderLookup.Provider registries) {
         applyGlobalRules();
 
-        if (hasBeenApplied) return;
-        hasBeenApplied = true;
+        if (manager == lastAppliedManager) return;
+        lastAppliedManager = manager;
 
         List<RecipeRule> rules = new ArrayList<>(RecipeConfigIO.loadRules());
 
