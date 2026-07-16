@@ -1,0 +1,40 @@
+---
+title: Usage
+hide_meta: true
+---
+
+Reliable Recipes works by watching a specific folder in your Minecraft instance for JSON files.
+
+## Folder Location
+Place your configuration files in: `./config/reliable_recipes`
+
+Upon server startup or data reload, the mod reads these files and injects your specified changes into the internal registries.
+
+## JSON Structure
+
+Configuration files define rules within a single, flat top-level JSON array. Each rule specifies its `"action"` alongside any filters or targets.
+
+```json
+[
+  {
+    "action": "remove_recipe",
+    "mod": "examplemod",
+    "type": "minecraft:crafting_shaped"
+  },
+  {
+    "action": "replace_input",
+    "target": "minecraft:stick",
+    "replacement": [
+      "minecraft:stick",
+      "examplemod:reinforced_stick"
+    ],
+    "id": "examplemod:reinforced_sword"
+  },
+  {
+    "action": "remove_from_tag",
+    "tag": "c:foods",
+    "id": [
+      "examplemod:inedible_food"
+    ]
+  }
+]

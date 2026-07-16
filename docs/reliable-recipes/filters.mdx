@@ -1,0 +1,91 @@
+---
+title: Filters
+hide_meta: true
+---
+
+When modifying recipes, filters determine which recipes are affected.
+A recipe must match all provided fields to be selected.
+
+## Basic Filters
+You can filter by simple strings or use **arrays** to match multiple values (acting as an `OR` condition).
+
+| Field | Description | Example |
+|---|---|---|
+| `output` | The registry name of the item produced. | `"minecraft:stone_pickaxe"` |
+| `id` | The specific ID of a recipe. | `"minecraft:black_bed_from_white_bed"` |
+| `mod` | The mod ID that owns the recipe. | `"farmersdelight"` or `["create", "mekanism"]` |
+| `type` | The recipe type. | `"minecraft:smoking"` |
+| `input` | Matches if the recipe contains this ingredient. | `"minecraft:stick"` or `"#minecraft:logs"` |
+
+## Tag Expansion in Filters
+
+You can use tags (e.g., `#minecraft:wooden_trapdoors`) to match multiple items at once. How these tags behave depends on whether you are filtering by `output` or `input`.
+
+### Output Filtering
+Because recipes cannot natively output tags, using a tag in an `output` filter will **automatically expand** to check if the recipe's output item belongs to that tag.
+
+**Example:** Remove all recipes that output *any* wooden trapdoor.
+```json
+[
+  {
+    "action": "remove_recipe",
+    "output": "#minecraft:wooden_trapdoors"
+  }
+]
+
+```
+
+### Input Filtering
+
+By default, checking a tag in an `input` filter strictly looks for the literal tag definition (e.g., `"item": "#minecraft:logs"`) in the recipe JSON.
+
+If you want to match **all individual items** contained within that tag (along with the literal tag itself), you must explicitly enable expansion. You can do this via shorthand (`+#`) or object syntax (`"expand": true`).
+
+**Example: Shorthand Syntax (`+#`)**
+Matches any recipe that uses *any* specific wooden trapdoor OR the literal trapdoors tag as an ingredient.
+
+```json
+[
+  {
+    "action": "remove_recipe",
+    "input": "+#minecraft:wooden_trapdoors"
+  }
+]
+
+```
+
+**Example: Object Syntax**
+An alternative way to write the exact same condition.
+
+```json
+[
+  {
+    "action": "remove_recipe",
+    "input": {
+      "tag": "#minecraft:wooden_trapdoors",
+      "expand": true
+    }
+  }
+]
+
+```
+
+## Advanced Filters (Regex & Logic)
+* **Regex:** Wrap strings in `/` to use Regular Expressions (e.g., `"/minecraft:.*_log/"` matches all vanilla logs).
+* **Logic:** Use `not`, `or`, and `and` for complex conditions.
+
+### Example: Regex & Logic
+Remove all recipes that output Gold items, *except* those from Vanilla Minecraft.
+
+```json
+[
+  {
+    "action": "remove_recipe",
+    "output": "/.*gold.*/",
+    "not": {
+      "mod": "minecraft"
+    }
+  }
+]
+
+```
