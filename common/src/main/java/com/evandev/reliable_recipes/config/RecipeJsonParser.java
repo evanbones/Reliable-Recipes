@@ -149,7 +149,8 @@ public class RecipeJsonParser {
                         yield (id, recipe) -> {
                             JsonElement res = recipe.has("result") ? recipe.get("result") :
                                     (recipe.has("results") ? recipe.get("results") :
-                                            (recipe.has("output") ? recipe.get("output") : null));
+                                            (recipe.has("output") ? recipe.get("output") :
+                                                    (recipe.has("outputs") ? recipe.get("outputs") : null)));
                             return jsonContainsValue(res, matcher);
                         };
                     }
