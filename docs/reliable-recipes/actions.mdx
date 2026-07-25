@@ -25,6 +25,18 @@ You can use arrays to remove large batches of recipes at once.
 
 ```
 
+**Example:** Remove brewing recipes by input.
+
+```json
+[
+  {
+    "action": "remove_recipe",
+    "type": "minecraft:brewing",
+    "input": "minecraft:golden_carrot"
+  }
+]
+```
+
 ## Action: `replace_input`
 
 Scans ingredients and replaces a target with a new one.
@@ -48,6 +60,8 @@ Scans ingredients and replaces a target with a new one.
 ]
 
 ```
+
+`replace_input` also works on brewing stand reagents, see [Replacing a Brewing Reagent](/reliable-recipes/brewing#replacing-a-brewing-reagent) for details.
 
 ## Action: `replace_output`
 

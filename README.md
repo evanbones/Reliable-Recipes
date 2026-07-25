@@ -199,6 +199,43 @@ names).
 
 ---
 
+## Data-Driven Brewing Recipes
+
+Reliable Recipes supports data-driven brewing stand recipes using the 26.3 `minecraft:brewing` recipe type format.
+
+### Recipe Fields
+
+* **`input`** (Object, required): Input container item or potion stack (`item`/`tag`, optional `potion_contents`).
+* **`reagent`** (Ingredient, required): Ingredient item placed in the top slot of the brewing stand.
+* **`output`** (ItemStack, required): Resulting item stack output with components.
+
+### Example JSON
+
+```json
+{
+  "type": "minecraft:brewing",
+  "input": {
+    "item": "minecraft:potion",
+    "potion_contents": {
+      "potions": "minecraft:awkward"
+    }
+  },
+  "reagent": {
+    "item": "minecraft:turtle_helmet"
+  },
+  "output": {
+    "id": "minecraft:potion",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:turtle_master"
+      }
+    }
+  }
+}
+```
+
+---
+
 ## Mod Compatibility
 
 * **Reliable Removal:** Automatically removes recipe and tag listings for items hidden

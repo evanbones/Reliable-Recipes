@@ -19,7 +19,29 @@ public class RecipeConfigIO {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path CONFIG_DIR = Services.PLATFORM.getConfigDirectory().resolve("reliable_recipes");
 
+    private static List<RecipeRule> cachedRules;
+    private static List<TagRule> cachedTagRules;
+
     public static List<RecipeRule> loadRules() {
+        if (cachedRules == null) {
+            cachedRules = computeRules();
+        }
+        return cachedRules;
+    }
+
+    public static List<TagRule> loadTagRules() {
+        if (cachedTagRules == null) {
+            cachedTagRules = computeTagRules();
+        }
+        return cachedTagRules;
+    }
+
+    public static void invalidateCache() {
+        cachedRules = null;
+        cachedTagRules = null;
+    }
+
+    private static List<RecipeRule> computeRules() {
         ConfigMigrator.migrateConfigsIfNeeded();
         List<RecipeRule> rules = new ArrayList<>();
         List<JsonElement> configs = loadAllConfigs();
@@ -46,7 +68,7 @@ public class RecipeConfigIO {
         return rules;
     }
 
-    public static List<TagRule> loadTagRules() {
+    private static List<TagRule> computeTagRules() {
         List<TagRule> rules = new ArrayList<>();
         List<JsonElement> configs = loadAllConfigs();
         for (JsonElement config : configs) {
@@ -202,6 +224,7 @@ public class RecipeConfigIO {
             ids.add(recipeId);
             try (FileWriter writer = new FileWriter(file)) {
                 GSON.toJson(root, writer);
+                invalidateCache();
             } catch (IOException e) {
                 Constants.LOG.error("Failed to save generated config", e);
             }
@@ -259,6 +282,7 @@ public class RecipeConfigIO {
                 try (FileWriter writer = new FileWriter(file)) {
                     GSON.toJson(root, writer);
                 }
+                invalidateCache();
             }
         } catch (Exception e) {
             Constants.LOG.error("Failed to update generated config", e);

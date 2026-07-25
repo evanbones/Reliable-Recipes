@@ -242,19 +242,49 @@ public class RecipeModifier {
             JsonElement resultElement = jsonObject.has("result") ? jsonObject.get("result") :
                     (jsonObject.has("results") ? jsonObject.get("results") :
                             (jsonObject.has("output") ? jsonObject.get("output") : null));
-            if (resultElement == null) return false;
+            if (resultElement != null) {
+                if (resultElement.isJsonObject() && isItemHidden(getResultItemId(resultElement.getAsJsonObject())))
+                    return true;
+                if (resultElement.isJsonPrimitive() && isItemHidden(resultElement.getAsJsonPrimitive().getAsString()))
+                    return true;
+                if (resultElement.isJsonArray()) {
+                    for (JsonElement element : resultElement.getAsJsonArray()) {
+                        if (element.isJsonObject() && isItemHidden(getResultItemId(element.getAsJsonObject())))
+                            return true;
+                        if (element.isJsonPrimitive() && isItemHidden(element.getAsString())) return true;
+                    }
+                }
+            }
 
-            if (resultElement.isJsonObject()) {
-                return isItemHidden(getResultItemId(resultElement.getAsJsonObject()));
-            } else if (resultElement.isJsonPrimitive() && resultElement.getAsJsonPrimitive().isString()) {
-                return isItemHidden(resultElement.getAsString());
-            } else if (resultElement.isJsonArray()) {
-                for (JsonElement element : resultElement.getAsJsonArray()) {
-                    if (element.isJsonObject() && isItemHidden(getResultItemId(element.getAsJsonObject()))) return true;
-                    if (element.isJsonPrimitive() && isItemHidden(element.getAsString())) return true;
+            for (String key : List.of("input", "reagent", "ingredients", "key")) {
+                if (jsonObject.has(key)) {
+                    if (checkJsonForHiddenItem(jsonObject.get(key))) return true;
                 }
             }
         } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    private static boolean checkJsonForHiddenItem(JsonElement element) {
+        if (element == null) return false;
+        if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+            return isItemHidden(element.getAsString());
+        }
+        if (element.isJsonArray()) {
+            for (JsonElement e : element.getAsJsonArray()) {
+                if (checkJsonForHiddenItem(e)) return true;
+            }
+        }
+        if (element.isJsonObject()) {
+            JsonObject obj = element.getAsJsonObject();
+            if (obj.has("item") && obj.get("item").isJsonPrimitive() && isItemHidden(obj.get("item").getAsString()))
+                return true;
+            if (obj.has("id") && obj.get("id").isJsonPrimitive() && isItemHidden(obj.get("id").getAsString()))
+                return true;
+            for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
+                if (checkJsonForHiddenItem(entry.getValue())) return true;
+            }
         }
         return false;
     }

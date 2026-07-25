@@ -3,6 +3,7 @@ package com.evandev.reliable_recipes;
 import com.evandev.reliable_recipes.command.UndoCommand;
 import com.evandev.reliable_recipes.networking.ClientboundDeleteRecipePayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
+import com.evandev.reliable_recipes.recipe.BrewingRecipe;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import com.evandev.reliable_recipes.recipe.TransmuteRecipe;
@@ -20,6 +21,9 @@ public class ReliableRecipesMod implements ModInitializer {
 
         Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, ResourceLocation.withDefaultNamespace("crafting_transmute"), TransmuteRecipe.SERIALIZER);
         Registry.register(BuiltInRegistries.RECIPE_TYPE, ResourceLocation.withDefaultNamespace("crafting_transmute"), TransmuteRecipe.TYPE);
+
+        Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, ResourceLocation.withDefaultNamespace("brewing"), BrewingRecipe.SERIALIZER);
+        Registry.register(BuiltInRegistries.RECIPE_TYPE, ResourceLocation.withDefaultNamespace("brewing"), BrewingRecipe.TYPE);
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 UndoCommand.register(dispatcher)

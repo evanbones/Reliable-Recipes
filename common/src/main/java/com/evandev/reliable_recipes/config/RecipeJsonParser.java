@@ -5,6 +5,7 @@ import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.tag.TagRule;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -24,6 +25,8 @@ public class RecipeJsonParser {
     private static final Set<String> IGNORED_KEYS = Set.of(
             "action", "target", "replacement", "items", "tags", "tag", "filter"
     );
+
+    private static final Set<String> OUTPUT_KEYS = Set.of("result", "output", "results");
 
     public static RecipeRule parseRule(JsonObject mod) {
         String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
@@ -101,10 +104,13 @@ public class RecipeJsonParser {
             JsonObject obj = json.getAsJsonObject();
             BiPredicate<ResourceLocation, JsonObject> combined = (id, recipe) -> true;
 
-            for (String key : obj.keySet()) {
+            for (String rawKey : obj.keySet()) {
+                if (IGNORED_KEYS.contains(rawKey)) continue;
+
+                String key = rawKey.trim().replaceAll(":$", "").trim();
                 if (IGNORED_KEYS.contains(key)) continue;
 
-                JsonElement criterion = obj.get(key);
+                JsonElement criterion = obj.get(rawKey);
                 BiPredicate<ResourceLocation, JsonObject> check = switch (key) {
                     case "not" -> {
                         BiPredicate<ResourceLocation, JsonObject> inner = parseFilter(criterion);
@@ -130,7 +136,13 @@ public class RecipeJsonParser {
                     }
                     case "type" -> {
                         Predicate<String> m = getStringMatcher(criterion, false);
-                        yield (id, recipe) -> recipe.has("type") && m.test(recipe.get("type").getAsString());
+                        yield (id, recipe) -> {
+                            if (!recipe.has("type")) return false;
+                            String typeStr = recipe.get("type").getAsString();
+                            if (m.test(typeStr)) return true;
+                            ResourceLocation loc = ResourceLocation.tryParse(typeStr);
+                            return loc != null && (m.test(loc.toString()) || m.test(loc.getPath()));
+                        };
                     }
                     case "mod" -> {
                         Predicate<String> m = getStringMatcher(criterion, false);
@@ -140,11 +152,14 @@ public class RecipeJsonParser {
                         Predicate<String> m = getStringMatcher(criterion, false);
                         yield (id, recipe) -> m.test(id.toString());
                     }
-                    case "input" -> {
+                    case "input", "reagent", "ingredient", "ingredients" -> {
                         Predicate<String> matcher = getStringMatcher(criterion, false);
-                        yield (id, recipe) -> jsonContainsValue(recipe, matcher);
+                        yield (id, recipe) -> {
+                            if (recipe.has(key) && jsonContainsValue(recipe.get(key), matcher)) return true;
+                            return jsonContainsValueExcluding(recipe, matcher, OUTPUT_KEYS);
+                        };
                     }
-                    case "output" -> {
+                    case "output", "result", "results" -> {
                         Predicate<String> matcher = getStringMatcher(criterion, true);
                         yield (id, recipe) -> {
                             JsonElement res = recipe.has("result") ? recipe.get("result") :
@@ -153,7 +168,10 @@ public class RecipeJsonParser {
                             return jsonContainsValue(res, matcher);
                         };
                     }
-                    default -> (id, recipe) -> true;
+                    default -> {
+                        Constants.LOG.warn("Unrecognized filter key '{}' in recipe rule JSON.", rawKey);
+                        yield (id, recipe) -> false;
+                    }
                 };
                 BiPredicate<ResourceLocation, JsonObject> finalCombined = combined;
                 combined = (id, recipe) -> finalCombined.test(id, recipe) && check.test(id, recipe);
@@ -164,13 +182,17 @@ public class RecipeJsonParser {
     }
 
     private static boolean jsonContainsValue(JsonElement element, Predicate<String> matcher) {
+        return jsonContainsValueExcluding(element, matcher, Set.of());
+    }
+
+    private static boolean jsonContainsValueExcluding(JsonElement element, Predicate<String> matcher, Set<String> excludedKeys) {
         if (element == null) return false;
         if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
             return matcher.test(element.getAsString());
         }
         if (element.isJsonArray()) {
             for (JsonElement e : element.getAsJsonArray()) {
-                if (jsonContainsValue(e, matcher)) return true;
+                if (jsonContainsValueExcluding(e, matcher, excludedKeys)) return true;
             }
         }
         if (element.isJsonObject()) {
@@ -183,7 +205,8 @@ public class RecipeJsonParser {
                 return true;
 
             for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
-                if (jsonContainsValue(entry.getValue(), matcher)) return true;
+                if (excludedKeys.contains(entry.getKey())) continue;
+                if (jsonContainsValueExcluding(entry.getValue(), matcher, excludedKeys)) return true;
             }
         }
         return false;
@@ -210,7 +233,7 @@ public class RecipeJsonParser {
                 if (expand && !tag.startsWith("+#")) {
                     tag = tag.replaceFirst("^#", "+#");
                 }
-                return getStringMatcher(new com.google.gson.JsonPrimitive(tag), autoExpandTags);
+                return getStringMatcher(new JsonPrimitive(tag), autoExpandTags);
             }
             return s -> false;
         }
@@ -248,7 +271,7 @@ public class RecipeJsonParser {
                         ResourceLocation itemId = ResourceLocation.tryParse(s);
                         if (itemId != null) {
                             Item item = BuiltInRegistries.ITEM.get(itemId);
-                            if (item != net.minecraft.world.item.Items.AIR) {
+                            if (item != Items.AIR) {
                                 ResourceLocation tagId = ResourceLocation.tryParse(tagPath);
                                 if (tagId != null) {
                                     TagKey<Item> tagKey = TagKey.create(Registries.ITEM, tagId);
@@ -256,8 +279,7 @@ public class RecipeJsonParser {
                                 }
                             }
                         }
-                    } catch (Exception e) {
-                        // Ignore malformed ResourceLocations during tag expansion
+                    } catch (Exception ignored) {
                     }
                 }
                 return false;

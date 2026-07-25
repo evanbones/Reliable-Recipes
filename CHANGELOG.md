@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-07-24
+
+### Added
+
+- Backported `brewing` recipe type from 26.3.
+- Added support for modifying brewing recipes using recipe rules.
+
+### Changed
+
+- Switched to YACL instead of Cloth Config.
+- Invalid removals now default to unmatched (previously, invalid filters would match everything).
+- Major backend cleanups.
+
+### Fixed
+
+- Fixed crash when attempting to delete certain invalid recipes.
+
 ## [2.2.0] - 2026-07-05
 
 ### Added

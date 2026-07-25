@@ -1,8 +1,8 @@
 package com.evandev.reliable_recipes.compat.emi;
 
+import com.evandev.reliable_recipes.config.ModConfig;
 import com.evandev.reliable_recipes.platform.Services;
 import dev.emi.emi.api.recipe.EmiRecipe;
-import dev.emi.emi.config.EmiConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -21,8 +21,8 @@ public class EmiInteractions {
             return false;
         }
 
-        if (!EmiConfig.devMode) {
-            mc.player.sendSystemMessage(Component.translatable("toast.reliable_recipes.emi_dev_mode"));
+        if (!ModConfig.get().enableEmiRemoval) {
+            mc.player.sendSystemMessage(Component.translatable("toast.reliable_recipes.enable_emi_removal"));
             return false;
         }
 
