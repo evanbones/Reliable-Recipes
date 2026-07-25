@@ -20,8 +20,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-public class RecipeJsonParser {
-
+public class RecipeRuleParser {
     private static final Set<String> IGNORED_KEYS = Set.of(
             "action", "target", "replacement", "items", "tags", "tag", "filter"
     );

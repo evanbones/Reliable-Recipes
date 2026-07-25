@@ -1,13 +1,7 @@
 package com.evandev.reliable_recipes.recipe;
 
-import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
-import com.evandev.reliable_recipes.mixin.accessor.RecipeManagerAccessor;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -16,14 +10,13 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeManager;
-import net.minecraft.world.item.crafting.RecipeType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class RecipeModifier {
-    private static final Map<ResourceLocation, RecipeHolder<?>> DELETED_RECIPES_CACHE = new HashMap<>();
     private static final ThreadLocal<Boolean> MODIFYING_JSON = ThreadLocal.withInitial(() -> false);
     private static List<RecipeRule> cachedRules = null;
 
@@ -325,43 +318,8 @@ public class RecipeModifier {
         }
     }
 
-    public static boolean removeRecipe(RecipeManager manager, ResourceLocation recipeId) {
-        RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
-        Map<ResourceLocation, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
-        Multimap<RecipeType<?>, RecipeHolder<?>> recipesByType = LinkedHashMultimap.create(managerAccessor.getRecipes());
-
-        RecipeHolder<?> recipe = recipesByName.remove(recipeId);
-
-        if (recipe != null) {
-            DELETED_RECIPES_CACHE.put(recipeId, recipe);
-            recipesByType.remove(recipe.value().getType(), recipe);
-            managerAccessor.setByName(ImmutableMap.copyOf(recipesByName));
-            managerAccessor.setRecipes(ImmutableMultimap.copyOf(recipesByType));
-            return true;
-        }
-        return false;
-    }
-
-    public static boolean restoreRecipe(RecipeManager manager, ResourceLocation recipeId) {
-        RecipeHolder<?> recipe = DELETED_RECIPES_CACHE.remove(recipeId);
-        if (recipe == null) return false;
-
-        RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
-        Map<ResourceLocation, RecipeHolder<?>> recipesByName = new LinkedHashMap<>(managerAccessor.getByName());
-        Multimap<RecipeType<?>, RecipeHolder<?>> recipesByType = LinkedHashMultimap.create(managerAccessor.getRecipes());
-
-        recipesByName.put(recipeId, recipe);
-        recipesByType.put(recipe.value().getType(), recipe);
-
-        managerAccessor.setByName(ImmutableMap.copyOf(recipesByName));
-        managerAccessor.setRecipes(ImmutableMultimap.copyOf(recipesByType));
-
-        Constants.LOG.info("Restored recipe: {}", recipeId);
-        return true;
-    }
-
     public static void reset() {
-        DELETED_RECIPES_CACHE.clear();
+        RecipeUndoCache.clear();
         ReliableRecipesAPI.clearRepairBlockers();
         ReliableRecipesAPI.clearCustomRepairMaterials();
         cachedRules = null;

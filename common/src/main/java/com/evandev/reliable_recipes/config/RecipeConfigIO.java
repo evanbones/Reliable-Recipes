@@ -49,19 +49,19 @@ public class RecipeConfigIO {
             if (config.isJsonArray()) {
                 for (JsonElement element : config.getAsJsonArray()) {
                     if (element.isJsonObject()) {
-                        RecipeRule rule = RecipeJsonParser.parseRule(element.getAsJsonObject());
+                        RecipeRule rule = RecipeRuleParser.parseRule(element.getAsJsonObject());
                         if (rule != null) rules.add(rule);
                     }
                 }
             } else if (config.isJsonObject() && config.getAsJsonObject().has("recipe_modifications")) {
                 for (JsonElement element : config.getAsJsonObject().getAsJsonArray("recipe_modifications")) {
                     if (element.isJsonObject()) {
-                        RecipeRule rule = RecipeJsonParser.parseRule(element.getAsJsonObject());
+                        RecipeRule rule = RecipeRuleParser.parseRule(element.getAsJsonObject());
                         if (rule != null) rules.add(rule);
                     }
                 }
             } else if (config.isJsonObject()) {
-                RecipeRule rule = RecipeJsonParser.parseRule(config.getAsJsonObject());
+                RecipeRule rule = RecipeRuleParser.parseRule(config.getAsJsonObject());
                 if (rule != null) rules.add(rule);
             }
         }
@@ -75,19 +75,19 @@ public class RecipeConfigIO {
             if (config.isJsonArray()) {
                 for (JsonElement element : config.getAsJsonArray()) {
                     if (element.isJsonObject()) {
-                        TagRule rule = RecipeJsonParser.parseTagRule(element.getAsJsonObject());
+                        TagRule rule = RecipeRuleParser.parseTagRule(element.getAsJsonObject());
                         if (rule != null) rules.add(rule);
                     }
                 }
             } else if (config.isJsonObject() && config.getAsJsonObject().has("tag_modifications")) {
                 for (JsonElement element : config.getAsJsonObject().getAsJsonArray("tag_modifications")) {
                     if (element.isJsonObject()) {
-                        TagRule rule = RecipeJsonParser.parseTagRule(element.getAsJsonObject());
+                        TagRule rule = RecipeRuleParser.parseTagRule(element.getAsJsonObject());
                         if (rule != null) rules.add(rule);
                     }
                 }
             } else if (config.isJsonObject()) {
-                TagRule rule = RecipeJsonParser.parseTagRule(config.getAsJsonObject());
+                TagRule rule = RecipeRuleParser.parseTagRule(config.getAsJsonObject());
                 if (rule != null) rules.add(rule);
             }
         }

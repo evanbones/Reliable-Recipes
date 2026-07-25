@@ -3,7 +3,7 @@ package com.evandev.reliable_recipes.networking;
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.platform.Services;
-import com.evandev.reliable_recipes.recipe.RecipeModifier;
+import com.evandev.reliable_recipes.recipe.RecipeUndoCache;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
@@ -22,24 +22,22 @@ public record DeleteRecipePayload(ResourceLocation recipeId) implements CustomPa
     );
 
     public static void handle(ResourceLocation id, MinecraftServer server, ServerPlayer player) {
-        {
-            if (player.hasPermissions(2)) {
-                RecipeConfigIO.addRemovalRule(id.toString());
+        if (player.hasPermissions(2)) {
+            RecipeConfigIO.addRemovalRule(id.toString());
 
-                boolean removed = RecipeModifier.removeRecipe(server.getRecipeManager(), id);
+            boolean removed = RecipeUndoCache.removeRecipe(server.getRecipeManager(), id);
 
-                if (removed) {
-                    Constants.LOG.info("Runtime deletion of recipe: {}", id);
+            if (removed) {
+                Constants.LOG.info("Runtime deletion of recipe: {}", id);
 
-                    server.getPlayerList().getPlayers().forEach(p ->
-                            Services.PLATFORM.sendDeleteRecipePacketToPlayer(p, id)
-                    );
-                } else {
-                    player.sendSystemMessage(Component.translatable("toast.reliable_recipes.could_not_find_recipe", id.toString()));
-                }
+                server.getPlayerList().getPlayers().forEach(p ->
+                        Services.PLATFORM.sendDeleteRecipePacketToPlayer(p, id)
+                );
             } else {
-                player.sendSystemMessage(Component.translatable("toast.reliable_recipes.permission_denied"));
+                player.sendSystemMessage(Component.translatable("toast.reliable_recipes.could_not_find_recipe", id.toString()));
             }
+        } else {
+            player.sendSystemMessage(Component.translatable("toast.reliable_recipes.permission_denied"));
         }
     }
 

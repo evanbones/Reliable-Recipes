@@ -3,7 +3,7 @@ package com.evandev.reliable_recipes.networking;
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.client.SharedToastOverlay;
 import com.evandev.reliable_recipes.config.ModConfig;
-import com.evandev.reliable_recipes.recipe.RecipeModifier;
+import com.evandev.reliable_recipes.recipe.RecipeUndoCache;
 import dev.emi.emi.runtime.EmiReloadManager;
 import dev.emi.emi.screen.RecipeScreen;
 import net.minecraft.ChatFormatting;
@@ -34,7 +34,7 @@ public record ClientboundDeleteRecipePayload(ResourceLocation recipeId) implemen
                     outputIcon = recipe.value().getResultItem(client.level.registryAccess());
                 }
 
-                boolean removed = RecipeModifier.removeRecipe(client.getConnection().getRecipeManager(), recipeId);
+                boolean removed = RecipeUndoCache.removeRecipe(client.getConnection().getRecipeManager(), recipeId);
                 if (removed) {
                     handleFeedback(recipeId, client, outputIcon);
                 }
