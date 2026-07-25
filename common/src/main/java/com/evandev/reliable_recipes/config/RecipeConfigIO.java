@@ -10,10 +10,12 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class RecipeConfigIO {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -42,7 +44,6 @@ public class RecipeConfigIO {
     }
 
     private static List<RecipeRule> computeRules() {
-        ConfigMigrator.migrateConfigsIfNeeded();
         List<RecipeRule> rules = new ArrayList<>();
         List<JsonElement> configs = loadAllConfigs();
         for (JsonElement config : configs) {
@@ -106,18 +107,22 @@ public class RecipeConfigIO {
             }
         }
 
-        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
-        if (files == null) return loadedConfigs;
+        if (!Files.exists(CONFIG_DIR)) return loadedConfigs;
 
-        for (File file : files) {
-            try (FileReader reader = new FileReader(file)) {
-                JsonElement root = JsonParser.parseReader(reader);
-                if (root != null) {
-                    loadedConfigs.add(root);
-                }
-            } catch (Exception e) {
-                Constants.LOG.error("Failed to load recipe config file: {}", file.getName(), e);
-            }
+        try (Stream<Path> stream = Files.walk(CONFIG_DIR)) {
+            stream.filter(path -> Files.isRegularFile(path) && path.toString().endsWith(".json"))
+                  .forEach(path -> {
+                      try (FileReader reader = new FileReader(path.toFile())) {
+                          JsonElement root = JsonParser.parseReader(reader);
+                          if (root != null) {
+                              loadedConfigs.add(root);
+                          }
+                      } catch (Exception e) {
+                          Constants.LOG.error("Failed to load recipe config file: {}", path.getFileName(), e);
+                      }
+                  });
+        } catch (IOException e) {
+            Constants.LOG.error("Failed to walk config directory: {}", CONFIG_DIR, e);
         }
 
         return loadedConfigs;

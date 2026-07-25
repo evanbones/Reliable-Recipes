@@ -16,6 +16,11 @@ import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.recipe.EmiAnvilRecipe;
 import dev.emi.emi.recipe.EmiBrewingRecipe;
+import dev.emi.emi.recipe.EmiGrindstoneRecipe;
+import dev.emi.emi.recipe.special.EmiAnvilRepairItemRecipe;
+import dev.emi.emi.recipe.special.EmiGrindstoneDisenchantingBookRecipe;
+import dev.emi.emi.recipe.special.EmiGrindstoneDisenchantingRecipe;
+import dev.emi.emi.recipe.special.EmiRepairItemRecipe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -135,7 +140,7 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
                 return true;
             }
 
-            boolean isRepairRecipe = isRepairCategory(recipe.getCategory().getId());
+            boolean isRepairRecipe = isRepairRecipe(recipe);
             List<EmiStack> outputs = recipe.getOutputs();
             if (outputs == null || outputs.isEmpty()) return false;
 
@@ -144,15 +149,11 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
             List<ItemStack> allInputStacks = extractItemStacks(inputs);
             List<ItemStack> allCatalystStacks = extractItemStacks(catalysts);
 
-            if (containsReplacedInput(allInputStacks)) {
-                return true;
-            }
-
             if (hasHiddenOutput(outputs, allInputStacks, allCatalystStacks, isRepairRecipe)) {
                 return true;
             }
 
-            return hasHiddenInput(inputs, isRepairRecipe);
+            return hasHiddenInput(inputs, isRepairRecipe) || hasHiddenInput(catalysts, isRepairRecipe);
         } catch (Exception e) {
             return false;
         }
@@ -254,17 +255,6 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
         return stacks;
     }
 
-    private boolean containsReplacedInput(List<ItemStack> allInputStacks) {
-        if (allInputStacks.isEmpty()) return false;
-        for (RecipeRule rule : RecipeConfigIO.loadRules()) {
-            if (rule.getAction() != RecipeRule.Action.REPLACE_INPUT) continue;
-            for (ItemStack inStack : allInputStacks) {
-                if (rule.targetsMatch(inStack)) return true;
-            }
-        }
-        return false;
-    }
-
     private boolean hasHiddenOutput(List<EmiStack> outputs, List<ItemStack> allInputStacks, List<ItemStack> allCatalystStacks, boolean isRepairRecipe) {
         boolean hasAnyRealOutput = false;
         boolean hasValidOutput = false;
@@ -336,9 +326,21 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
         return ReliableRecipesAPI.isRepairBlocked(stack);
     }
 
-    private boolean isRepairCategory(ResourceLocation categoryId) {
-        if (categoryId == null) return false;
-        String path = categoryId.getPath();
-        return path.contains("anvil") || path.contains("grindstone") || path.contains("repair");
+    private boolean isRepairRecipe(EmiRecipe recipe) {
+        if (recipe == null) return false;
+        if (recipe instanceof EmiGrindstoneDisenchantingRecipe || recipe instanceof EmiGrindstoneDisenchantingBookRecipe) {
+            return false;
+        }
+        if (recipe instanceof EmiRepairItemRecipe || recipe instanceof EmiGrindstoneRecipe || recipe instanceof EmiAnvilRecipe || recipe instanceof EmiAnvilRepairItemRecipe) {
+            return true;
+        }
+        if (recipe.getCategory() != null) {
+            ResourceLocation categoryId = recipe.getCategory().getId();
+            if (categoryId != null) {
+                String path = categoryId.getPath();
+                return path.contains("anvil") || path.contains("grindstone") || path.contains("grinding") || path.contains("repair");
+            }
+        }
+        return false;
     }
 }
