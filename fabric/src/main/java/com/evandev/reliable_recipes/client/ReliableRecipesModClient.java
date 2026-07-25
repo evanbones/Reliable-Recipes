@@ -10,7 +10,7 @@ public class ReliableRecipesModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ClientPlayNetworking.registerGlobalReceiver(ClientboundDeleteRecipePayload.TYPE,
-                (payload, context) -> ClientboundDeleteRecipePayload.handle(payload.recipeId(), context.client()));
+                (payload, context) -> ClientPayloadHandler.handleDeleteRecipe(payload.recipeId()));
 
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
             ScreenEvents.afterRender(screen).register((sharedScreen, guiGraphics, mouseX, mouseY, tickDelta) -> {
