@@ -2,6 +2,7 @@ package com.evandev.reliable_recipes.recipe;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
@@ -37,7 +38,7 @@ public class BrewingRecipe implements Recipe<SingleRecipeInput> {
             list -> list.size() == 1 ? Either.right(list.getFirst()) : Either.left(list)
     );
 
-    public static final Codec<Ingredient> FLEXIBLE_INGREDIENT_CODEC = Codec.either(
+    public static final Codec<Ingredient> BASE_INGREDIENT_CODEC = Codec.either(
             Ingredient.CODEC,
             Codec.either(
                     ResourceLocation.CODEC,
@@ -53,6 +54,22 @@ public class BrewingRecipe implements Recipe<SingleRecipeInput> {
             ),
             Either::left
     );
+
+    public static final Codec<Ingredient> ITEM_WRAPPED_INGREDIENT_CODEC = RecordCodecBuilder.create(instance ->
+            instance.group(
+                    BASE_INGREDIENT_CODEC.optionalFieldOf("ingredient", Ingredient.EMPTY).forGetter(ing -> ing),
+                    BASE_INGREDIENT_CODEC.optionalFieldOf("item", Ingredient.EMPTY).forGetter(ing -> ing)
+            ).apply(instance, (ing1, ing2) -> !ing1.isEmpty() ? ing1 : ing2)
+    );
+
+    public static final Codec<Ingredient> FLEXIBLE_INGREDIENT_CODEC = Codec.either(
+            BASE_INGREDIENT_CODEC,
+            ITEM_WRAPPED_INGREDIENT_CODEC
+    ).xmap(
+            either -> either.map(ing -> ing, ing -> ing),
+            Either::left
+    );
+
     public static final MapCodec<BrewingRecipe> MAP_CODEC = RecordCodecBuilder.mapCodec(
             i -> i.group(
                     BrewingInputMatcher.CODEC.fieldOf("input").forGetter((BrewingRecipe o) -> o.input),
@@ -60,6 +77,17 @@ public class BrewingRecipe implements Recipe<SingleRecipeInput> {
                     ItemStack.STRICT_CODEC.fieldOf("output").forGetter((BrewingRecipe o) -> o.output)
             ).apply(i, BrewingRecipe::new)
     );
+    public static final RecipeSerializer<BrewingRecipe> SERIALIZER = new RecipeSerializer<>() {
+        @Override
+        public @NotNull MapCodec<BrewingRecipe> codec() {
+            return MAP_CODEC;
+        }
+
+        @Override
+        public @NotNull StreamCodec<RegistryFriendlyByteBuf, BrewingRecipe> streamCodec() {
+            return STREAM_CODEC;
+        }
+    };
     public static final StreamCodec<RegistryFriendlyByteBuf, BrewingRecipe> STREAM_CODEC = StreamCodec.of(
             (buf, recipe) -> {
                 BrewingInputMatcher.STREAM_CODEC.encode(buf, recipe.input);
@@ -73,17 +101,6 @@ public class BrewingRecipe implements Recipe<SingleRecipeInput> {
                 return new BrewingRecipe(input, reagent, output);
             }
     );
-    public static final RecipeSerializer<BrewingRecipe> SERIALIZER = new RecipeSerializer<>() {
-        @Override
-        public @NotNull MapCodec<BrewingRecipe> codec() {
-            return MAP_CODEC;
-        }
-
-        @Override
-        public @NotNull StreamCodec<RegistryFriendlyByteBuf, BrewingRecipe> streamCodec() {
-            return STREAM_CODEC;
-        }
-    };
     public static final RecipeType<BrewingRecipe> TYPE = new RecipeType<>() {
         @Override
         public String toString() {
@@ -182,15 +199,39 @@ public class BrewingRecipe implements Recipe<SingleRecipeInput> {
                 ).apply(instance, (potions1, potions2) -> potions1.isPresent() ? potions1 : potions2)
         );
 
-        public static final Codec<BrewingInputMatcher> CODEC = RecordCodecBuilder.create(instance ->
+        public static final Codec<Optional<List<ResourceLocation>>> FLEXIBLE_POTION_CONTENTS_CODEC = Codec.either(
+                POTION_CONTENTS_OBJECT_CODEC,
+                POTIONS_CODEC
+        ).xmap(
+                either -> either.map(opt -> opt, Optional::of),
+                opt -> opt.map(Either::<Optional<List<ResourceLocation>>, List<ResourceLocation>>right).orElseGet(() -> Either.left(Optional.empty()))
+        );
+
+        public static final Codec<BrewingInputMatcher> OBJECT_CODEC = RecordCodecBuilder.create(instance ->
                 instance.group(
                         FLEXIBLE_INGREDIENT_CODEC.optionalFieldOf("ingredient", Ingredient.EMPTY).forGetter(BrewingInputMatcher::ingredient),
                         FLEXIBLE_INGREDIENT_CODEC.optionalFieldOf("item", Ingredient.EMPTY).forGetter(b -> Ingredient.EMPTY),
-                        POTION_CONTENTS_OBJECT_CODEC.optionalFieldOf("potion_contents", Optional.empty()).forGetter(BrewingInputMatcher::potionContents)
+                        FLEXIBLE_POTION_CONTENTS_CODEC.optionalFieldOf("potion_contents", Optional.empty()).forGetter(BrewingInputMatcher::potionContents)
                 ).apply(instance, (ing1, ing2, potionContents) -> {
                     Ingredient ing = !ing1.isEmpty() ? ing1 : ing2;
                     return new BrewingInputMatcher(ing, potionContents);
                 })
+        );
+
+        public static final Codec<BrewingInputMatcher> CODEC = Codec.either(
+                OBJECT_CODEC,
+                FLEXIBLE_INGREDIENT_CODEC
+        ).flatXmap(
+                either -> either.map(
+                        matcher -> {
+                            if (matcher.ingredient().isEmpty() && matcher.potionContents().isEmpty()) {
+                                return DataResult.error(() -> "Neither ingredient/item nor potion_contents found in input object");
+                            }
+                            return DataResult.success(matcher);
+                        },
+                        ing -> DataResult.success(new BrewingInputMatcher(ing, Optional.empty()))
+                ),
+                matcher -> DataResult.success(matcher.potionContents().isPresent() ? Either.left(matcher) : Either.right(matcher.ingredient()))
         );
 
         public static final StreamCodec<RegistryFriendlyByteBuf, BrewingInputMatcher> STREAM_CODEC = StreamCodec.of(
