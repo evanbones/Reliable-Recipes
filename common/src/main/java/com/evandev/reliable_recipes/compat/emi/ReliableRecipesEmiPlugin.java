@@ -149,7 +149,7 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
             List<ItemStack> allInputStacks = extractItemStacks(inputs);
             List<ItemStack> allCatalystStacks = extractItemStacks(catalysts);
 
-            if (hasHiddenOutput(outputs, allInputStacks, allCatalystStacks, isRepairRecipe)) {
+            if (recipe.supportsRecipeTree() && hasHiddenOutput(outputs, allInputStacks, allCatalystStacks, isRepairRecipe)) {
                 return true;
             }
 
