@@ -1,3 +1,4 @@
 ### Fixed
 
-- Improved recipe matching.
+- Fixed certain recipes being removed from EMI entirely when the recipe's placeholder preview item
+  was hidden.

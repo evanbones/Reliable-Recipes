@@ -74,44 +74,46 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
                     }
                 }
 
-                boolean hasAnyRealOutput = false;
-                boolean hasValidOutput = false;
+                if (recipe.supportsRecipeTree()) {
+                    boolean hasAnyRealOutput = false;
+                    boolean hasValidOutput = false;
 
-                for (EmiStack outputEmi : outputs) {
-                    if (outputEmi == null || outputEmi.isEmpty()) continue;
-                    ItemStack outputStack = outputEmi.getItemStack();
-                    if (outputStack == null || outputStack.isEmpty()) continue;
+                    for (EmiStack outputEmi : outputs) {
+                        if (outputEmi == null || outputEmi.isEmpty()) continue;
+                        ItemStack outputStack = outputEmi.getItemStack();
+                        if (outputStack == null || outputStack.isEmpty()) continue;
 
-                    boolean isReturnedTool = false;
+                        boolean isReturnedTool = false;
 
-                    // Check cached inputs
-                    for (ItemStack inStack : allInputStacks) {
-                        if (ItemStack.isSameItem(inStack, outputStack)) {
-                            isReturnedTool = true;
-                            break;
-                        }
-                    }
-
-                    // Check cached catalysts
-                    if (!isReturnedTool) {
-                        for (ItemStack catStack : allCatalystStacks) {
-                            if (ItemStack.isSameItem(catStack, outputStack)) {
+                        // Check cached inputs
+                        for (ItemStack inStack : allInputStacks) {
+                            if (ItemStack.isSameItem(inStack, outputStack)) {
                                 isReturnedTool = true;
                                 break;
                             }
                         }
-                    }
 
-                    if (!isReturnedTool) {
-                        hasAnyRealOutput = true;
-                        if (!isHidden(outputEmi) && !(isRepairRecipe && isRepairBlocked(outputEmi))) {
-                            hasValidOutput = true;
+                        // Check cached catalysts
+                        if (!isReturnedTool) {
+                            for (ItemStack catStack : allCatalystStacks) {
+                                if (ItemStack.isSameItem(catStack, outputStack)) {
+                                    isReturnedTool = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!isReturnedTool) {
+                            hasAnyRealOutput = true;
+                            if (!isHidden(outputEmi) && !(isRepairRecipe && isRepairBlocked(outputEmi))) {
+                                hasValidOutput = true;
+                            }
                         }
                     }
-                }
 
-                if (hasAnyRealOutput && !hasValidOutput) {
-                    return true;
+                    if (hasAnyRealOutput && !hasValidOutput) {
+                        return true;
+                    }
                 }
 
                 if (inputs != null) {
