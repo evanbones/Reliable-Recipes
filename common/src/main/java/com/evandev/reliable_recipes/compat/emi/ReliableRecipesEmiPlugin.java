@@ -144,12 +144,16 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
             List<EmiStack> outputs = recipe.getOutputs();
             if (outputs == null || outputs.isEmpty()) return false;
 
+            if (!recipe.supportsRecipeTree()) {
+                return allStacksHidden(outputs);
+            }
+
             List<EmiIngredient> inputs = recipe.getInputs();
             List<EmiIngredient> catalysts = recipe.getCatalysts();
             List<ItemStack> allInputStacks = extractItemStacks(inputs);
             List<ItemStack> allCatalystStacks = extractItemStacks(catalysts);
 
-            if (recipe.supportsRecipeTree() && hasHiddenOutput(outputs, allInputStacks, allCatalystStacks, isRepairRecipe)) {
+            if (hasHiddenOutput(outputs, allInputStacks, allCatalystStacks, isRepairRecipe)) {
                 return true;
             }
 
@@ -275,6 +279,24 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
         }
 
         return hasAnyRealOutput && !hasValidOutput;
+    }
+
+    /**
+     * True when every real stack in the list is hidden.
+     */
+    private boolean allStacksHidden(List<EmiStack> stacks) {
+        boolean sawStack = false;
+
+        for (EmiStack emiStack : stacks) {
+            if (emiStack == null || emiStack.isEmpty()) continue;
+            ItemStack stack = emiStack.getItemStack();
+            if (stack == null || stack.isEmpty()) continue;
+
+            sawStack = true;
+            if (!isHidden(emiStack)) return false;
+        }
+
+        return sawStack;
     }
 
     private boolean isSameItemInList(ItemStack targetStack, List<ItemStack> stackList) {
