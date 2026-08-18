@@ -1,3 +1,3 @@
 ### Fixed
 
-- Fixed some EMI entries, such as EMI Enchanting's enchantment pages, being removed when they referenced a hidden item.
+- Fixed issues with custom repair materials not removing the original material.

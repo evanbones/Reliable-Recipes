@@ -140,6 +140,10 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
                 return true;
             }
 
+            if (isReplacedAnvilRepair(recipe)) {
+                return true;
+            }
+
             boolean isRepairRecipe = isRepairRecipe(recipe);
             List<EmiStack> outputs = recipe.getOutputs();
             if (outputs == null || outputs.isEmpty()) return false;
@@ -279,6 +283,58 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
         }
 
         return hasAnyRealOutput && !hasValidOutput;
+    }
+
+    private boolean isReplacedAnvilRepair(EmiRecipe recipe) {
+        if (recipe.getId() != null && recipe.getId().getNamespace().equals(Constants.MOD_ID)) {
+            return false;
+        }
+
+        if (recipe.getCategory() != null && recipe.getCategory().getId() != null) {
+            String path = recipe.getCategory().getId().getPath();
+            if (!path.contains("anvil")) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+
+        List<EmiIngredient> inputs = recipe.getInputs();
+        if (inputs == null || inputs.size() < 2) return false;
+
+        EmiIngredient base = inputs.get(0);
+        EmiIngredient addition = inputs.get(1);
+
+        if (base == null || addition == null) return false;
+
+        for (EmiStack baseEmiStack : base.getEmiStacks()) {
+            if (baseEmiStack == null || baseEmiStack.isEmpty()) continue;
+            ItemStack baseStack = baseEmiStack.getItemStack();
+            if (baseStack == null || baseStack.isEmpty()) continue;
+
+            Ingredient customMaterial = ReliableRecipesAPI.getCustomRepairMaterial(baseStack.getItem());
+            if (customMaterial != null && !customMaterial.isEmpty()) {
+
+                boolean hasInvalidAddition = false;
+                for (EmiStack additionEmiStack : addition.getEmiStacks()) {
+                    if (additionEmiStack == null || additionEmiStack.isEmpty()) continue;
+                    ItemStack additionStack = additionEmiStack.getItemStack();
+                    if (additionStack == null || additionStack.isEmpty()) continue;
+
+                    if (additionStack.getItem() == Items.ENCHANTED_BOOK) continue;
+                    if (ItemStack.isSameItem(baseStack, additionStack)) continue;
+                    if (customMaterial.test(additionStack)) continue;
+
+                    hasInvalidAddition = true;
+                    break;
+                }
+
+                if (hasInvalidAddition) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
