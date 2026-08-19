@@ -1,4 +1,3 @@
 ### Fixed
 
-- Fixed certain recipes being removed from EMI entirely when the recipe's placeholder preview item
-  was hidden.
+- Fixed timing issues with tag expansion.

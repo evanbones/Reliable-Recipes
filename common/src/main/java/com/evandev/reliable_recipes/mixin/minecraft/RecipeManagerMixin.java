@@ -21,6 +21,6 @@ public class RecipeManagerMixin {
             at = @At("HEAD")
     )
     private void reliableRecipes$filterJsonAndReset(Map<ResourceLocation, JsonElement> object, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
-        RecipeModifier.modifyRecipesJson(object);
+        RecipeModifier.modifyRecipesJson(object, resourceManager);
     }
 }

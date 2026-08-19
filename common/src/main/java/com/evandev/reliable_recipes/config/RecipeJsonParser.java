@@ -1,6 +1,7 @@
 package com.evandev.reliable_recipes.config;
 
 import com.evandev.reliable_recipes.Constants;
+import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.recipe.TagRule;
 import com.google.gson.JsonElement;
@@ -251,8 +252,7 @@ public class RecipeJsonParser {
                             if (item != Items.AIR) {
                                 ResourceLocation tagId = ResourceLocation.tryParse(tagPath);
                                 if (tagId != null) {
-                                    TagKey<Item> tagKey = TagKey.create(Registries.ITEM, tagId);
-                                    return item.getDefaultInstance().is(tagKey);
+                                    return RecipeModifier.isItemInTag(item, tagId);
                                 }
                             }
                         }
