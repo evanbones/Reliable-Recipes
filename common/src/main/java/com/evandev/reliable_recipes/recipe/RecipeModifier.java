@@ -1,5 +1,6 @@
 package com.evandev.reliable_recipes.recipe;
 
+import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.google.gson.JsonArray;
@@ -7,26 +8,63 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.tags.TagKey;
+import net.minecraft.tags.TagLoader;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class RecipeModifier {
     private static final ThreadLocal<Boolean> MODIFYING_JSON = ThreadLocal.withInitial(() -> false);
     private static List<RecipeRule> cachedRules = null;
+    private static Map<ResourceLocation, Set<Item>> currentItemTags = null;
 
     public static boolean isModifyingJson() {
         return MODIFYING_JSON.get();
     }
 
-    /**
-     * Called during datapack load before recipes are parsed.
-     */
+    public static void modifyRecipesJson(Map<ResourceLocation, JsonElement> map, ResourceManager resourceManager) {
+        if (resourceManager != null) {
+            try {
+                TagLoader<Item> tagLoader = new TagLoader<>(BuiltInRegistries.ITEM::getOptional, Registries.tagsDirPath(Registries.ITEM));
+                Map<ResourceLocation, Collection<Item>> rawTags = tagLoader.loadAndBuild(resourceManager);
+                Map<ResourceLocation, Set<Item>> itemTags = new HashMap<>();
+                for (Map.Entry<ResourceLocation, Collection<Item>> entry : rawTags.entrySet()) {
+                    itemTags.put(entry.getKey(), new HashSet<>(entry.getValue()));
+                }
+                currentItemTags = itemTags;
+            } catch (Exception e) {
+                Constants.LOG.error("Failed to preload item tags for recipe filtering", e);
+            }
+        }
+        try {
+            modifyRecipesJson(map);
+        } finally {
+            currentItemTags = null;
+        }
+    }
+
+    public static boolean isItemInTag(Item item, ResourceLocation tagId) {
+        if (currentItemTags != null) {
+            Set<Item> items = currentItemTags.get(tagId);
+            if (items != null) {
+                return items.contains(item);
+            }
+        }
+        TagKey<Item> tagKey = TagKey.create(Registries.ITEM, tagId);
+        return item.builtInRegistryHolder().is(tagKey);
+    }
+
     public static void modifyRecipesJson(Map<ResourceLocation, JsonElement> map) {
         MODIFYING_JSON.set(true);
         try {
@@ -298,9 +336,6 @@ public class RecipeModifier {
         return ReliableRecipesAPI.isItemHidden(item.getDefaultInstance());
     }
 
-    /**
-     * Called at the end of datapack reload to apply vanilla runtime logic (repair rules).
-     */
     public static void apply() {
         reset();
         List<RecipeRule> rules = cachedRules != null ? cachedRules : RecipeConfigIO.loadRules();
@@ -323,5 +358,6 @@ public class RecipeModifier {
         ReliableRecipesAPI.clearRepairBlockers();
         ReliableRecipesAPI.clearCustomRepairMaterials();
         cachedRules = null;
+        currentItemTags = null;
     }
 }

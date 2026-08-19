@@ -1,3 +1,3 @@
 ### Fixed
 
-- Fixed issues with custom repair materials not removing the original material.
+- Fixed timing issues with tag expansion.

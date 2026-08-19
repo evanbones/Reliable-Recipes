@@ -24,7 +24,7 @@ public class RecipeManagerMixin {
     )
     private void reliableRecipes$filterJsonAndReset(Map<ResourceLocation, JsonElement> object, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
         RecipeConfigIO.invalidateCache();
-        RecipeModifier.modifyRecipesJson(object);
+        RecipeModifier.modifyRecipesJson(object, resourceManager);
     }
 
     @Inject(
