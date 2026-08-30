@@ -82,7 +82,7 @@ Changes the result of matching recipes.
 
 ### 4. `prevent_repair`
 
-Blocks specific items from being repaired across all standard repair methods.
+Blocks specific items from being repaired across all standard repair methods. Supports item IDs, tags (`"#minecraft:swords"` or `"minecraft:enchantable/durability"`), regex (`"/.*_pickaxe/"`), or arrays.
 
 ```json
 {
@@ -93,7 +93,7 @@ Blocks specific items from being repaired across all standard repair methods.
 
 ### 5. `set_repair_material`
 
-Overrides the repair material required to repair a specific tool or weapon in the Anvil.
+Overrides the repair material required to repair a specific tool or weapon in the Anvil. Supports item IDs, tags (`"#c:iron_ingots"`, `"tag:c:iron_ingots"`), regex (`"/.*_slag/"`), or arrays for both `target` and `material`.
 
 ```json
 {

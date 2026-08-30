@@ -4,9 +4,11 @@ import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.tag.TagRule;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -23,7 +25,7 @@ import java.util.regex.Pattern;
 
 public class RecipeRuleParser {
     private static final Set<String> IGNORED_KEYS = Set.of(
-            "action", "target", "replacement", "items", "tags", "tag", "filter"
+            "action", "target", "replacement", "material", "items", "tags", "tag", "filter"
     );
 
     private static final Set<String> OUTPUT_KEYS = Set.of("result", "output", "results");
@@ -40,6 +42,13 @@ public class RecipeRuleParser {
             return new RecipeRule(RecipeRule.Action.PREVENT_REPAIR, (id, r) -> false, target, Ingredient.EMPTY);
         }
 
+        if (actionStr.equals("set_repair_material")) {
+            Ingredient target = parseIngredient(mod.get("target"));
+            JsonElement matEl = mod.has("material") ? mod.get("material") : mod.get("replacement");
+            Ingredient material = parseIngredient(matEl);
+            return new RecipeRule(RecipeRule.Action.SET_REPAIR_MATERIAL, (id, r) -> false, target, material);
+        }
+
         BiPredicate<ResourceLocation, JsonObject> filter = mod.has("filter") ? parseFilter(mod.get("filter")) : parseFilter(mod);
 
         return switch (actionStr) {
@@ -51,12 +60,6 @@ public class RecipeRuleParser {
             case "replace_output" -> {
                 List<String> rawTargets = mod.has("target") ? extractStrings(mod.get("target")) : List.of();
                 yield new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, filter, rawTargets, mod.get("replacement"));
-            }
-            case "set_repair_material" -> {
-                Ingredient target = parseIngredient(mod.get("target"));
-                JsonElement matEl = mod.has("material") ? mod.get("material") : mod.get("replacement");
-                Ingredient material = parseIngredient(matEl);
-                yield new RecipeRule(RecipeRule.Action.SET_REPAIR_MATERIAL, (id, r) -> false, target, material);
             }
             default -> {
                 Constants.LOG.warn("Unknown recipe action: {}", actionStr);
@@ -301,31 +304,53 @@ public class RecipeRuleParser {
         return list;
     }
 
-    private static Ingredient parseIngredient(JsonElement json) {
-        if (json == null) return Ingredient.EMPTY;
+    public static Ingredient parseIngredient(JsonElement json) {
+        if (json == null || json.isJsonNull()) return Ingredient.EMPTY;
+
+        if (json.isJsonPrimitive() && json.getAsJsonPrimitive().isString()) {
+            return parseIngredientString(json.getAsString());
+        }
+
         if (json.isJsonArray()) {
             List<Ingredient> list = new ArrayList<>();
-            json.getAsJsonArray().forEach(e -> list.add(parseIngredientString(e.getAsString())));
+            json.getAsJsonArray().forEach(e -> list.add(parseIngredient(e)));
             return mergeIngredients(list);
         }
-        return parseIngredientString(json.getAsString());
+
+        return Ingredient.CODEC.parse(JsonOps.INSTANCE, json).result().orElseGet(() -> {
+            if (json.isJsonObject()) {
+                JsonObject obj = json.getAsJsonObject();
+                if (obj.has("id")) {
+                    return parseIngredientString(obj.get("id").getAsString());
+                }
+            }
+            return Ingredient.EMPTY;
+        });
     }
 
-    private static Ingredient mergeIngredients(List<Ingredient> ingredients) {
-        if (ingredients.isEmpty()) return Ingredient.EMPTY;
-        if (ingredients.size() == 1) return ingredients.getFirst();
+    public static Ingredient mergeIngredients(Collection<Ingredient> ingredients) {
+        if (ingredients == null || ingredients.isEmpty()) return Ingredient.EMPTY;
+        if (ingredients.size() == 1) return ingredients.iterator().next();
 
-        List<ItemStack> allStacks = new ArrayList<>();
+        JsonArray array = new JsonArray();
         for (Ingredient ing : ingredients) {
-            allStacks.addAll(Arrays.asList(ing.getItems()));
+            if (ing == null || ing.isEmpty()) continue;
+            Ingredient.CODEC.encodeStart(JsonOps.INSTANCE, ing).result().ifPresent(json -> {
+                if (json.isJsonArray()) {
+                    json.getAsJsonArray().forEach(array::add);
+                } else {
+                    array.add(json);
+                }
+            });
         }
-        return Ingredient.of(allStacks.toArray(new ItemStack[0]));
+
+        if (array.isEmpty()) return Ingredient.EMPTY;
+        return Ingredient.CODEC.parse(JsonOps.INSTANCE, array).result().orElse(Ingredient.EMPTY);
     }
 
-    private static Ingredient parseIngredientString(String str) {
-        if (str.startsWith("#")) {
-            return Ingredient.of(TagKey.create(Registries.ITEM, ResourceLocation.parse(str.substring(1))));
-        }
+    public static Ingredient parseIngredientString(String str) {
+        if (str == null || str.isBlank()) return Ingredient.EMPTY;
+        str = str.trim();
 
         if (str.startsWith("/") && str.endsWith("/") && str.length() > 2) {
             try {
@@ -334,7 +359,7 @@ public class RecipeRuleParser {
 
                 for (Item item : BuiltInRegistries.ITEM) {
                     ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
-                    if (pattern.matcher(key.toString()).matches()) {
+                    if (pattern.matcher(key.toString()).matches() || pattern.matcher(key.getPath()).matches()) {
                         matchingItems.add(new ItemStack(item));
                     }
                 }
@@ -346,7 +371,35 @@ public class RecipeRuleParser {
             }
         }
 
-        Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(str));
-        return item != Items.AIR ? Ingredient.of(item) : Ingredient.EMPTY;
+        if (str.startsWith("#") || str.startsWith("tag:")) {
+            String tagPath = str.startsWith("#") ? str.substring(1) : str.substring(4);
+            ResourceLocation tagLoc = ResourceLocation.tryParse(tagPath);
+            return tagLoc != null ? Ingredient.of(TagKey.create(Registries.ITEM, tagLoc)) : Ingredient.EMPTY;
+        }
+
+        if (str.startsWith("item:")) {
+            String itemPath = str.substring(5);
+            ResourceLocation itemLoc = ResourceLocation.tryParse(itemPath);
+            if (itemLoc != null) {
+                Item item = BuiltInRegistries.ITEM.get(itemLoc);
+                if (item != Items.AIR) {
+                    return Ingredient.of(item);
+                }
+            }
+            return Ingredient.EMPTY;
+        }
+
+        ResourceLocation loc = ResourceLocation.tryParse(str);
+        if (loc != null) {
+            if (BuiltInRegistries.ITEM.containsKey(loc)) {
+                Item item = BuiltInRegistries.ITEM.get(loc);
+                if (item != Items.AIR) {
+                    return Ingredient.of(item);
+                }
+            }
+            return Ingredient.of(TagKey.create(Registries.ITEM, loc));
+        }
+
+        return Ingredient.EMPTY;
     }
 }

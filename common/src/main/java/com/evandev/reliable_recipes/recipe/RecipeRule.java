@@ -1,20 +1,19 @@
 package com.evandev.reliable_recipes.recipe;
 
+import com.evandev.reliable_recipes.config.RecipeRuleParser;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiPredicate;
+import java.util.regex.Pattern;
 
 public class RecipeRule {
     private final Action action;
@@ -51,42 +50,46 @@ public class RecipeRule {
     private static Ingredient stringsToIngredient(List<String> values) {
         List<Ingredient> ingredients = new ArrayList<>();
         for (String value : values) {
-            if (value.startsWith("#")) {
-                ResourceLocation tagLoc = ResourceLocation.tryParse(value.substring(1));
-                if (tagLoc != null) {
-                    ingredients.add(Ingredient.of(TagKey.create(Registries.ITEM, tagLoc)));
-                }
-            } else {
-                ResourceLocation loc = ResourceLocation.tryParse(value);
-                if (loc != null) {
-                    Item item = BuiltInRegistries.ITEM.get(loc);
-                    if (item != Items.AIR) {
-                        ingredients.add(Ingredient.of(item));
-                    }
-                }
+            Ingredient parsed = RecipeRuleParser.parseIngredientString(value);
+            if (!parsed.isEmpty()) {
+                ingredients.add(parsed);
             }
         }
-        if (ingredients.isEmpty()) return Ingredient.EMPTY;
-        if (ingredients.size() == 1) return ingredients.getFirst();
-
-        List<ItemStack> allStacks = new ArrayList<>();
-        for (Ingredient ing : ingredients) {
-            allStacks.addAll(Arrays.asList(ing.getItems()));
-        }
-        return Ingredient.of(allStacks.toArray(new ItemStack[0]));
+        return RecipeRuleParser.mergeIngredients(ingredients);
     }
 
     private static boolean matchesAnyItemString(List<String> values, ItemStack stack) {
         if (stack.isEmpty()) return false;
         String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        String itemPath = BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath();
         for (String value : values) {
-            if (value.startsWith("#")) {
-                ResourceLocation tagLoc = ResourceLocation.tryParse(value.substring(1));
+            if (value.startsWith("#") || value.startsWith("tag:")) {
+                String tagPath = value.startsWith("#") ? value.substring(1) : value.substring(4);
+                ResourceLocation tagLoc = ResourceLocation.tryParse(tagPath);
                 if (tagLoc != null && stack.is(TagKey.create(Registries.ITEM, tagLoc))) {
+                    return true;
+                }
+            } else if (value.startsWith("/") && value.endsWith("/") && value.length() > 2) {
+                try {
+                    Pattern pattern = Pattern.compile(value.substring(1, value.length() - 1));
+                    if (pattern.matcher(itemId).matches() || pattern.matcher(itemPath).matches()) {
+                        return true;
+                    }
+                } catch (Exception ignored) {
+                }
+            } else if (value.startsWith("item:")) {
+                if (value.substring(5).equals(itemId)) {
                     return true;
                 }
             } else if (value.equals(itemId)) {
                 return true;
+            } else {
+                ResourceLocation loc = ResourceLocation.tryParse(value);
+                if (loc != null && !BuiltInRegistries.ITEM.containsKey(loc)) {
+                    if (stack.is(TagKey.create(Registries.ITEM, loc))) {
+                        return true;
+                    }
+                }
             }
         }
         return false;
