@@ -1,5 +1,6 @@
 package com.evandev.reliable_recipes.api;
 
+import com.evandev.reliable_recipes.config.RecipeRuleParser;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -102,9 +103,16 @@ public class ReliableRecipesAPI {
     /**
      * Registers a replacement repair material for an item, used by the anvil, grindstone,
      * and vanilla item-repair recipes in place of the item's default repair material.
+     * If a custom repair material is already registered for this item, the materials are merged.
      */
     public static void registerCustomRepairMaterial(Item item, Ingredient material) {
-        CUSTOM_REPAIR_MATERIALS.put(item, material);
+        if (item == null || material == null || material.isEmpty()) return;
+        CUSTOM_REPAIR_MATERIALS.compute(item, (k, existing) -> {
+            if (existing == null || existing.isEmpty()) {
+                return material;
+            }
+            return RecipeRuleParser.mergeIngredients(List.of(existing, material));
+        });
     }
 
     public static Ingredient getCustomRepairMaterial(Item item) {

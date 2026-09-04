@@ -333,19 +333,34 @@ public class RecipeRuleParser {
         if (ingredients.size() == 1) return ingredients.iterator().next();
 
         JsonArray array = new JsonArray();
+        Set<JsonElement> seen = new HashSet<>();
         for (Ingredient ing : ingredients) {
             if (ing == null || ing.isEmpty()) continue;
             Ingredient.CODEC.encodeStart(JsonOps.INSTANCE, ing).result().ifPresent(json -> {
                 if (json.isJsonArray()) {
-                    json.getAsJsonArray().forEach(array::add);
+                    for (JsonElement elem : json.getAsJsonArray()) {
+                        if (seen.add(elem)) {
+                            array.add(elem);
+                        }
+                    }
                 } else {
-                    array.add(json);
+                    if (seen.add(json)) {
+                        array.add(json);
+                    }
                 }
             });
         }
 
         if (array.isEmpty()) return Ingredient.EMPTY;
-        return Ingredient.CODEC.parse(JsonOps.INSTANCE, array).result().orElse(Ingredient.EMPTY);
+        return Ingredient.CODEC.parse(JsonOps.INSTANCE, array).result().orElseGet(() -> {
+            List<ItemStack> stacks = new ArrayList<>();
+            for (Ingredient ing : ingredients) {
+                if (ing != null && !ing.isEmpty()) {
+                    stacks.addAll(Arrays.asList(ing.getItems()));
+                }
+            }
+            return stacks.isEmpty() ? Ingredient.EMPTY : Ingredient.of(stacks.stream());
+        });
     }
 
     public static Ingredient parseIngredientString(String str) {
