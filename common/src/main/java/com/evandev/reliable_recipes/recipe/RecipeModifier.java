@@ -16,13 +16,7 @@ import net.minecraft.tags.TagLoader;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class RecipeModifier {
     private static final ThreadLocal<Boolean> MODIFYING_JSON = ThreadLocal.withInitial(() -> false);
@@ -121,7 +115,11 @@ public class RecipeModifier {
         }
     }
 
-    private static void mutateJsonRecursively(JsonElement parent, List<String> targets, JsonElement rawReplacement, RecipeRule.Action action, boolean isTargetContext) {
+    static void mutateJsonRecursively(JsonElement parent, List<String> targets, JsonElement rawReplacement, RecipeRule.Action action, boolean isTargetContext) {
+        mutateJsonRecursively(parent, targets, rawReplacement, action, isTargetContext, false);
+    }
+
+    static void mutateJsonRecursively(JsonElement parent, List<String> targets, JsonElement rawReplacement, RecipeRule.Action action, boolean isTargetContext, boolean isIngredientList) {
         if (parent.isJsonObject()) {
             JsonObject obj = parent.getAsJsonObject();
             List<Map.Entry<String, JsonElement>> entries = new ArrayList<>(obj.entrySet());
@@ -131,6 +129,7 @@ public class RecipeModifier {
                 JsonElement child = entry.getValue();
 
                 boolean nextContext = getNextContext(action, isTargetContext, key);
+                boolean childIsIngredientList = isIngredientListKey(key);
 
                 if (child.isJsonObject()) {
                     JsonObject childObj = child.getAsJsonObject();
@@ -161,7 +160,7 @@ public class RecipeModifier {
                             obj.add(key, rawReplacement.deepCopy());
                         }
                     } else {
-                        mutateJsonRecursively(child, targets, rawReplacement, action, nextContext);
+                        mutateJsonRecursively(child, targets, rawReplacement, action, nextContext, childIsIngredientList);
                     }
                 } else if (child.isJsonPrimitive() && child.getAsJsonPrimitive().isString()) {
                     if (targets.contains(child.getAsString()) && nextContext) {
@@ -170,12 +169,26 @@ public class RecipeModifier {
                             obj.remove("tag");
                             if (repStr.startsWith("#")) obj.addProperty("tag", repStr.substring(1));
                             else obj.addProperty("item", repStr);
+                        } else if (rawReplacement.isJsonArray()) {
+                            JsonArray newArr = new JsonArray();
+                            for (JsonElement rep : rawReplacement.getAsJsonArray()) {
+                                if (rep.isJsonPrimitive()) {
+                                    JsonObject newObj = new JsonObject();
+                                    String repStr = rep.getAsString();
+                                    if (repStr.startsWith("#")) newObj.addProperty("tag", repStr.substring(1));
+                                    else newObj.addProperty(key.equals("tag") ? "tag" : "item", repStr);
+                                    newArr.add(newObj);
+                                } else {
+                                    newArr.add(rep.deepCopy());
+                                }
+                            }
+                            obj.add(key, newArr);
                         } else {
                             obj.add(key, rawReplacement.deepCopy());
                         }
                     }
                 } else {
-                    mutateJsonRecursively(child, targets, rawReplacement, action, nextContext);
+                    mutateJsonRecursively(child, targets, rawReplacement, action, nextContext, childIsIngredientList);
                 }
             }
         } else if (parent.isJsonArray()) {
@@ -193,16 +206,33 @@ public class RecipeModifier {
                     if (matchedKey != null && isTargetContext) {
                         changed = true;
                         if (rawReplacement.isJsonArray()) {
-                            for (JsonElement rep : rawReplacement.getAsJsonArray()) {
-                                if (rep.isJsonPrimitive()) {
-                                    JsonObject newObj = childObj.deepCopy();
-                                    String repStr = rep.getAsString();
-                                    newObj.remove(matchedKey);
-                                    if (repStr.startsWith("#")) newObj.addProperty("tag", repStr.substring(1));
-                                    else newObj.addProperty(matchedKey.equals("tag") ? "item" : matchedKey, repStr);
-                                    newArray.add(newObj);
-                                } else {
-                                    newArray.add(rep.deepCopy());
+                            if (isIngredientList) {
+                                JsonArray newArr = new JsonArray();
+                                for (JsonElement rep : rawReplacement.getAsJsonArray()) {
+                                    if (rep.isJsonPrimitive()) {
+                                        JsonObject newObj = childObj.deepCopy();
+                                        String repStr = rep.getAsString();
+                                        newObj.remove(matchedKey);
+                                        if (repStr.startsWith("#")) newObj.addProperty("tag", repStr.substring(1));
+                                        else newObj.addProperty(matchedKey.equals("tag") ? "item" : matchedKey, repStr);
+                                        newArr.add(newObj);
+                                    } else {
+                                        newArr.add(rep.deepCopy());
+                                    }
+                                }
+                                newArray.add(newArr);
+                            } else {
+                                for (JsonElement rep : rawReplacement.getAsJsonArray()) {
+                                    if (rep.isJsonPrimitive()) {
+                                        JsonObject newObj = childObj.deepCopy();
+                                        String repStr = rep.getAsString();
+                                        newObj.remove(matchedKey);
+                                        if (repStr.startsWith("#")) newObj.addProperty("tag", repStr.substring(1));
+                                        else newObj.addProperty(matchedKey.equals("tag") ? "item" : matchedKey, repStr);
+                                        newArray.add(newObj);
+                                    } else {
+                                        newArray.add(rep.deepCopy());
+                                    }
                                 }
                             }
                         } else if (rawReplacement.isJsonPrimitive()) {
@@ -217,13 +247,29 @@ public class RecipeModifier {
                         }
                     } else {
                         newArray.add(child);
-                        mutateJsonRecursively(child, targets, rawReplacement, action, isTargetContext);
+                        mutateJsonRecursively(child, targets, rawReplacement, action, isTargetContext, false);
                     }
                 } else if (child.isJsonPrimitive() && child.getAsJsonPrimitive().isString()) {
                     if (targets.contains(child.getAsString()) && isTargetContext) {
                         changed = true;
                         if (rawReplacement.isJsonArray()) {
-                            for (JsonElement rep : rawReplacement.getAsJsonArray()) newArray.add(rep.deepCopy());
+                            if (isIngredientList) {
+                                JsonArray newArr = new JsonArray();
+                                for (JsonElement rep : rawReplacement.getAsJsonArray()) {
+                                    if (rep.isJsonPrimitive()) {
+                                        String repStr = rep.getAsString();
+                                        JsonObject newObj = new JsonObject();
+                                        if (repStr.startsWith("#")) newObj.addProperty("tag", repStr.substring(1));
+                                        else newObj.addProperty("item", repStr);
+                                        newArr.add(newObj);
+                                    } else {
+                                        newArr.add(rep.deepCopy());
+                                    }
+                                }
+                                newArray.add(newArr);
+                            } else {
+                                for (JsonElement rep : rawReplacement.getAsJsonArray()) newArray.add(rep.deepCopy());
+                            }
                         } else {
                             newArray.add(rawReplacement.deepCopy());
                         }
@@ -232,7 +278,7 @@ public class RecipeModifier {
                     }
                 } else {
                     newArray.add(child);
-                    mutateJsonRecursively(child, targets, rawReplacement, action, isTargetContext);
+                    mutateJsonRecursively(child, targets, rawReplacement, action, isTargetContext, false);
                 }
             }
 
@@ -241,6 +287,11 @@ public class RecipeModifier {
                 for (int i = 0; i < newArray.size(); i++) oldArray.add(newArray.get(i));
             }
         }
+    }
+
+    private static boolean isIngredientListKey(String key) {
+        String lower = key.toLowerCase(Locale.ROOT);
+        return lower.endsWith("ingredients") || lower.endsWith("inputs");
     }
 
     private static boolean getNextContext(RecipeRule.Action action, boolean isTargetContext, String key) {
