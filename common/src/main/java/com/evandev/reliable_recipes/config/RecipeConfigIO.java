@@ -6,23 +6,29 @@ import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.tag.TagRule;
 import com.google.gson.*;
 
+import net.minecraft.resources.ResourceLocation;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class RecipeConfigIO {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path CONFIG_DIR = Services.PLATFORM.getConfigDirectory().resolve("reliable_recipes");
+    public static Path getConfigDir() {
+        return Services.PLATFORM.getConfigDirectory().resolve("reliable_recipes");
+    }
+
+    public record ConfigFile(Path path, Path relativePath, JsonElement element) {
+    }
 
     private static List<RecipeRule> cachedRules;
     private static List<TagRule> cachedTagRules;
+    private static Map<ResourceLocation, JsonElement> cachedCustomRecipes;
 
     public static List<RecipeRule> loadRules() {
         if (cachedRules == null) {
@@ -38,15 +44,24 @@ public class RecipeConfigIO {
         return cachedTagRules;
     }
 
+    public static Map<ResourceLocation, JsonElement> loadCustomRecipes() {
+        if (cachedCustomRecipes == null) {
+            cachedCustomRecipes = computeCustomRecipes();
+        }
+        return cachedCustomRecipes;
+    }
+
     public static void invalidateCache() {
         cachedRules = null;
         cachedTagRules = null;
+        cachedCustomRecipes = null;
     }
 
     private static List<RecipeRule> computeRules() {
         List<RecipeRule> rules = new ArrayList<>();
-        List<JsonElement> configs = loadAllConfigs();
-        for (JsonElement config : configs) {
+        List<ConfigFile> configs = loadAllConfigFiles();
+        for (ConfigFile configFile : configs) {
+            JsonElement config = configFile.element();
             if (config.isJsonArray()) {
                 for (JsonElement element : config.getAsJsonArray()) {
                     if (element.isJsonObject()) {
@@ -71,8 +86,9 @@ public class RecipeConfigIO {
 
     private static List<TagRule> computeTagRules() {
         List<TagRule> rules = new ArrayList<>();
-        List<JsonElement> configs = loadAllConfigs();
-        for (JsonElement config : configs) {
+        List<ConfigFile> configs = loadAllConfigFiles();
+        for (ConfigFile configFile : configs) {
+            JsonElement config = configFile.element();
             if (config.isJsonArray()) {
                 for (JsonElement element : config.getAsJsonArray()) {
                     if (element.isJsonObject()) {
@@ -95,34 +111,198 @@ public class RecipeConfigIO {
         return rules;
     }
 
-    private static List<JsonElement> loadAllConfigs() {
-        List<JsonElement> loadedConfigs = new ArrayList<>();
-        File dir = CONFIG_DIR.toFile();
+    private static Map<ResourceLocation, JsonElement> computeCustomRecipes() {
+        Map<ResourceLocation, JsonElement> customRecipes = new LinkedHashMap<>();
+        List<ConfigFile> configs = loadAllConfigFiles();
 
-        if (!dir.exists()) {
-            if (dir.mkdirs()) {
-                createDefault(CONFIG_DIR.resolve("recipe_example.json.disabled"));
-            } else {
-                Constants.LOG.error("Could not create config directory: {}", CONFIG_DIR);
+        for (ConfigFile configFile : configs) {
+            JsonElement root = configFile.element();
+            Path relPath = configFile.relativePath();
+
+            if (root.isJsonArray()) {
+                JsonArray array = root.getAsJsonArray();
+                List<JsonObject> recipeCandidates = new ArrayList<>();
+                for (JsonElement elem : array) {
+                    if (elem.isJsonObject()) {
+                        JsonObject obj = elem.getAsJsonObject();
+                        if (isRecipeElement(obj)) {
+                            recipeCandidates.add(obj);
+                        }
+                    }
+                }
+                for (int i = 0; i < recipeCandidates.size(); i++) {
+                    processRecipeObject(recipeCandidates.get(i), relPath, i, recipeCandidates.size(), customRecipes);
+                }
+            } else if (root.isJsonObject()) {
+                JsonObject obj = root.getAsJsonObject();
+                if (obj.has("recipes") && obj.get("recipes").isJsonArray()) {
+                    JsonArray array = obj.getAsJsonArray("recipes");
+                    List<JsonObject> recipeCandidates = new ArrayList<>();
+                    for (JsonElement elem : array) {
+                        if (elem.isJsonObject()) {
+                            recipeCandidates.add(elem.getAsJsonObject());
+                        }
+                    }
+                    for (int i = 0; i < recipeCandidates.size(); i++) {
+                        processRecipeObject(recipeCandidates.get(i), relPath, i, recipeCandidates.size(), customRecipes);
+                    }
+                } else if (obj.has("custom_recipes") && obj.get("custom_recipes").isJsonArray()) {
+                    JsonArray array = obj.getAsJsonArray("custom_recipes");
+                    List<JsonObject> recipeCandidates = new ArrayList<>();
+                    for (JsonElement elem : array) {
+                        if (elem.isJsonObject()) {
+                            recipeCandidates.add(elem.getAsJsonObject());
+                        }
+                    }
+                    for (int i = 0; i < recipeCandidates.size(); i++) {
+                        processRecipeObject(recipeCandidates.get(i), relPath, i, recipeCandidates.size(), customRecipes);
+                    }
+                } else if (obj.has("recipe_additions") && obj.get("recipe_additions").isJsonArray()) {
+                    JsonArray array = obj.getAsJsonArray("recipe_additions");
+                    List<JsonObject> recipeCandidates = new ArrayList<>();
+                    for (JsonElement elem : array) {
+                        if (elem.isJsonObject()) {
+                            recipeCandidates.add(elem.getAsJsonObject());
+                        }
+                    }
+                    for (int i = 0; i < recipeCandidates.size(); i++) {
+                        processRecipeObject(recipeCandidates.get(i), relPath, i, recipeCandidates.size(), customRecipes);
+                    }
+                } else if (!obj.has("recipe_modifications") && !obj.has("tag_modifications")) {
+                    if (isRecipeElement(obj)) {
+                        processRecipeObject(obj, relPath, 0, 1, customRecipes);
+                    }
+                }
             }
         }
 
-        if (!Files.exists(CONFIG_DIR)) return loadedConfigs;
+        return customRecipes;
+    }
 
-        try (Stream<Path> stream = Files.walk(CONFIG_DIR)) {
-            stream.filter(path -> Files.isRegularFile(path) && path.toString().endsWith(".json"))
-                  .forEach(path -> {
-                      try (FileReader reader = new FileReader(path.toFile())) {
-                          JsonElement root = JsonParser.parseReader(reader);
-                          if (root != null) {
-                              loadedConfigs.add(root);
+    private static boolean isRecipeElement(JsonObject obj) {
+        if (obj.has("action")) {
+            String action = obj.get("action").getAsString();
+            return "add".equalsIgnoreCase(action) || "add_recipe".equalsIgnoreCase(action);
+        }
+        return obj.has("type") && obj.get("type").isJsonPrimitive();
+    }
+
+    private static void processRecipeObject(JsonObject rawObj, Path relPath, int index, int totalInFile, Map<ResourceLocation, JsonElement> outputMap) {
+        JsonObject recipeJson;
+        if (rawObj.has("action")) {
+            String action = rawObj.get("action").getAsString();
+            if ("add".equalsIgnoreCase(action) || "add_recipe".equalsIgnoreCase(action)) {
+                if (rawObj.has("recipe") && rawObj.get("recipe").isJsonObject()) {
+                    recipeJson = rawObj.getAsJsonObject("recipe").deepCopy();
+                    if (rawObj.has("id") && !recipeJson.has("id")) {
+                        recipeJson.add("id", rawObj.get("id"));
+                    }
+                } else {
+                    recipeJson = rawObj.deepCopy();
+                    recipeJson.remove("action");
+                }
+            } else {
+                return;
+            }
+        } else {
+            recipeJson = rawObj.deepCopy();
+        }
+
+        ResourceLocation recipeId = null;
+        boolean explicitId = false;
+
+        if (recipeJson.has("id") && recipeJson.get("id").isJsonPrimitive() && recipeJson.get("id").getAsJsonPrimitive().isString()) {
+            String idStr = recipeJson.get("id").getAsString().trim();
+            if (!idStr.isEmpty()) {
+                if (idStr.contains(":")) {
+                    recipeId = ResourceLocation.tryParse(idStr);
+                } else {
+                    recipeId = ResourceLocation.tryParse("reliable_recipes:" + idStr);
+                }
+                if (recipeId != null) {
+                    explicitId = true;
+                }
+            }
+        }
+
+        if (recipeId == null) {
+            String pathStr = relPath.toString().replace('\\', '/');
+            if (pathStr.endsWith(".json")) {
+                pathStr = pathStr.substring(0, pathStr.length() - 5);
+            }
+            String sanitized = pathStr.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9/._-]", "_");
+            if (sanitized.startsWith("/")) sanitized = sanitized.substring(1);
+            if (totalInFile > 1) {
+                sanitized += "_" + index;
+            }
+            recipeId = ResourceLocation.tryParse("reliable_recipes:" + sanitized);
+            if (recipeId == null) {
+                recipeId = ResourceLocation.fromNamespaceAndPath("reliable_recipes", "recipe_" + outputMap.size());
+            }
+        }
+
+        if (!explicitId && outputMap.containsKey(recipeId)) {
+            int counter = 1;
+            ResourceLocation candidate;
+            do {
+                candidate = ResourceLocation.tryParse(recipeId.toString() + "_" + counter++);
+            } while (candidate != null && outputMap.containsKey(candidate));
+            if (candidate != null) {
+                recipeId = candidate;
+            }
+        }
+
+        recipeJson.remove("id");
+        recipeJson.remove("action");
+        outputMap.put(recipeId, recipeJson);
+    }
+
+    private static List<ConfigFile> loadAllConfigFiles() {
+        List<ConfigFile> loadedConfigs = new ArrayList<>();
+        Path configDir = getConfigDir();
+        File dir = configDir.toFile();
+
+        if (!dir.exists()) {
+            if (dir.mkdirs()) {
+                createDefault(configDir.resolve("recipe_example.json.disabled"));
+            } else {
+                Constants.LOG.error("Could not create config directory: {}", configDir);
+            }
+        }
+
+        List<Path> scanDirs = new ArrayList<>();
+        if (Files.exists(configDir)) {
+            scanDirs.add(configDir);
+        }
+
+        try {
+            Path configParent = Services.PLATFORM.getConfigDirectory().getParent();
+            if (configParent != null) {
+                Path rootReliableRecipes = configParent.resolve("reliable_recipes");
+                if (Files.exists(rootReliableRecipes) && Files.isDirectory(rootReliableRecipes) && !rootReliableRecipes.equals(configDir)) {
+                    scanDirs.add(rootReliableRecipes);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        for (Path rootDir : scanDirs) {
+            try (Stream<Path> stream = Files.walk(rootDir)) {
+                stream.filter(path -> Files.isRegularFile(path) && path.toString().endsWith(".json"))
+                      .forEach(path -> {
+                          try (FileReader reader = new FileReader(path.toFile())) {
+                              JsonElement root = JsonParser.parseReader(reader);
+                              if (root != null) {
+                                  Path relPath = rootDir.relativize(path);
+                                  loadedConfigs.add(new ConfigFile(path, relPath, root));
+                              }
+                          } catch (Exception e) {
+                              Constants.LOG.error("Failed to load recipe config file: {}", path.getFileName(), e);
                           }
-                      } catch (Exception e) {
-                          Constants.LOG.error("Failed to load recipe config file: {}", path.getFileName(), e);
-                      }
-                  });
-        } catch (IOException e) {
-            Constants.LOG.error("Failed to walk config directory: {}", CONFIG_DIR, e);
+                      });
+            } catch (IOException e) {
+                Constants.LOG.error("Failed to walk recipe directory: {}", rootDir, e);
+            }
         }
 
         return loadedConfigs;
@@ -160,6 +340,24 @@ public class RecipeConfigIO {
         tagRemoveExample.add("id", tagItems);
         root.add(tagRemoveExample);
 
+        // Example 4: Add custom recipe
+        JsonObject addExample = new JsonObject();
+        addExample.addProperty("action", "add_recipe");
+        addExample.addProperty("id", "reliable_recipes:example_stick");
+        JsonObject recipeDetails = new JsonObject();
+        recipeDetails.addProperty("type", "minecraft:crafting_shapeless");
+        JsonArray ingredients = new JsonArray();
+        JsonObject ing = new JsonObject();
+        ing.addProperty("item", "minecraft:dirt");
+        ingredients.add(ing);
+        recipeDetails.add("ingredients", ingredients);
+        JsonObject result = new JsonObject();
+        result.addProperty("id", "minecraft:stick");
+        result.addProperty("count", 4);
+        recipeDetails.add("result", result);
+        addExample.add("recipe", recipeDetails);
+        root.add(addExample);
+
         try (FileWriter writer = new FileWriter(path.toFile())) {
             GSON.toJson(root, writer);
         } catch (IOException e) {
@@ -168,7 +366,7 @@ public class RecipeConfigIO {
     }
 
     public static void addRemovalRule(String recipeId) {
-        Path generatedPath = CONFIG_DIR.resolve("generated_removals.json");
+        Path generatedPath = getConfigDir().resolve("generated_removals.json");
         File file = generatedPath.toFile();
         JsonArray root;
 
@@ -237,7 +435,7 @@ public class RecipeConfigIO {
     }
 
     public static void removeRemovalRule(String recipeId) {
-        Path generatedPath = CONFIG_DIR.resolve("generated_removals.json");
+        Path generatedPath = getConfigDir().resolve("generated_removals.json");
         File file = generatedPath.toFile();
         if (!file.exists()) return;
 

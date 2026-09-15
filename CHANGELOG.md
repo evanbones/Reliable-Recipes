@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-09-14
+
+### Added
+
+- Added JSON recipe loading directly from the `reliable_recipes/` folder, with support for standalone recipe files in subdirectories.
+- Added the `add_recipe` action.
+- Added `remove_output` as an alias for removing recipes by output.
+
+### Fixed
+
+- Fixed `replace_output` not modifying recipes when `target` is omitted.
+- Fixed rare service loading crash.
+
 ## [3.1.8] - 2026-09-05
 
 ### Changed

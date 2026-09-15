@@ -153,5 +153,51 @@ If you want to disable the vanilla crafting grid repair feature for **all** item
     "id": "minecraft:repair_item"
   }
 ]
+```
 
+## Action: `add_recipe`
+
+Creates a brand new recipe. You can define custom recipes within your rule arrays or as standalone recipe files.
+
+* **`id`** (Optional): A custom identifier for the recipe (e.g. `"reliable_recipes:my_recipe"`). If an existing recipe ID is provided, it replaces the existing recipe.
+* **`recipe`** (Optional): A JSON object containing the recipe definition.
+
+**Example 1: Using the `recipe` wrapper**
+```json
+[
+  {
+    "action": "add_recipe",
+    "id": "reliable_recipes:flint_from_gravel",
+    "recipe": {
+      "type": "minecraft:crafting_shapeless",
+      "ingredients": [
+        { "item": "minecraft:gravel" },
+        { "item": "minecraft:gravel" },
+        { "item": "minecraft:gravel" }
+      ],
+      "result": {
+        "count": 1,
+        "id": "minecraft:flint"
+      }
+    }
+  }
+]
+```
+
+**Example 2: Direct recipe definition**
+```json
+[
+  {
+    "action": "add_recipe",
+    "id": "reliable_recipes:dirt_to_stick",
+    "type": "minecraft:crafting_shapeless",
+    "ingredients": [
+      { "item": "minecraft:dirt" }
+    ],
+    "result": {
+      "count": 4,
+      "id": "minecraft:stick"
+    }
+  }
+]
 ```

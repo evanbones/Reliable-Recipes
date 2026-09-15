@@ -6,13 +6,17 @@ hide_meta: true
 Reliable Recipes works by watching a specific folder in your Minecraft instance for JSON files.
 
 ## Folder Location
-Place your configuration files in: `./config/reliable_recipes`
+Place your configuration files in: `./config/reliable_recipes` (or `./reliable_recipes`). Subdirectories are supported for organizing your files.
 
-Upon server startup or data reload, the mod reads these files and injects your specified changes into the internal registries.
+Upon server startup or data reload, the mod reads these files, adds any custom recipes, and applies your specified modifications.
 
 ## JSON Structure
 
-Configuration files define rules within a single, flat top-level JSON array. Each rule specifies its `"action"` alongside any filters or targets.
+Reliable Recipes supports multiple formats:
+
+### 1. Modification Rules
+
+Configuration files can define rules within a single top-level JSON array. Each modification rule specifies its `"action"` alongside any filters or targets:
 
 ```json
 [
@@ -36,5 +40,47 @@ Configuration files define rules within a single, flat top-level JSON array. Eac
     "id": [
       "examplemod:inedible_food"
     ]
+  },
+  {
+    "action": "add_recipe",
+    "id": "reliable_recipes:flint_from_gravel",
+    "recipe": {
+      "type": "minecraft:crafting_shapeless",
+      "ingredients": [
+        { "item": "minecraft:gravel" },
+        { "item": "minecraft:gravel" },
+        { "item": "minecraft:gravel" }
+      ],
+      "result": {
+        "count": 1,
+        "id": "minecraft:flint"
+      }
+    }
   }
 ]
+```
+
+### 2. Standalone Recipe Files
+
+You can drop arbitrary standard Minecraft or modded recipe JSON files directly into `./config/reliable_recipes/` (or any subfolder, e.g. `./config/reliable_recipes/recipes/crafting/my_recipe.json`):
+
+```json
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": { "item": "minecraft:stick" }
+  },
+  "pattern": [
+    "###",
+    "###",
+    "###"
+  ],
+  "result": {
+    "count": 1,
+    "id": "minecraft:diamond"
+  }
+}
+```
+
+* **Recipe ID:** If you provide an `"id"` field (e.g. `"id": "reliable_recipes:my_recipe"` or `"id": "minecraft:cake"`), that ID will be used. Providing an existing recipe ID overrides the existing recipe. If `"id"` is omitted, Reliable Recipes automatically derives an ID from the relative file path.

@@ -108,6 +108,37 @@ public class RecipeModifier {
                 newMap.put(id, recipeJson);
             }
 
+            // Custom recipes loaded from reliable_recipes/
+            Map<ResourceLocation, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
+            for (Map.Entry<ResourceLocation, JsonElement> customEntry : customRecipes.entrySet()) {
+                ResourceLocation id = customEntry.getKey();
+                JsonElement element = customEntry.getValue();
+
+                if (!element.isJsonObject()) {
+                    newMap.put(id, element);
+                    continue;
+                }
+
+                JsonObject recipeJson = element.getAsJsonObject().deepCopy();
+
+                if (!globalReplacements.isEmpty()) {
+                    for (Map.Entry<String, String> rep : globalReplacements.entrySet()) {
+                        mutateJsonRecursively(recipeJson, List.of(rep.getKey()), new JsonPrimitive(rep.getValue()), null, true);
+                    }
+                }
+
+                // Hidden items output check
+                if (ReliableRecipesAPI.hasItemHidingCapabilities() && shouldHideRecipeJson(recipeJson)) {
+                    continue;
+                }
+
+                newMap.put(id, recipeJson);
+            }
+
+            if (!customRecipes.isEmpty()) {
+                Constants.LOG.info("Loaded {} custom recipe(s) from reliable_recipes", customRecipes.size());
+            }
+
             map.clear();
             map.putAll(newMap);
         } finally {
@@ -115,11 +146,11 @@ public class RecipeModifier {
         }
     }
 
-    static void mutateJsonRecursively(JsonElement parent, List<String> targets, JsonElement rawReplacement, RecipeRule.Action action, boolean isTargetContext) {
+    public static void mutateJsonRecursively(JsonElement parent, List<String> targets, JsonElement rawReplacement, RecipeRule.Action action, boolean isTargetContext) {
         mutateJsonRecursively(parent, targets, rawReplacement, action, isTargetContext, false);
     }
 
-    static void mutateJsonRecursively(JsonElement parent, List<String> targets, JsonElement rawReplacement, RecipeRule.Action action, boolean isTargetContext, boolean isIngredientList) {
+    public static void mutateJsonRecursively(JsonElement parent, List<String> targets, JsonElement rawReplacement, RecipeRule.Action action, boolean isTargetContext, boolean isIngredientList) {
         if (parent.isJsonObject()) {
             JsonObject obj = parent.getAsJsonObject();
             List<Map.Entry<String, JsonElement>> entries = new ArrayList<>(obj.entrySet());
@@ -133,7 +164,7 @@ public class RecipeModifier {
 
                 if (child.isJsonObject()) {
                     JsonObject childObj = child.getAsJsonObject();
-                    String matchedKey = getMatchingKey(childObj, targets);
+                    String matchedKey = getMatchingKey(childObj, targets, action, nextContext);
 
                     if (matchedKey != null && nextContext) {
                         if (rawReplacement.isJsonArray()) {
@@ -159,11 +190,14 @@ public class RecipeModifier {
                         } else {
                             obj.add(key, rawReplacement.deepCopy());
                         }
+                    } else if (action == RecipeRule.Action.REPLACE_OUTPUT && nextContext && targets.isEmpty() && rawReplacement.isJsonObject()) {
+                        obj.add(key, rawReplacement.deepCopy());
                     } else {
                         mutateJsonRecursively(child, targets, rawReplacement, action, nextContext, childIsIngredientList);
                     }
                 } else if (child.isJsonPrimitive() && child.getAsJsonPrimitive().isString()) {
-                    if (targets.contains(child.getAsString()) && nextContext) {
+                    boolean isMatch = nextContext && (targets.contains(child.getAsString()) || (action == RecipeRule.Action.REPLACE_OUTPUT && targets.isEmpty()));
+                    if (isMatch) {
                         if (key.equals("tag") && rawReplacement.isJsonPrimitive()) {
                             String repStr = rawReplacement.getAsString();
                             obj.remove("tag");
@@ -201,7 +235,7 @@ public class RecipeModifier {
 
                 if (child.isJsonObject()) {
                     JsonObject childObj = child.getAsJsonObject();
-                    String matchedKey = getMatchingKey(childObj, targets);
+                    String matchedKey = getMatchingKey(childObj, targets, action, isTargetContext);
 
                     if (matchedKey != null && isTargetContext) {
                         changed = true;
@@ -245,12 +279,16 @@ public class RecipeModifier {
                         } else {
                             newArray.add(rawReplacement.deepCopy());
                         }
+                    } else if (action == RecipeRule.Action.REPLACE_OUTPUT && isTargetContext && targets.isEmpty() && rawReplacement.isJsonObject()) {
+                        changed = true;
+                        newArray.add(rawReplacement.deepCopy());
                     } else {
                         newArray.add(child);
                         mutateJsonRecursively(child, targets, rawReplacement, action, isTargetContext, false);
                     }
                 } else if (child.isJsonPrimitive() && child.getAsJsonPrimitive().isString()) {
-                    if (targets.contains(child.getAsString()) && isTargetContext) {
+                    boolean isMatch = isTargetContext && (targets.contains(child.getAsString()) || (action == RecipeRule.Action.REPLACE_OUTPUT && targets.isEmpty()));
+                    if (isMatch) {
                         changed = true;
                         if (rawReplacement.isJsonArray()) {
                             if (isIngredientList) {
@@ -306,11 +344,21 @@ public class RecipeModifier {
         return isTargetContext;
     }
 
-    private static String getMatchingKey(JsonObject obj, List<String> targets) {
+    private static String getMatchingKey(JsonObject obj, List<String> targets, RecipeRule.Action action, boolean isTargetContext) {
+        if (action == RecipeRule.Action.REPLACE_OUTPUT && isTargetContext && targets.isEmpty()) {
+            if (obj.has("id") && obj.get("id").isJsonPrimitive()) return "id";
+            if (obj.has("item") && obj.get("item").isJsonPrimitive()) return "item";
+            if (obj.has("result") && obj.get("result").isJsonPrimitive()) return "result";
+            if (obj.has("output") && obj.get("output").isJsonPrimitive()) return "output";
+        }
         if (obj.has("item") && obj.get("item").isJsonPrimitive() && targets.contains(obj.get("item").getAsString()))
             return "item";
         if (obj.has("id") && obj.get("id").isJsonPrimitive() && targets.contains(obj.get("id").getAsString()))
             return "id";
+        if (obj.has("result") && obj.get("result").isJsonPrimitive() && targets.contains(obj.get("result").getAsString()))
+            return "result";
+        if (obj.has("output") && obj.get("output").isJsonPrimitive() && targets.contains(obj.get("output").getAsString()))
+            return "output";
         if (obj.has("tag") && obj.get("tag").isJsonPrimitive()) {
             String tagVal = obj.get("tag").getAsString();
             if (targets.contains("#" + tagVal) || targets.contains(tagVal))

@@ -31,7 +31,14 @@ public class RecipeRuleParser {
     private static final Set<String> OUTPUT_KEYS = Set.of("result", "output", "results");
 
     public static RecipeRule parseRule(JsonObject mod) {
-        String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
+        if (!mod.has("action")) {
+            return null;
+        }
+        String actionStr = mod.get("action").getAsString();
+
+        if (actionStr.equals("add") || actionStr.equals("add_recipe")) {
+            return null;
+        }
 
         if (Set.of("remove_all_tags", "remove_tag", "remove_from_tag", "clear_tag").contains(actionStr)) {
             return null;
@@ -49,17 +56,28 @@ public class RecipeRuleParser {
             return new RecipeRule(RecipeRule.Action.SET_REPAIR_MATERIAL, (id, r) -> false, target, material);
         }
 
-        BiPredicate<ResourceLocation, JsonObject> filter = mod.has("filter") ? parseFilter(mod.get("filter")) : parseFilter(mod);
+        JsonElement filterEl = mod.has("filter") ? mod.get("filter") : mod;
+        if (actionStr.equals("remove_output") && filterEl.isJsonObject()) {
+            JsonObject filterObj = filterEl.getAsJsonObject();
+            if (filterObj.has("target") && !filterObj.has("output") && !filterObj.has("result") && !filterObj.has("results")) {
+                JsonObject adjusted = filterObj.deepCopy();
+                adjusted.add("output", adjusted.get("target"));
+                filterEl = adjusted;
+            }
+        }
+        BiPredicate<ResourceLocation, JsonObject> filter = parseFilter(filterEl);
 
         return switch (actionStr) {
-            case "remove", "remove_recipe" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
+            case "remove", "remove_recipe", "remove_output" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
             case "replace_input" -> {
                 List<String> rawTargets = extractStrings(mod.get("target"));
                 yield new RecipeRule(RecipeRule.Action.REPLACE_INPUT, filter, rawTargets, mod.get("replacement"));
             }
             case "replace_output" -> {
                 List<String> rawTargets = mod.has("target") ? extractStrings(mod.get("target")) : List.of();
-                yield new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, filter, rawTargets, mod.get("replacement"));
+                JsonElement replacement = mod.has("replacement") ? mod.get("replacement") :
+                        (mod.has("output") ? mod.get("output") : mod.get("result"));
+                yield new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, filter, rawTargets, replacement);
             }
             default -> {
                 Constants.LOG.warn("Unknown recipe action: {}", actionStr);
@@ -69,9 +87,12 @@ public class RecipeRuleParser {
     }
 
     public static TagRule parseTagRule(JsonObject mod) {
-        String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
+        if (!mod.has("action")) {
+            return null;
+        }
+        String actionStr = mod.get("action").getAsString();
 
-        if (Set.of("remove", "remove_recipe", "replace_input", "replace_output", "prevent_repair", "set_repair_material").contains(actionStr)) {
+        if (Set.of("remove", "remove_recipe", "remove_output", "replace_input", "replace_output", "prevent_repair", "set_repair_material", "add", "add_recipe").contains(actionStr)) {
             return null;
         }
 
@@ -153,7 +174,7 @@ public class RecipeRuleParser {
                     }
                     case "id", "pattern", "patterns" -> {
                         Predicate<String> m = getStringMatcher(criterion, false);
-                        yield (id, recipe) -> m.test(id.toString());
+                        yield (id, recipe) -> m.test(id.toString()) || m.test(id.getPath());
                     }
                     case "input", "reagent", "ingredient", "ingredients" -> {
                         Predicate<String> matcher = getStringMatcher(criterion, false);

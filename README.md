@@ -12,10 +12,10 @@ files, without the need for complex scripting (looking at you, KubeJS!).
 
 ## Getting Started
 
-Reliable Recipes watches a specific folder in your Minecraft instance for JSON files:
+Reliable Recipes watches the `reliable_recipes/` folder in your Minecraft instance for JSON files:
 
-* **Location:** Place your config files in `./config/reliable_recipes/` (e.g. `my_recipe_changes.json`).
-* **Format:** Rules are defined within a single JSON array. Each rule must specify an `"action"`.
+* **Location:** Place your JSON files in `./config/reliable_recipes/` (or `./reliable_recipes/`). Subdirectories are also supported.
+* **Format:** Files can contain modification rules within a JSON array, or standard Minecraft/modded recipe JSON objects:
 
 ```json
 [
@@ -26,6 +26,8 @@ Reliable Recipes watches a specific folder in your Minecraft instance for JSON f
   }
 ]
 ```
+
+You can also drop standalone recipe JSON files (e.g., standard crafting, smelting, stonecutting, or brewing recipes) directly into `reliable_recipes/` without needing to build a datapack!
 
 ---
 
@@ -100,6 +102,56 @@ Overrides the repair material required to repair a specific tool or weapon in th
   "action": "set_repair_material",
   "target": "minecraft:diamond_sword",
   "material": "minecraft:dirt"
+}
+```
+
+### 6. `add_recipe` (or `add`)
+
+Adds custom recipes directly, without needing a datapack. Works with all vanilla recipe types, and any modded recipe types.
+
+* **Recipe ID:** If an `"id"` is specified (e.g. `"id": "reliable_recipes:custom_recipe"`), that ID is used. If omitted, the recipe ID is automatically generated from the file name and path. Specifying an existing recipe ID overrides that recipe.
+
+**Example using the `add_recipe` wrapper:**
+```json
+{
+  "action": "add_recipe",
+  "id": "reliable_recipes:dirt_to_stick",
+  "recipe": {
+    "type": "minecraft:crafting_shapeless",
+    "ingredients": [
+      {
+        "item": "minecraft:dirt"
+      }
+    ],
+    "result": {
+      "count": 4,
+      "id": "minecraft:stick"
+    }
+  }
+}
+```
+
+**Or drop raw recipe JSON directly:**
+Any standard Minecraft recipe JSON file (e.g. `my_crafting_recipe.json` or `recipes/stonecutting/cut_copper.json`) placed directly inside `reliable_recipes/` will automatically be loaded!
+
+```json
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": {
+      "item": "minecraft:stick"
+    }
+  },
+  "pattern": [
+    "###",
+    "###",
+    "###"
+  ],
+  "result": {
+    "count": 1,
+    "id": "minecraft:diamond"
+  }
 }
 ```
 
