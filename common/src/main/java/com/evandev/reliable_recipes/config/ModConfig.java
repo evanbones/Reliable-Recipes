@@ -18,9 +18,10 @@ public class ModConfig {
 
     private static ModConfig INSTANCE;
 
+    public boolean enableEmiRemoval = false;
     public boolean showToast = true;
     public boolean showChatMessages = true;
-    public boolean reloadEmi = true;
+    public boolean reloadEmi = false;
     public List<String> ignoredTags = new ArrayList<>(List.of("c:hidden_from_recipe_viewers"));
 
     public static ModConfig get() {
@@ -34,9 +35,18 @@ public class ModConfig {
         if (CONFIG_FILE.exists()) {
             try (FileReader reader = new FileReader(CONFIG_FILE)) {
                 INSTANCE = GSON.fromJson(reader, ModConfig.class);
+                if (INSTANCE == null) {
+                    INSTANCE = new ModConfig();
+                    save();
+                } else if (INSTANCE.ignoredTags == null) {
+                    INSTANCE.ignoredTags = new ArrayList<>(List.of("c:hidden_from_recipe_viewers"));
+                } else {
+                    INSTANCE.ignoredTags = new ArrayList<>(INSTANCE.ignoredTags);
+                }
             } catch (Exception e) {
                 Constants.LOG.error("Failed to load reliable_recipes.json", e);
                 INSTANCE = new ModConfig();
+                save();
             }
         } else {
             INSTANCE = new ModConfig();

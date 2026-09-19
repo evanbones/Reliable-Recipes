@@ -3,9 +3,11 @@ package com.evandev.reliable_recipes.config;
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
-import com.evandev.reliable_recipes.recipe.TagRule;
+import com.evandev.reliable_recipes.tag.TagRule;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -20,14 +22,22 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-public class RecipeJsonParser {
-
+public class RecipeRuleParser {
     private static final Set<String> IGNORED_KEYS = Set.of(
-            "action", "target", "replacement", "items", "tags", "tag", "filter"
+            "action", "target", "replacement", "material", "items", "tags", "tag", "filter"
     );
 
+    private static final Set<String> OUTPUT_KEYS = Set.of("result", "output", "results");
+
     public static RecipeRule parseRule(JsonObject mod) {
-        String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
+        if (!mod.has("action")) {
+            return null;
+        }
+        String actionStr = mod.get("action").getAsString();
+
+        if (actionStr.equals("add") || actionStr.equals("add_recipe")) {
+            return null;
+        }
 
         if (Set.of("remove_all_tags", "remove_tag", "remove_from_tag", "clear_tag").contains(actionStr)) {
             return null;
@@ -38,23 +48,35 @@ public class RecipeJsonParser {
             return new RecipeRule(RecipeRule.Action.PREVENT_REPAIR, (id, r) -> false, target, Ingredient.EMPTY);
         }
 
-        BiPredicate<ResourceLocation, JsonObject> filter = mod.has("filter") ? parseFilter(mod.get("filter")) : parseFilter(mod);
+        if (actionStr.equals("set_repair_material")) {
+            Ingredient target = parseIngredient(mod.get("target"));
+            JsonElement matEl = mod.has("material") ? mod.get("material") : mod.get("replacement");
+            Ingredient material = parseIngredient(matEl);
+            return new RecipeRule(RecipeRule.Action.SET_REPAIR_MATERIAL, (id, r) -> false, target, material);
+        }
+
+        JsonElement filterEl = mod.has("filter") ? mod.get("filter") : mod;
+        if (actionStr.equals("remove_output") && filterEl.isJsonObject()) {
+            JsonObject filterObj = filterEl.getAsJsonObject();
+            if (filterObj.has("target") && !filterObj.has("output") && !filterObj.has("result") && !filterObj.has("results")) {
+                JsonObject adjusted = filterObj.deepCopy();
+                adjusted.add("output", adjusted.get("target"));
+                filterEl = adjusted;
+            }
+        }
+        BiPredicate<ResourceLocation, JsonObject> filter = parseFilter(filterEl);
 
         return switch (actionStr) {
-            case "remove", "remove_recipe" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
+            case "remove", "remove_recipe", "remove_output" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
             case "replace_input" -> {
                 List<String> rawTargets = extractStrings(mod.get("target"));
                 yield new RecipeRule(RecipeRule.Action.REPLACE_INPUT, filter, rawTargets, mod.get("replacement"));
             }
             case "replace_output" -> {
                 List<String> rawTargets = mod.has("target") ? extractStrings(mod.get("target")) : List.of();
-                yield new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, filter, rawTargets, mod.get("replacement"));
-            }
-            case "set_repair_material" -> {
-                Ingredient target = parseIngredient(mod.get("target"));
-                JsonElement matEl = mod.has("material") ? mod.get("material") : mod.get("replacement");
-                Ingredient material = parseIngredient(matEl);
-                yield new RecipeRule(RecipeRule.Action.SET_REPAIR_MATERIAL, (id, r) -> false, target, material);
+                JsonElement replacement = mod.has("replacement") ? mod.get("replacement") :
+                        (mod.has("output") ? mod.get("output") : mod.get("result"));
+                yield new RecipeRule(RecipeRule.Action.REPLACE_OUTPUT, filter, rawTargets, replacement);
             }
             default -> {
                 Constants.LOG.warn("Unknown recipe action: {}", actionStr);
@@ -64,9 +86,12 @@ public class RecipeJsonParser {
     }
 
     public static TagRule parseTagRule(JsonObject mod) {
-        String actionStr = mod.has("action") ? mod.get("action").getAsString() : "unknown";
+        if (!mod.has("action")) {
+            return null;
+        }
+        String actionStr = mod.get("action").getAsString();
 
-        if (Set.of("remove", "remove_recipe", "replace_input", "replace_output", "prevent_repair", "set_repair_material").contains(actionStr)) {
+        if (Set.of("remove", "remove_recipe", "remove_output", "replace_input", "replace_output", "prevent_repair", "set_repair_material", "add", "add_recipe").contains(actionStr)) {
             return null;
         }
 
@@ -102,10 +127,13 @@ public class RecipeJsonParser {
             JsonObject obj = json.getAsJsonObject();
             BiPredicate<ResourceLocation, JsonObject> combined = (id, recipe) -> true;
 
-            for (String key : obj.keySet()) {
+            for (String rawKey : obj.keySet()) {
+                if (IGNORED_KEYS.contains(rawKey)) continue;
+
+                String key = rawKey.trim().replaceAll(":$", "").trim();
                 if (IGNORED_KEYS.contains(key)) continue;
 
-                JsonElement criterion = obj.get(key);
+                JsonElement criterion = obj.get(rawKey);
                 BiPredicate<ResourceLocation, JsonObject> check = switch (key) {
                     case "not" -> {
                         BiPredicate<ResourceLocation, JsonObject> inner = parseFilter(criterion);
@@ -131,7 +159,13 @@ public class RecipeJsonParser {
                     }
                     case "type" -> {
                         Predicate<String> m = getStringMatcher(criterion, false);
-                        yield (id, recipe) -> recipe.has("type") && m.test(recipe.get("type").getAsString());
+                        yield (id, recipe) -> {
+                            if (!recipe.has("type")) return false;
+                            String typeStr = recipe.get("type").getAsString();
+                            if (m.test(typeStr)) return true;
+                            ResourceLocation loc = ResourceLocation.tryParse(typeStr);
+                            return loc != null && (m.test(loc.toString()) || m.test(loc.getPath()));
+                        };
                     }
                     case "mod" -> {
                         Predicate<String> m = getStringMatcher(criterion, false);
@@ -139,23 +173,28 @@ public class RecipeJsonParser {
                     }
                     case "id", "pattern", "patterns" -> {
                         Predicate<String> m = getStringMatcher(criterion, false);
-                        yield (id, recipe) -> m.test(id.toString());
+                        yield (id, recipe) -> m.test(id.toString()) || m.test(id.getPath());
                     }
-                    case "input" -> {
+                    case "input", "reagent", "ingredient", "ingredients" -> {
                         Predicate<String> matcher = getStringMatcher(criterion, false);
-                        yield (id, recipe) -> jsonContainsValue(recipe, matcher);
+                        yield (id, recipe) -> {
+                            if (recipe.has(key) && jsonContainsValue(recipe.get(key), matcher)) return true;
+                            return jsonContainsValueExcluding(recipe, matcher, OUTPUT_KEYS);
+                        };
                     }
-                    case "output" -> {
+                    case "output", "result", "results" -> {
                         Predicate<String> matcher = getStringMatcher(criterion, true);
                         yield (id, recipe) -> {
                             JsonElement res = recipe.has("result") ? recipe.get("result") :
                                     (recipe.has("results") ? recipe.get("results") :
-                                            (recipe.has("output") ? recipe.get("output") :
-                                                    (recipe.has("outputs") ? recipe.get("outputs") : null)));
+                                            (recipe.has("output") ? recipe.get("output") : null));
                             return jsonContainsValue(res, matcher);
                         };
                     }
-                    default -> (id, recipe) -> true;
+                    default -> {
+                        Constants.LOG.warn("Unrecognized filter key '{}' in recipe rule JSON.", rawKey);
+                        yield (id, recipe) -> false;
+                    }
                 };
                 BiPredicate<ResourceLocation, JsonObject> finalCombined = combined;
                 combined = (id, recipe) -> finalCombined.test(id, recipe) && check.test(id, recipe);
@@ -166,13 +205,17 @@ public class RecipeJsonParser {
     }
 
     private static boolean jsonContainsValue(JsonElement element, Predicate<String> matcher) {
+        return jsonContainsValueExcluding(element, matcher, Set.of());
+    }
+
+    private static boolean jsonContainsValueExcluding(JsonElement element, Predicate<String> matcher, Set<String> excludedKeys) {
         if (element == null) return false;
         if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
             return matcher.test(element.getAsString());
         }
         if (element.isJsonArray()) {
             for (JsonElement e : element.getAsJsonArray()) {
-                if (jsonContainsValue(e, matcher)) return true;
+                if (jsonContainsValueExcluding(e, matcher, excludedKeys)) return true;
             }
         }
         if (element.isJsonObject()) {
@@ -185,7 +228,8 @@ public class RecipeJsonParser {
                 return true;
 
             for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
-                if (jsonContainsValue(entry.getValue(), matcher)) return true;
+                if (excludedKeys.contains(entry.getKey())) continue;
+                if (jsonContainsValueExcluding(entry.getValue(), matcher, excludedKeys)) return true;
             }
         }
         return false;
@@ -198,6 +242,7 @@ public class RecipeJsonParser {
             return p;
         }
 
+        // Support for {"tag": "#minecraft:wooden_trapdoors", "expand": true}
         if (element.isJsonObject()) {
             JsonObject obj = element.getAsJsonObject();
             if (obj.has("tag")) {
@@ -211,7 +256,7 @@ public class RecipeJsonParser {
                 if (expand && !tag.startsWith("+#")) {
                     tag = tag.replaceFirst("^#", "+#");
                 }
-                return getStringMatcher(new com.google.gson.JsonPrimitive(tag), autoExpandTags);
+                return getStringMatcher(new JsonPrimitive(tag), autoExpandTags);
             }
             return s -> false;
         }
@@ -256,8 +301,7 @@ public class RecipeJsonParser {
                                 }
                             }
                         }
-                    } catch (Exception e) {
-                        // Ignore malformed ResourceLocations during tag expansion
+                    } catch (Exception ignored) {
                     }
                 }
                 return false;
@@ -280,31 +324,82 @@ public class RecipeJsonParser {
         return list;
     }
 
-    private static Ingredient parseIngredient(JsonElement json) {
-        if (json == null) return Ingredient.EMPTY;
+    public static Ingredient parseIngredient(JsonElement json) {
+        if (json == null || json.isJsonNull()) return Ingredient.EMPTY;
+
+        if (json.isJsonPrimitive() && json.getAsJsonPrimitive().isString()) {
+            return parseIngredientString(json.getAsString());
+        }
+
         if (json.isJsonArray()) {
             List<Ingredient> list = new ArrayList<>();
-            json.getAsJsonArray().forEach(e -> list.add(parseIngredientString(e.getAsString())));
+            json.getAsJsonArray().forEach(e -> list.add(parseIngredient(e)));
             return mergeIngredients(list);
         }
-        return parseIngredientString(json.getAsString());
+
+        try {
+            return Ingredient.fromJson(json);
+        } catch (Exception ignored) {
+            if (json.isJsonObject()) {
+                JsonObject obj = json.getAsJsonObject();
+                if (obj.has("id")) {
+                    return parseIngredientString(obj.get("id").getAsString());
+                }
+                if (obj.has("item")) {
+                    return parseIngredientString(obj.get("item").getAsString());
+                }
+                if (obj.has("tag")) {
+                    return parseIngredientString("#" + obj.get("tag").getAsString());
+                }
+            }
+            return Ingredient.EMPTY;
+        }
     }
 
-    private static Ingredient mergeIngredients(List<Ingredient> ingredients) {
-        if (ingredients.isEmpty()) return Ingredient.EMPTY;
-        if (ingredients.size() == 1) return ingredients.get(0);
+    public static Ingredient mergeIngredients(Collection<Ingredient> ingredients) {
+        if (ingredients == null || ingredients.isEmpty()) return Ingredient.EMPTY;
+        if (ingredients.size() == 1) return ingredients.iterator().next();
 
-        List<ItemStack> allStacks = new ArrayList<>();
+        JsonArray array = new JsonArray();
+        Set<JsonElement> seen = new HashSet<>();
         for (Ingredient ing : ingredients) {
-            allStacks.addAll(Arrays.asList(ing.getItems()));
+            if (ing == null || ing.isEmpty()) continue;
+            try {
+                JsonElement json = ing.toJson();
+                if (json.isJsonArray()) {
+                    for (JsonElement elem : json.getAsJsonArray()) {
+                        if (seen.add(elem)) {
+                            array.add(elem);
+                        }
+                    }
+                } else {
+                    if (seen.add(json)) {
+                        array.add(json);
+                    }
+                }
+            } catch (Exception ignored) {
+            }
         }
-        return Ingredient.of(allStacks.toArray(new ItemStack[0]));
+
+        if (!array.isEmpty()) {
+            try {
+                return Ingredient.fromJson(array);
+            } catch (Exception ignored) {
+            }
+        }
+
+        List<ItemStack> stacks = new ArrayList<>();
+        for (Ingredient ing : ingredients) {
+            if (ing != null && !ing.isEmpty()) {
+                stacks.addAll(Arrays.asList(ing.getItems()));
+            }
+        }
+        return stacks.isEmpty() ? Ingredient.EMPTY : Ingredient.of(stacks.stream());
     }
 
-    private static Ingredient parseIngredientString(String str) {
-        if (str.startsWith("#")) {
-            return Ingredient.of(TagKey.create(Registries.ITEM, new ResourceLocation(str.substring(1))));
-        }
+    public static Ingredient parseIngredientString(String str) {
+        if (str == null || str.isBlank()) return Ingredient.EMPTY;
+        str = str.trim();
 
         if (str.startsWith("/") && str.endsWith("/") && str.length() > 2) {
             try {
@@ -313,7 +408,7 @@ public class RecipeJsonParser {
 
                 for (Item item : BuiltInRegistries.ITEM) {
                     ResourceLocation key = BuiltInRegistries.ITEM.getKey(item);
-                    if (pattern.matcher(key.toString()).matches()) {
+                    if (pattern.matcher(key.toString()).matches() || pattern.matcher(key.getPath()).matches()) {
                         matchingItems.add(new ItemStack(item));
                     }
                 }
@@ -325,7 +420,35 @@ public class RecipeJsonParser {
             }
         }
 
-        Item item = BuiltInRegistries.ITEM.get(new ResourceLocation(str));
-        return item != Items.AIR ? Ingredient.of(item) : Ingredient.EMPTY;
+        if (str.startsWith("#") || str.startsWith("tag:")) {
+            String tagPath = str.startsWith("#") ? str.substring(1) : str.substring(4);
+            ResourceLocation tagLoc = ResourceLocation.tryParse(tagPath);
+            return tagLoc != null ? Ingredient.of(TagKey.create(Registries.ITEM, tagLoc)) : Ingredient.EMPTY;
+        }
+
+        if (str.startsWith("item:")) {
+            String itemPath = str.substring(5);
+            ResourceLocation itemLoc = ResourceLocation.tryParse(itemPath);
+            if (itemLoc != null) {
+                Item item = BuiltInRegistries.ITEM.get(itemLoc);
+                if (item != Items.AIR) {
+                    return Ingredient.of(item);
+                }
+            }
+            return Ingredient.EMPTY;
+        }
+
+        ResourceLocation loc = ResourceLocation.tryParse(str);
+        if (loc != null) {
+            if (BuiltInRegistries.ITEM.containsKey(loc)) {
+                Item item = BuiltInRegistries.ITEM.get(loc);
+                if (item != Items.AIR) {
+                    return Ingredient.of(item);
+                }
+            }
+            return Ingredient.of(TagKey.create(Registries.ITEM, loc));
+        }
+
+        return Ingredient.EMPTY;
     }
 }

@@ -2,6 +2,7 @@
 
 <a href='https://files.minecraftforge.net'><img alt="forge" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/forge_vector.svg"></a>
 <a href='https://fabricmc.net'><img alt="fabric" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/fabric_vector.svg"></a>
+<a href='https://neoforged.net/'><img alt="neoforge" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/neoforge_vector.svg"></a>
 
 A powerful, developer-friendly utility designed for manipulating recipes and tags through simple JSON configuration.
 Reliable Recipes allows modpack creators to effortlessly add, remove, or modify recipes and tags using standard JSON
@@ -11,10 +12,10 @@ files, without the need for complex scripting (looking at you, KubeJS!).
 
 ## Getting Started
 
-Reliable Recipes watches a specific folder in your Minecraft instance for JSON files:
+Reliable Recipes watches the `reliable_recipes/` folder in your Minecraft instance for JSON files:
 
-* **Location:** Place your config files in `./config/reliable_recipes/` (e.g. `my_recipe_changes.json`).
-* **Format:** Rules are defined within a single JSON array. Each rule must specify an `"action"`.
+* **Location:** Place your JSON files in `./config/reliable_recipes/` (or `./reliable_recipes/`). Subdirectories are also supported.
+* **Format:** Files can contain modification rules within a JSON array, or standard Minecraft/modded recipe JSON objects:
 
 ```json
 [
@@ -25,6 +26,8 @@ Reliable Recipes watches a specific folder in your Minecraft instance for JSON f
   }
 ]
 ```
+
+You can also drop standalone recipe JSON files (e.g., standard crafting, smelting, stonecutting, or brewing recipes) directly into `reliable_recipes/` without needing to build a datapack!
 
 ---
 
@@ -81,7 +84,7 @@ Changes the result of matching recipes.
 
 ### 4. `prevent_repair`
 
-Blocks specific items from being repaired across all standard repair methods.
+Blocks specific items from being repaired across all standard repair methods. Supports item IDs, tags (`"#minecraft:swords"` or `"minecraft:enchantable/durability"`), regex (`"/.*_pickaxe/"`), or arrays.
 
 ```json
 {
@@ -92,13 +95,63 @@ Blocks specific items from being repaired across all standard repair methods.
 
 ### 5. `set_repair_material`
 
-Overrides the repair material required to repair a specific tool or weapon in the Anvil.
+Overrides the repair material required to repair a specific tool or weapon in the Anvil. Supports item IDs, tags (`"#c:iron_ingots"`, `"tag:c:iron_ingots"`), regex (`"/.*_slag/"`), or arrays for both `target` and `material`.
 
 ```json
 {
   "action": "set_repair_material",
   "target": "minecraft:diamond_sword",
   "material": "minecraft:dirt"
+}
+```
+
+### 6. `add_recipe` (or `add`)
+
+Adds custom recipes directly, without needing a datapack. Works with all vanilla recipe types, and any modded recipe types.
+
+* **Recipe ID:** If an `"id"` is specified (e.g. `"id": "reliable_recipes:custom_recipe"`), that ID is used. If omitted, the recipe ID is automatically generated from the file name and path. Specifying an existing recipe ID overrides that recipe.
+
+**Example using the `add_recipe` wrapper:**
+```json
+{
+  "action": "add_recipe",
+  "id": "reliable_recipes:dirt_to_stick",
+  "recipe": {
+    "type": "minecraft:crafting_shapeless",
+    "ingredients": [
+      {
+        "item": "minecraft:dirt"
+      }
+    ],
+    "result": {
+      "count": 4,
+      "id": "minecraft:stick"
+    }
+  }
+}
+```
+
+**Or drop raw recipe JSON directly:**
+Any standard Minecraft recipe JSON file (e.g. `my_crafting_recipe.json` or `recipes/stonecutting/cut_copper.json`) placed directly inside `reliable_recipes/` will automatically be loaded!
+
+```json
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": {
+      "item": "minecraft:stick"
+    }
+  },
+  "pattern": [
+    "###",
+    "###",
+    "###"
+  ],
+  "result": {
+    "count": 1,
+    "id": "minecraft:diamond"
+  }
 }
 ```
 
@@ -164,7 +217,7 @@ Empties all items/blocks from the specified tags.
 ## Crafting Transmute backport
 
 Reliable Recipes backports the `minecraft:crafting_transmute` crafting recipe type. This allows you to upgrade/convert
-items in a crafting grid while preserving all of their NBT tags (such as durability, enchantments, and custom
+items in a crafting grid while preserving all of their item components (such as durability, enchantments, and custom
 names).
 
 ### Recipe Fields
@@ -192,6 +245,43 @@ names).
   "material_count": 1,
   "result": {
     "id": "minecraft:golden_pickaxe"
+  }
+}
+```
+
+---
+
+## Data-Driven Brewing Recipes
+
+Reliable Recipes supports data-driven brewing stand recipes using the 26.3 `minecraft:brewing` recipe type format.
+
+### Recipe Fields
+
+* **`input`** (Object, required): Input container item or potion stack (`item`/`tag`, optional `potion_contents`).
+* **`reagent`** (Ingredient, required): Ingredient item placed in the top slot of the brewing stand.
+* **`output`** (ItemStack, required): Resulting item stack output with components.
+
+### Example JSON
+
+```json
+{
+  "type": "minecraft:brewing",
+  "input": {
+    "item": "minecraft:potion",
+    "potion_contents": {
+      "potions": "minecraft:awkward"
+    }
+  },
+  "reagent": {
+    "item": "minecraft:turtle_helmet"
+  },
+  "output": {
+    "id": "minecraft:potion",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:turtle_master"
+      }
+    }
   }
 }
 ```

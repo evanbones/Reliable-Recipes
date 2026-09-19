@@ -5,24 +5,107 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.2.3] - 2026-08-18
+## [3.2.0] - 2026-09-14
+
+### Added
+
+- Added JSON recipe loading directly from the `reliable_recipes/` folder, with support for standalone recipe files in
+  subdirectories.
+- Added the `add_recipe` action.
+- Added `remove_output` as an alias for removing recipes by output.
+
+### Fixed
+
+- Fixed `replace_output` not modifying recipes when `target` is omitted.
+- Fixed rare service loading crash.
+
+## [3.1.8] - 2026-09-05
+
+### Changed
+
+- Ingredient replacement arrays now act as OR instead of AND.
+
+## [3.1.7] - 2026-09-03
+
+### Changed
+
+- Multiple repair materials now merge instead of overwriting each other.
+
+## [3.1.6] - 2026-08-30
+
+### Added
+
+- Added tag and regex support for repair materials and targets in `set_repair_material` and `prevent_repair`.
+- Added support for tag/item object formats (`{"tag": "..."}`, `{"item": "..."}`) for repair materials and targets.
+
+## [3.1.5] - 2026-08-18
 
 ### Fixed
 
 - Fixed timing issues with tag expansion.
 
-## [2.2.2] - 2026-07-27
+## [3.1.4] - 2026-08-18
+
+### Fixed
+
+- Fixed issues with custom repair materials not removing the original material.
+
+## [3.1.3] - 2026-08-02
+
+### Fixed
+
+- Fixed some EMI entries, such as EMI Enchanting's enchantment pages, being removed when they referenced a hidden item.
+
+## [3.1.2] - 2026-07-27
 
 ### Fixed
 
 - Fixed certain recipes being removed from EMI entirely when the recipe's placeholder preview item
   was hidden.
 
-## [2.2.1] - 2026-07-21
+## [3.1.1] - 2026-07-25
 
 ### Fixed
 
-- Improved recipe matching.
+- Fixed dedicated server crash.
+
+## [3.1.0] - 2026-07-25
+
+### Added
+
+- Added proper support for subfolders.
+
+### Fixed
+
+- Fixed certain repair recipes not being hidden from EMI.
+- Fixed certain types of recipe replacements not properly reflecting in EMI.
+
+### Removed
+
+- Removed legacy config migrator.
+
+## [3.0.1] - 2026-07-25
+
+### Changed
+
+- Improved brewing recipe parsing to exactly support the 26.3 recipe format.
+
+## [3.0.0] - 2026-07-24
+
+### Added
+
+- Backported `brewing` recipe type from 26.3.
+- Added support for modifying brewing recipes using recipe rules.
+
+### Changed
+
+- Switched to YACL instead of Cloth Config.
+- Invalid removals now default to unmatched (previously, invalid filters would match everything).
+- Major backend cleanups.
+
+### Fixed
+
+- Fixed crash when attempting to delete certain invalid recipes.
 
 ## [2.2.0] - 2026-07-05
 

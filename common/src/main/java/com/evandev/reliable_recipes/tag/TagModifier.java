@@ -1,4 +1,4 @@
-package com.evandev.reliable_recipes.recipe;
+package com.evandev.reliable_recipes.tag;
 
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
@@ -19,13 +19,23 @@ import net.minecraft.world.level.block.Block;
 import java.util.*;
 
 public class TagModifier {
+    private static final ThreadLocal<Boolean> APPLYING_TAGS = ThreadLocal.withInitial(() -> false);
+
+    public static boolean isApplyingTags() {
+        return APPLYING_TAGS.get();
+    }
 
     public static void apply() {
-        applyToRegistry(BuiltInRegistries.ITEM, "Item");
-        applyToRegistry(BuiltInRegistries.BLOCK, "Block");
+        APPLYING_TAGS.set(true);
+        try {
+            applyToRegistry(BuiltInRegistries.ITEM, "Item");
+            applyToRegistry(BuiltInRegistries.BLOCK, "Block");
 
-        if (ReliableRecipesAPI.hasItemHidingCapabilities()) {
-            applyHiddenItemRules();
+            if (ReliableRecipesAPI.hasItemHidingCapabilities()) {
+                applyHiddenItemRules();
+            }
+        } finally {
+            APPLYING_TAGS.set(false);
         }
     }
 
@@ -100,7 +110,7 @@ public class TagModifier {
             }
 
             for (Map.Entry<Object, Set<T>> entry : batchedRemovals.entrySet()) {
-                removalCount += batchRemoveFromTag(entry.getKey(), entry.getValue());
+                removalCount += batchRemoveFromTag(entry.getKey(), entry.getValue(), true);
             }
         }
 
@@ -166,13 +176,13 @@ public class TagModifier {
 
         int count = 0;
         for (Map.Entry<Object, Set<T>> entry : batchedRemovals.entrySet()) {
-            count += batchRemoveFromTag(entry.getKey(), entry.getValue());
+            count += batchRemoveFromTag(entry.getKey(), entry.getValue(), false);
         }
         return count;
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> int batchRemoveFromTag(Object tag, Set<T> valuesToRemove) {
+    private static <T> int batchRemoveFromTag(Object tag, Set<T> valuesToRemove, boolean updateHolderReference) {
         if (valuesToRemove.isEmpty() || !(tag instanceof HolderSet.Named<?> namedTag) || !(tag instanceof HolderSetNamedAccessor accessor)) {
             return 0;
         }
@@ -193,12 +203,14 @@ public class TagModifier {
             mutableContents.removeAll(toRemove);
             accessor.setContents((List<Holder<?>>) (Object) mutableContents);
 
-            TagKey<?> tagKey = namedTag.key();
-            for (Holder<T> holder : toRemove) {
-                if (holder instanceof Holder.Reference<?> ref && ref instanceof HolderReferenceAccessor refAccessor) {
-                    Set<TagKey<?>> itemTags = new HashSet<>(refAccessor.getTags());
-                    itemTags.remove(tagKey);
-                    refAccessor.setTags(Set.copyOf(itemTags));
+            if (updateHolderReference) {
+                TagKey<?> tagKey = namedTag.key();
+                for (Holder<T> holder : toRemove) {
+                    if (holder instanceof Holder.Reference<?> ref && ref instanceof HolderReferenceAccessor refAccessor) {
+                        Set<TagKey<?>> itemTags = new HashSet<>(refAccessor.getTags());
+                        itemTags.remove(tagKey);
+                        refAccessor.setTags(Set.copyOf(itemTags));
+                    }
                 }
             }
             return toRemove.size();

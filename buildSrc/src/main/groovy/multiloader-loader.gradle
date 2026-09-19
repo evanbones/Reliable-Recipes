@@ -22,10 +22,9 @@ dependencies {
     commonResources project(path: ':common', configuration: 'commonResources')
 }
 
-sourceSets.main.java.srcDir configurations.commonJava
-
 tasks.named('compileJava', JavaCompile) {
     dependsOn(configurations.commonJava)
+    source(configurations.commonJava)
 }
 
 processResources {
@@ -48,7 +47,7 @@ publishMods {
         server = true
 
         optional("reliable-remover")
-        optional("cloth-config")
+        requires("yacl")
     }
 
     modrinth {
@@ -57,6 +56,6 @@ publishMods {
         minecraftVersions.add("${minecraft_version}")
 
         optional("reliable-remover")
-        optional("cloth-config")
+        requires("yacl")
     }
 }

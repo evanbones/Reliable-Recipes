@@ -6,17 +6,13 @@
   "refmap": "${mod_id}.refmap.json",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "accessor.AbstractCookingRecipeAccessor",
     "accessor.HolderReferenceAccessor",
     "accessor.HolderSetNamedAccessor",
-    "accessor.IngredientAccessor",
     "accessor.RecipeManagerAccessor",
-    "accessor.ShapedRecipeAccessor",
-    "accessor.ShapelessRecipeAccessor",
-    "accessor.SingleItemRecipeAccessor",
     "minecraft.AnvilMenuMixin",
     "minecraft.GrindstoneMenuMixin",
     "minecraft.ItemMixin",
+    "minecraft.PotionBrewingMixin",
     "minecraft.RecipeManagerMixin",
     "minecraft.ReloadableServerResourcesMixin",
     "minecraft.RepairItemRecipeMixin"

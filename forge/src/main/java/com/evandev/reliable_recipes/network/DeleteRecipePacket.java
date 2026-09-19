@@ -2,7 +2,8 @@ package com.evandev.reliable_recipes.network;
 
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
-import com.evandev.reliable_recipes.recipe.RecipeModifier;
+import com.evandev.reliable_recipes.platform.Services;
+import com.evandev.reliable_recipes.recipe.RecipeUndoCache;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -36,14 +37,13 @@ public class DeleteRecipePacket {
 
                     MinecraftServer server = player.getServer();
                     if (server != null) {
-                        boolean removed = RecipeModifier.removeRecipe(server.getRecipeManager(), msg.recipeId);
+                        boolean removed = RecipeUndoCache.removeRecipe(server.getRecipeManager(), msg.recipeId);
 
                         if (removed) {
                             Constants.LOG.info("Runtime deletion of recipe: {}", msg.recipeId);
-
-                            ClientboundDeleteRecipePacket packet = new ClientboundDeleteRecipePacket(msg.recipeId);
-                            PacketHandler.INSTANCE.send(net.minecraftforge.network.PacketDistributor.ALL.noArg(), packet);
-
+                            server.getPlayerList().getPlayers().forEach(p ->
+                                    Services.PLATFORM.sendDeleteRecipePacketToPlayer(p, msg.recipeId)
+                            );
                         } else {
                             player.sendSystemMessage(Component.literal("Reliable Recipes: Could not find recipe " + msg.recipeId));
                         }

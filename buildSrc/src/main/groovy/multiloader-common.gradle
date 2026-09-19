@@ -61,12 +61,16 @@ repositories {
         }
     }
     maven {
+        name = 'Fabric'
+        url = 'https://maven.fabricmc.net/'
+    }
+    maven {
         name = "TerraformersMC"
         url = "https://maven.terraformersmc.com/"
     }
     maven {
-        name = "ClothConfig"
-        url "https://maven.shedaniel.me/"
+        name = "Xander Maven"
+        url = "https://maven.isxander.dev/releases"
     }
 }
 

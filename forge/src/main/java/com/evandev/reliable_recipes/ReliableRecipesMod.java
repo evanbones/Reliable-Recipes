@@ -2,6 +2,7 @@ package com.evandev.reliable_recipes;
 
 import com.evandev.reliable_recipes.command.UndoCommand;
 import com.evandev.reliable_recipes.network.PacketHandler;
+import com.evandev.reliable_recipes.recipe.BrewingRecipe;
 import com.evandev.reliable_recipes.recipe.TransmuteRecipe;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -26,8 +27,10 @@ public class ReliableRecipesMod {
     private void onRegister(RegisterEvent event) {
         if (event.getRegistryKey().equals(Registries.RECIPE_SERIALIZER)) {
             event.register(Registries.RECIPE_SERIALIZER, new ResourceLocation("crafting_transmute"), () -> TransmuteRecipe.SERIALIZER);
+            event.register(Registries.RECIPE_SERIALIZER, new ResourceLocation("brewing"), () -> BrewingRecipe.SERIALIZER);
         } else if (event.getRegistryKey().equals(Registries.RECIPE_TYPE)) {
             event.register(Registries.RECIPE_TYPE, new ResourceLocation("crafting_transmute"), () -> TransmuteRecipe.TYPE);
+            event.register(Registries.RECIPE_TYPE, new ResourceLocation("brewing"), () -> BrewingRecipe.TYPE);
         }
     }
 

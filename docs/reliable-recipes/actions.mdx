@@ -25,6 +25,18 @@ You can use arrays to remove large batches of recipes at once.
 
 ```
 
+**Example:** Remove brewing recipes by input.
+
+```json
+[
+  {
+    "action": "remove_recipe",
+    "type": "minecraft:brewing",
+    "input": "minecraft:golden_carrot"
+  }
+]
+```
+
 ## Action: `replace_input`
 
 Scans ingredients and replaces a target with a new one.
@@ -49,6 +61,8 @@ Scans ingredients and replaces a target with a new one.
 
 ```
 
+`replace_input` also works on brewing stand reagents, see [Replacing a Brewing Reagent](/reliable-recipes/brewing#replacing-a-brewing-reagent) for details.
+
 ## Action: `replace_output`
 
 Changes the result of the matching recipes.
@@ -72,7 +86,7 @@ Changes the result of the matching recipes.
 
 Allows you to block specific items from being repaired across all standard Minecraft repair methods, including the Crafting Grid, Anvil, and Grindstone.
 
-* **`target`**: The item ID (e.g., `"minecraft:diamond_pickaxe"`) or tag (e.g., `"#minecraft:swords"`) to block from being repaired.
+* **`target`**: The item ID (e.g., `"minecraft:diamond_pickaxe"`), tag (e.g., `"#minecraft:swords"` or `"minecraft:enchantable/durability"`), regex pattern (e.g., `"/.*_pickaxe/"`), or an array of any combination.
 
 **Example: Block specific item repair**
 
@@ -83,18 +97,17 @@ Allows you to block specific items from being repaired across all standard Minec
     "target": "minecraft:diamond_pickaxe"
   }
 ]
-
 ```
 
 ## Action: `set_repair_material`
 
 Allows you to completely override the item required to repair a specific tool or weapon in the Anvil.
 
-* **`target`**: The item ID (e.g., `"minecraft:diamond_sword"`) or tag to modify.
-* **`material`**: The new item ID (e.g., `"minecraft:dirt"`) or tag to use as the valid repair material.
+* **`target`**: The item ID (e.g., `"minecraft:diamond_sword"`), tag (e.g., `"#minecraft:swords"` or `"minecraft:enchantable/durability"`), regex pattern (e.g., `"/.*_sword/"`), or an array of targets to modify.
+* **`material`**: The new item ID (e.g., `"minecraft:dirt"`), tag (e.g., `"#c:iron_ingots"` or `"tag:c:iron_ingots"`), regex pattern (e.g., `"/valcon:.*_slag/"`), or an array of valid repair materials.
 
-**Example: Change a repair material**
-Make a Diamond Sword repairable with Dirt instead of Diamonds.
+**Example 1: Change a repair material by item ID**
+Make a Diamond Sword repairable with Dirt instead of Diamonds:
 
 ```json
 {
@@ -102,7 +115,31 @@ Make a Diamond Sword repairable with Dirt instead of Diamonds.
   "target": "minecraft:diamond_sword",
   "material": "minecraft:dirt"
 }
+```
 
+**Example 2: Use tags and regex for targets and repair materials**
+Make all durable items repairable with Diamonds:
+
+```json
+{
+  "action": "set_repair_material",
+  "target": "minecraft:enchantable/durability",
+  "material": "minecraft:diamond"
+}
+```
+
+**Example 3: Use regex patterns or multiple repair materials**
+Make all swords repairable with any ingots or dirt:
+
+```json
+{
+  "action": "set_repair_material",
+  "target": "/.*_sword/",
+  "material": [
+    "/.*_ingot/",
+    "minecraft:dirt"
+  ]
+}
 ```
 
 ## Global Repair Removal
@@ -116,5 +153,51 @@ If you want to disable the vanilla crafting grid repair feature for **all** item
     "id": "minecraft:repair_item"
   }
 ]
+```
 
+## Action: `add_recipe`
+
+Creates a brand new recipe. You can define custom recipes within your rule arrays or as standalone recipe files.
+
+* **`id`** (Optional): A custom identifier for the recipe (e.g. `"reliable_recipes:my_recipe"`). If an existing recipe ID is provided, it replaces the existing recipe.
+* **`recipe`** (Optional): A JSON object containing the recipe definition.
+
+**Example 1: Using the `recipe` wrapper**
+```json
+[
+  {
+    "action": "add_recipe",
+    "id": "reliable_recipes:flint_from_gravel",
+    "recipe": {
+      "type": "minecraft:crafting_shapeless",
+      "ingredients": [
+        { "item": "minecraft:gravel" },
+        { "item": "minecraft:gravel" },
+        { "item": "minecraft:gravel" }
+      ],
+      "result": {
+        "count": 1,
+        "id": "minecraft:flint"
+      }
+    }
+  }
+]
+```
+
+**Example 2: Direct recipe definition**
+```json
+[
+  {
+    "action": "add_recipe",
+    "id": "reliable_recipes:dirt_to_stick",
+    "type": "minecraft:crafting_shapeless",
+    "ingredients": [
+      { "item": "minecraft:dirt" }
+    ],
+    "result": {
+      "count": 4,
+      "id": "minecraft:stick"
+    }
+  }
+]
 ```

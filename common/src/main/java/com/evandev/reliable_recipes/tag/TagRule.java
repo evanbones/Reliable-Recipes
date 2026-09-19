@@ -1,4 +1,4 @@
-package com.evandev.reliable_recipes.recipe;
+package com.evandev.reliable_recipes.tag;
 
 import net.minecraft.resources.ResourceLocation;
 

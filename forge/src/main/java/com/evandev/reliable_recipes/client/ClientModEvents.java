@@ -1,7 +1,6 @@
 package com.evandev.reliable_recipes.client;
 
 import com.evandev.reliable_recipes.Constants;
-import com.evandev.reliable_recipes.config.ClothConfigIntegration;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -15,11 +14,11 @@ public class ClientModEvents {
 
     @SubscribeEvent
     public static void onConstruct(FMLConstructModEvent event) {
-        if (ModList.get().isLoaded("cloth_config")) {
+        if (ModList.get().isLoaded("yet_another_config_lib_v3") || ModList.get().isLoaded("yacl")) {
             ModLoadingContext.get().registerExtensionPoint(
                     ConfigScreenHandler.ConfigScreenFactory.class,
                     () -> new ConfigScreenHandler.ConfigScreenFactory(
-                            (client, parent) -> ClothConfigIntegration.createScreen(parent)
+                            (client, parent) -> ModConfigScreen.createScreen(parent)
                     )
             );
         }
