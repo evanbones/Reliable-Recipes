@@ -165,4 +165,51 @@ public class RecipeConfigIOTest extends MinecraftTestBase {
         assertEquals("minecraft:stick", recipe.getAsJsonObject("result").get("id").getAsString());
         assertEquals(4, recipe.getAsJsonObject("result").get("count").getAsInt());
     }
+
+    @Test
+    @DisplayName("Load multiple add_recipe entries in a single file")
+    void testMultipleAddRecipesInSingleFile() throws IOException {
+        Path reliableRecipesDir = tempDir.resolve("reliable_recipes");
+        Files.createDirectories(reliableRecipesDir);
+        TestPlatformHelper.customConfigDir = tempDir;
+
+        String content = """
+        [
+          {
+            "action": "add_recipe",
+            "id": "reliable_recipes:recipe_one",
+            "type": "minecraft:crafting_shapeless",
+            "ingredients": [{ "item": "minecraft:dirt" }],
+            "result": { "count": 1, "id": "minecraft:clay_ball" }
+          },
+          {
+            "action": "add_recipe",
+            "id": "reliable_recipes:recipe_two",
+            "recipe": {
+              "type": "minecraft:crafting_shapeless",
+              "ingredients": [{ "item": "minecraft:gravel" }],
+              "result": { "count": 1, "id": "minecraft:flint" }
+            }
+          },
+          {
+            "action": "add_recipe",
+            "type": "minecraft:crafting_shapeless",
+            "ingredients": [{ "item": "minecraft:sand" }],
+            "result": { "count": 1, "id": "minecraft:glass" }
+          }
+        ]
+        """;
+        Files.writeString(reliableRecipesDir.resolve("multiple_recipes.json"), content);
+
+        Map<ResourceLocation, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
+        assertEquals(3, customRecipes.size());
+
+        ResourceLocation idOne = ResourceLocation.fromNamespaceAndPath("reliable_recipes", "recipe_one");
+        ResourceLocation idTwo = ResourceLocation.fromNamespaceAndPath("reliable_recipes", "recipe_two");
+        ResourceLocation idThreeInferred = ResourceLocation.fromNamespaceAndPath("reliable_recipes", "multiple_recipes_2");
+
+        assertTrue(customRecipes.containsKey(idOne));
+        assertTrue(customRecipes.containsKey(idTwo));
+        assertTrue(customRecipes.containsKey(idThreeInferred));
+    }
 }
