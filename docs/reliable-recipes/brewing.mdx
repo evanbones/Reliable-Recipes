@@ -1,0 +1,144 @@
+---
+title: Brewing Recipes
+hide_meta: true
+---
+
+Reliable Recipes adds complete support for data-driven brewing recipes using the backported 26.3 `minecraft:brewing` recipe type format, allowing you to define brewing stand recipes via JSON in datapacks.
+
+Additionally, you can filter, modify, or remove existing vanilla and modded potion brewing recipes using standard Reliable Recipes actions.
+
+## Recipe Fields
+
+A `minecraft:brewing` recipe consists of three main objects:
+
+* **`input`** (Object, required): Defines the container or potion stack being brewed.
+  * `item` or `tag` (String or Ingredient Object, optional): Direct item ID string (e.g. `"minecraft:potion"`), tag string (`"#c:potions"`), or standard ingredient object (`{"item": "minecraft:potion"}`).
+  * `potion_contents` (Optional): An object specifying `potion` or `potions` to match (e.g., `"minecraft:awkward"` or a list of potion IDs).
+* **`reagent`** (String or Ingredient Object, required): The ingredient placed in the top slot of the brewing stand (e.g. `"minecraft:turtle_helmet"` or `{"item": "minecraft:turtle_helmet"}`).
+* **`output`** (ItemStack Object, required): The resulting item stack produced by brewing, defined using standard item stack components (e.g. `minecraft:potion_contents`).
+
+## Creating Custom Brewing Recipes
+
+### Example 1: Potion to Potion Brewing
+
+Brew an Awkward Potion with a Turtle Helmet to create a Potion of the Turtle Master.
+
+```json
+{
+  "type": "minecraft:brewing",
+  "input": {
+    "item": "minecraft:potion",
+    "potion_contents": {
+      "potions": "minecraft:awkward"
+    }
+  },
+  "reagent": {
+    "item": "minecraft:turtle_helmet"
+  },
+  "output": {
+    "id": "minecraft:potion",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:turtle_master"
+      }
+    }
+  }
+}
+```
+
+### Example 2: Night Vision Potion Brewing
+
+Brew an Awkward Potion with a Golden Carrot to produce a Night Vision Potion.
+
+```json
+{
+  "type": "minecraft:brewing",
+  "input": {
+    "item": "minecraft:potion",
+    "potion_contents": {
+      "potions": "minecraft:awkward"
+    }
+  },
+  "reagent": {
+    "item": "minecraft:golden_carrot"
+  },
+  "output": {
+    "id": "minecraft:potion",
+    "components": {
+      "minecraft:potion_contents": {
+        "potion": "minecraft:night_vision"
+      }
+    }
+  }
+}
+```
+
+### Example 3: Custom Item Brewing
+
+You can also brew custom items that aren't potions!
+
+```json
+{
+  "type": "minecraft:brewing",
+  "input": {
+    "item": "minecraft:glass_bottle"
+  },
+  "reagent": {
+    "item": "minecraft:blaze_powder"
+  },
+  "output": {
+    "id": "minecraft:experience_bottle"
+  }
+}
+```
+
+---
+
+## Modifying & Removing Vanilla or Modded Potion Recipes
+
+You can use Reliable Recipes JSON rules in `./config/reliable_recipes/` to disable or modify vanilla or modded brewing recipes.
+
+### Disabling a Specific Brewing Recipe
+
+To prevent players from brewing Night Vision potions:
+
+```json
+[
+  {
+    "action": "remove_recipe",
+    "type": "minecraft:brewing",
+    "input": "minecraft:golden_carrot"
+  }
+]
+```
+
+### Disabling All Brewing Recipes
+
+```json
+[
+  {
+    "action": "remove_recipe",
+    "type": "minecraft:brewing"
+  }
+]
+```
+
+### Replacing a Brewing Reagent
+
+You can also swap the item used as a reagent.
+
+For example, to brew Night Vision with a Diamond instead of a Golden Carrot:
+
+```json
+[
+  {
+    "action": "replace_input",
+    "target": "minecraft:golden_carrot",
+    "replacement": "minecraft:diamond"
+  }
+]
+```
+
+`target` and `replacement` each accept a single item ID or a `#`-prefixed tag.
+
+Unlike `replace_input` for JSON-based recipes, brewing reagent replacement only looks at `target`/`replacement`: other filters like `id`, `type`, or `mod` are ignored.

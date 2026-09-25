@@ -5,20 +5,179 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.1.0] - 2026-06-04
+## [3.2.0] - 2026-09-14
 
 ### Added
 
-- Added additional safety checks for modded recipes.
-- Added additional logging for failed recipe mutations.
+- Added JSON recipe loading directly from the `reliable_recipes/` folder, with support for standalone recipe files in subdirectories.
+- Added the `add_recipe` action.
+- Added `remove_output` as an alias for removing recipes by output.
 
-## [2.0.0] - 2026-04-25
+### Fixed
+
+- Fixed `replace_output` not modifying recipes when `target` is omitted.
+- Fixed rare service loading crash.
+
+## [3.1.8] - 2026-09-05
 
 ### Changed
 
-- (26.1) Now requires latest version of RRV for the item viewer integration.
+- Ingredient replacement arrays now act as OR instead of AND.
 
-## [1.12.0] - 2026-04-23
+## [3.1.7] - 2026-09-03
+
+### Changed
+
+- Multiple repair materials now merge instead of overwriting each other.
+
+## [3.1.6] - 2026-08-30
+
+### Added
+
+- Added tag and regex support for repair materials and targets in `set_repair_material` and `prevent_repair`.
+- Added support for tag/item object formats (`{"tag": "..."}`, `{"item": "..."}`) for repair materials and targets.
+
+## [3.1.5] - 2026-08-18
+
+### Fixed
+
+- Fixed timing issues with tag expansion.
+
+## [3.1.4] - 2026-08-18
+
+### Fixed
+
+- Fixed issues with custom repair materials not removing the original material.
+
+## [3.1.3] - 2026-08-02
+
+### Fixed
+
+- Fixed some EMI entries, such as EMI Enchanting's enchantment pages, being removed when they referenced a hidden item.
+
+## [3.1.2] - 2026-07-27
+
+### Fixed
+
+- Fixed certain recipes being removed from EMI entirely when the recipe's placeholder preview item
+  was hidden.
+
+## [3.1.1] - 2026-07-25
+
+### Fixed
+
+- Fixed dedicated server crash.
+
+## [3.1.0] - 2026-07-25
+
+### Added
+
+- Added proper support for subfolders.
+
+### Fixed
+
+- Fixed certain repair recipes not being hidden from EMI.
+- Fixed certain types of recipe replacements not properly reflecting in EMI.
+
+### Removed
+
+- Removed legacy config migrator.
+
+## [3.0.1] - 2026-07-25
+
+### Changed
+
+- Improved brewing recipe parsing to exactly support the 26.3 recipe format.
+
+## [3.0.0] - 2026-07-24
+
+### Added
+
+- Backported `brewing` recipe type from 26.3.
+- Added support for modifying brewing recipes using recipe rules.
+
+### Changed
+
+- Switched to YACL instead of Cloth Config.
+- Invalid removals now default to unmatched (previously, invalid filters would match everything).
+- Major backend cleanups.
+
+### Fixed
+
+- Fixed crash when attempting to delete certain invalid recipes.
+
+## [2.2.0] - 2026-07-05
+
+### Added
+
+- Backported `crafting_transmute` recipe type.
+
+## [2.1.1] - 2026-06-24
+
+### Fixed
+
+- Improvements to advancement-based filtering.
+
+## [2.0.4] - 2026-05-19
+
+### Fixed
+
+- Fixed issues with `replace_input` and `replace_output`.
+
+## [2.0.3] - 2026-05-19
+
+### Fixed
+
+- Fixed a bug where tags were getting stripped instead of items being removed with Reliable Remover.
+
+## [2.0.2] - 2026-05-16
+
+### Fixed
+
+- Hotfix for recipe replacements running too early.
+
+## [2.0.1] - 2026-05-16
+
+### Fixed
+
+- Fixed recipe replacement hot reloading with Reliable Remover.
+
+## [2.0.0] - 2026-05-14
+
+### Added
+
+- Added partial support for more modded recipes.
+    - If you run into any issues or unsupported recipe types, feel free to make an issue on the GitHub.
+
+### Changed
+
+- Major backend reworks for additional stability and performance.
+
+## [1.13.2] - 2026-05-10
+
+### Fixed
+
+- Hopefully fix crash with EMI.
+
+## [1.13.1] - 2026-05-02
+
+### Changed
+
+- Improved recipe rule parser.
+- Code cleanups.
+
+## [1.13.0] - 2026-04-30
+
+### Added
+
+- Added a `set_repair_material` action to change repair materials.
+
+### Fixed
+
+- Fixed `prevent_repair` not syncing until running /reload.
+- General improvements to `prevent_repair`.
+
+## [1.12.0] - 2026-04-30
 
 ### Fixed
 

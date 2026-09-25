@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${description}",
+  "authors": [
+    "${mod_author}"
+  ],
+  "contact": {
+    "homepage": "https://github.com/evanbones/Reliable-Recipes",
+    "sources": "https://github.com/evanbones/Reliable-Recipes"
+  },
+  "license": "${license}",
+  "icon": "${mod_id}.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.evandev.reliable_recipes.fabric.ReliableRecipesMod"
+    ],
+    "client": [
+      "com.evandev.reliable_recipes.fabric.client.ReliableRecipesModClient"
+    ],
+    "modmenu": [
+      "com.evandev.reliable_recipes.fabric.compat.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "${mod_id}.mixins.json",
+    "${mod_id}.fabric.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft}",
+    "java": ">=${java_version}",
+    "yet_another_config_lib_v3": "*"
+  },
+  "suggests": {
+    "rrv": "*"
+  }
+}

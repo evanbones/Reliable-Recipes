@@ -1,4 +1,4 @@
-### Added
-
-- Added additional safety checks for modded recipes.
-- Added additional logging for failed recipe mutations.
+- Ported to 26.3.
+- Brought into parity with 1.21 version.
+- Added data-driven brewing recipes to 26.1/26.2.
+- Added vanilla recipe JSON loading.
