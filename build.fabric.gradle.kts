@@ -177,7 +177,7 @@ publishMods {
         minecraftVersions.add(property("deps.minecraft") as String)
         minecraftVersions.addAll(additionalVersions)
         requires("fabric-api")
-        requires("yacl")
+        optional("yacl")
         optional("modmenu")
     }
 
@@ -187,7 +187,7 @@ publishMods {
         minecraftVersions.add(property("deps.minecraft") as String)
         minecraftVersions.addAll(additionalVersions)
         requires("fabric-api")
-        requires("yacl")
+        optional("yacl")
         optional("modmenu")
         client = true
         server = true

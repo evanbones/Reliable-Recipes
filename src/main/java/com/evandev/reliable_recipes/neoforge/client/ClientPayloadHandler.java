@@ -12,14 +12,14 @@ public class ClientPayloadHandler {
     public static void handleRemove(final ClientboundRemoveRecipePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
             Constants.LOG.info("Received recipe removal notification for: {}", payload.recipeKey().identifier());
-            RrvInteractions.closeRecipeViewScreen();
+            RrvInteractions.onRecipeRemoved(payload.recipeKey());
         });
     }
 
     public static void handleAdd(final ClientboundAddRecipePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
             Constants.LOG.info("Received recipe restoration notification for: {}", payload.recipeHolder().id().identifier());
-            RrvInteractions.closeRecipeViewScreen();
+            RrvInteractions.onRecipeAdded(payload.recipeHolder());
         });
     }
 }

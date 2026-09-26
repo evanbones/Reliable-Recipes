@@ -3,7 +3,9 @@ package com.evandev.reliable_recipes.api;
 import net.minecraft.util.context.ContextMap;
 //? if <=26.2 {
 /*import com.evandev.reliable_recipes.recipe.BrewingRecipe;
-*///?}
+*///?} else {
+import net.minecraft.world.item.crafting.BrewingRecipe;
+//?}
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -99,7 +101,11 @@ public class ReliableRecipesAPI {
         /*if (recipe instanceof BrewingRecipe brewingRecipe) {
             return List.of(brewingRecipe.getOutput());
         }
-        *///?}
+        *///?} else {
+        if (recipe instanceof BrewingRecipe brewingRecipe) {
+            return List.of(brewingRecipe.getOutput().create());
+        }
+        //?}
         List<ItemStack> results = new ArrayList<>();
         List<RecipeDisplay> displays = recipe.display();
         //? if <=26.2 {

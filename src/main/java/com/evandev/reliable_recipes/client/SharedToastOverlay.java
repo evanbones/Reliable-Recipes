@@ -68,7 +68,7 @@ public class SharedToastOverlay {
             guiGraphics.fakeItem(iconStack, 8, 8);
         }
 
-        guiGraphics.text(mc.font, currentTitle != null ? currentTitle : Component.literal("Deleted"), 30, 7, -11534256, false);
+        guiGraphics.text(mc.font, currentTitle != null ? currentTitle : Component.translatable("toast.reliable_recipes.deleted_title"), 30, 7, -11534256, false);
         guiGraphics.text(mc.font, currentMessage, 30, 18, -16777216, false);
 
         guiGraphics.pose().popMatrix();

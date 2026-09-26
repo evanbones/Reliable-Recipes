@@ -17,11 +17,11 @@ public class YaclConfigIntegration {
         ModConfig config = ModConfig.get();
 
         YetAnotherConfigLib.Builder builder = YetAnotherConfigLib.createBuilder()
-                .title(Component.literal("Reliable Recipes Config"))
+                .title(Component.translatable("config.reliable_recipes.title"))
                 .save(ModConfig::save);
 
         ConfigCategory.Builder generalCategory = ConfigCategory.createBuilder()
-                .name(Component.literal("General"));
+                .name(Component.translatable("config.reliable_recipes.general"));
 
         generalCategory.option(createBoolOption("show_toast", true, () -> config.showToast, val -> config.showToast = val));
         generalCategory.option(createBoolOption("show_chat_messages", true, () -> config.showChatMessages, val -> config.showChatMessages = val));

@@ -24,14 +24,14 @@ public class ReliableRecipesModClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(ClientboundRemoveRecipePayload.TYPE, (payload, context) -> {
             context.client().execute(() -> {
                 Constants.LOG.info("Received recipe removal notification for: {}", payload.recipeKey().identifier());
-                RrvInteractions.closeRecipeViewScreen();
+                RrvInteractions.onRecipeRemoved(payload.recipeKey());
             });
         });
 
         ClientPlayNetworking.registerGlobalReceiver(ClientboundAddRecipePayload.TYPE, (payload, context) -> {
             context.client().execute(() -> {
                 Constants.LOG.info("Received recipe restoration notification for: {}", payload.recipeHolder().id().identifier());
-                RrvInteractions.closeRecipeViewScreen();
+                RrvInteractions.onRecipeAdded(payload.recipeHolder());
             });
         });
     }

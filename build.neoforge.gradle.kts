@@ -193,7 +193,7 @@ publishMods {
         accessToken = providers.environmentVariable("MODRINTH_TOKEN").orElse(providers.environmentVariable("MODRINTH_API_KEY"))
         minecraftVersions.add(property("deps.minecraft") as String)
         minecraftVersions.addAll(additionalVersions)
-        requires("yacl")
+        optional("yacl")
     }
 
     curseforge {
@@ -201,7 +201,7 @@ publishMods {
         accessToken = providers.environmentVariable("CURSEFORGE_TOKEN").orElse(providers.environmentVariable("CURSEFORGE_API_KEY"))
         minecraftVersions.add(property("deps.minecraft") as String)
         minecraftVersions.addAll(additionalVersions)
-        requires("yacl")
+        optional("yacl")
         client = true
         server = true
     }

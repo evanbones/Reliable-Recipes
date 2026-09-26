@@ -1,10 +1,10 @@
 package com.evandev.reliable_recipes.networking;
 
 import com.evandev.reliable_recipes.Constants;
-import com.evandev.reliable_recipes.compat.RrvCompat;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
+import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -44,26 +44,28 @@ public record DeleteRecipePayload(ResourceKey<Recipe<?>> recipeKey) implements C
                 recipeManager.finalizeRecipeLoading(server.getWorldData().enabledFeatures());
                 Constants.LOG.info("Runtime deletion of recipe: {}", key.identifier());
 
-                MutableComponent undoText = Component.literal("[UNDO]")
+                MutableComponent undoText = Component.translatable("toast.reliable_recipes.undo")
                         .withStyle(ChatFormatting.RED)
                         .withStyle(style -> style
                                 .withClickEvent(new ClickEvent.RunCommand("/rrecipes_undo " + key.identifier()))
-                                .withHoverEvent(new HoverEvent.ShowText(Component.literal("Click to restore this recipe")))
+                                .withHoverEvent(new HoverEvent.ShowText(Component.translatable("commands.reliable_recipes.undo.hover")))
                         );
 
-                player.sendSystemMessage(Component.literal("[Reliable Recipes] Removed recipe " + key.identifier() + " ").append(undoText)); // TODO: make this a lang key
+                player.sendSystemMessage(Component.translatable("toast.reliable_recipes.deleted", key.identifier().toString()).append(undoText));
+
+                ClientboundUpdateRecipesPacket packet = new ClientboundUpdateRecipesPacket(
+                        recipeManager.getSynchronizedItemProperties(),
+                        recipeManager.getSynchronizedStonecutterRecipes()
+                );
 
                 server.getPlayerList().getPlayers().forEach(p -> {
+                    p.connection.send(packet);
                     Services.PLATFORM.sendDeleteRecipePacketToPlayer(p, key);
                 });
-
-                if (Services.PLATFORM.isModLoaded("rrv")) {
-                    RrvCompat.syncRecipesToAllClients();
-                }
             } else {
                 player.sendSystemMessage(Component.translatable(
                         "toast.reliable_recipes.could_not_find_recipe",
-                        Component.literal(key.identifier().toString())
+                        key.identifier().toString()
                 ));
             }
         } else {

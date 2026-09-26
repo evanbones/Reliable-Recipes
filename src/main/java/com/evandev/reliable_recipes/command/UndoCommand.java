@@ -1,9 +1,9 @@
 package com.evandev.reliable_recipes.command;
 
-import com.evandev.reliable_recipes.compat.RrvCompat;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -33,24 +33,23 @@ public class UndoCommand {
                             RecipeManager recipeManager = ctx.getSource().getServer().getRecipeManager();
 
                             // Restore in memory
-                            boolean restored = RecipeModifier.restoreRecipe(recipeManager, recipeKey);
+                            RecipeHolder<?> restored = RecipeModifier.restoreRecipeAndGet(recipeManager, recipeKey);
 
-                            if (restored) {
+                            if (restored != null) {
                                 recipeManager.finalizeRecipeLoading(ctx.getSource().getServer().getWorldData().enabledFeatures());
                                 // Sync restored vanilla recipes to all clients
                                 ClientboundUpdateRecipesPacket packet = new ClientboundUpdateRecipesPacket(
                                         recipeManager.getSynchronizedItemProperties(),
                                         recipeManager.getSynchronizedStonecutterRecipes()
                                 );
-                                ctx.getSource().getServer().getPlayerList().getPlayers().forEach(p -> p.connection.send(packet));
+                                ctx.getSource().getServer().getPlayerList().getPlayers().forEach(p -> {
+                                    p.connection.send(packet);
+                                    Services.PLATFORM.sendAddRecipePacketToPlayer(p, restored);
+                                });
 
-                                // Trigger RRV's sync to clients
-                                if (Services.PLATFORM.isModLoaded("rrv")) {
-                                    RrvCompat.syncRecipesToAllClients();
-                                }
-                                ctx.getSource().sendSuccess(() -> Component.literal("Restored recipe " + id), true);
+                                ctx.getSource().sendSuccess(() -> Component.translatable("commands.reliable_recipes.undo.success", id), true);
                             } else {
-                                ctx.getSource().sendFailure(Component.literal("Could not restore recipe " + id + " (not in cache or already exists)"));
+                                ctx.getSource().sendFailure(Component.translatable("commands.reliable_recipes.undo.failure", id));
                             }
                             return 1;
                         })

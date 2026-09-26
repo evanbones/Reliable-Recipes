@@ -276,9 +276,9 @@ public class RecipeModifier {
         return false;
     }
 
-    public static boolean restoreRecipe(RecipeManager manager, ResourceKey<Recipe<?>> recipeKey) {
+    public static RecipeHolder<?> restoreRecipeAndGet(RecipeManager manager, ResourceKey<Recipe<?>> recipeKey) {
         RecipeHolder<?> recipe = DELETED_RECIPES_CACHE.remove(recipeKey);
-        if (recipe == null) return false;
+        if (recipe == null) return null;
 
         RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
         RecipeMap currentMap = managerAccessor.reliableRecipes$getRecipeMap();
@@ -287,7 +287,22 @@ public class RecipeModifier {
         updatedRecipes.add(recipe);
 
         managerAccessor.reliableRecipes$setRecipeMap(createRecipeMap(updatedRecipes));
-        return true;
+        return recipe;
+    }
+
+    public static boolean restoreRecipe(RecipeManager manager, ResourceKey<Recipe<?>> recipeKey) {
+        return restoreRecipeAndGet(manager, recipeKey) != null;
+    }
+
+    public static void addRecipe(RecipeManager manager, RecipeHolder<?> recipe) {
+        RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
+        RecipeMap currentMap = managerAccessor.reliableRecipes$getRecipeMap();
+
+        List<RecipeHolder<?>> updatedRecipes = new ArrayList<>(currentMap.values());
+        updatedRecipes.removeIf(holder -> holder.id().equals(recipe.id()));
+        updatedRecipes.add(recipe);
+
+        managerAccessor.reliableRecipes$setRecipeMap(createRecipeMap(updatedRecipes));
     }
 
     private static boolean shouldHideRecipe(RecipeHolder<?> holder) {

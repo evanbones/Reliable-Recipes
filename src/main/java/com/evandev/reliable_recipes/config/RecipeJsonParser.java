@@ -16,6 +16,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
+//? if >26.2 {
+import net.minecraft.world.item.crafting.BrewingRecipe;
+//?}
 import net.minecraft.world.level.ItemLike;
 
 import java.util.ArrayList;
@@ -182,9 +185,17 @@ public class RecipeJsonParser {
                     }
                     case "input" -> {
                         Predicate<ItemStack> matcher = getItemStackMatcher(criterion);
-                        yield r -> r.value().placementInfo().ingredients().stream().anyMatch(ing -> {
-                            return ing.items().anyMatch(holder -> matcher.test(new ItemStack(holder)));
-                        });
+                        yield r -> {
+                            //? if >26.2 {
+                            if (r.value() instanceof BrewingRecipe brewingRecipe) {
+                                return brewingRecipe.getInput().ingredient().items().anyMatch(holder -> matcher.test(new ItemStack(holder)))
+                                        || brewingRecipe.getReagent().ingredient().items().anyMatch(holder -> matcher.test(new ItemStack(holder)));
+                            }
+                            //?}
+                            return r.value().placementInfo().ingredients().stream().anyMatch(ing -> {
+                                return ing.items().anyMatch(holder -> matcher.test(new ItemStack(holder)));
+                            });
+                        };
                     }
                     case "output" -> {
                         Predicate<ItemStack> m = getItemStackMatcher(criterion);

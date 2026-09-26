@@ -32,9 +32,9 @@ public class RecipeJsonMutator {
                 if (key.equals("type")) continue;
 
                 boolean nextContext = isOutputContext;
-                if (key.equals("result") || key.equals("results")) {
+                if (key.equals("result") || key.equals("results") || key.equals("output") || key.equals("outputs")) {
                     nextContext = true;
-                } else if (key.equals("ingredients") || key.equals("ingredient") || key.equals("key") || key.equals("base") || key.equals("addition")) {
+                } else if (key.equals("ingredients") || key.equals("ingredient") || key.equals("key") || key.equals("base") || key.equals("addition") || key.equals("input") || key.equals("inputs") || key.equals("reagent") || key.equals("material")) {
                     nextContext = false;
                 }
 

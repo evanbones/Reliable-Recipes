@@ -33,10 +33,10 @@
     "fabricloader": ">=${fabric_loader_version}",
     "fabric-api": "*",
     "minecraft": "${minecraft}",
-    "java": ">=${java_version}",
-    "yet_another_config_lib_v3": "*"
+    "java": ">=${java_version}"
   },
   "suggests": {
+    "yet_another_config_lib_v3": "*",
     "rrv": "*"
   }
 }

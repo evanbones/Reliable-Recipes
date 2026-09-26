@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
@@ -31,23 +32,27 @@ import org.jetbrains.annotations.NotNull;
 public class ReliableRecipesMod {
 
     public ReliableRecipesMod(IEventBus eventBus) {
+        eventBus.addListener(ReliableRecipesMod::registerRegistries);
+        eventBus.addListener(ReliableRecipesMod::registerPayloadHandlers);
+
         eventBus.register(new Object() {
             @SubscribeEvent
             public void onConstructMod(FMLConstructModEvent event) {
-                ModLoadingContext.get().registerExtensionPoint(
-                        IConfigScreenFactory.class,
-                        () -> new IConfigScreenFactory() {
-                            @Override
-                            public @NotNull Screen createScreen(@NotNull ModContainer modContainer, @NotNull Screen parent) {
-                                return YaclConfigIntegration.createScreen(parent);
+                if (ModList.get().isLoaded("yet_another_config_lib_v3")) {
+                    ModLoadingContext.get().registerExtensionPoint(
+                            IConfigScreenFactory.class,
+                            () -> new IConfigScreenFactory() {
+                                @Override
+                                public @NotNull Screen createScreen(@NotNull ModContainer modContainer, @NotNull Screen parent) {
+                                    return YaclConfigIntegration.createScreen(parent);
+                                }
                             }
-                        }
-                );
+                    );
+                }
             }
         });
     }
 
-    @SubscribeEvent
     public static void registerRegistries(RegisterEvent event) {
         BrewingRegistration.registerNeoForge(event);
     }
@@ -57,7 +62,6 @@ public class ReliableRecipesMod {
         UndoCommand.register(event.getDispatcher());
     }
 
-    @SubscribeEvent
     public static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
         final PayloadRegistrar registrar = event.registrar("1");
 
