@@ -3,8 +3,9 @@ package com.evandev.reliable_recipes.config;
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
-import com.evandev.reliable_recipes.recipe.TagRule;
+import com.evandev.reliable_recipes.tag.TagRule;
 import com.google.gson.*;
+
 import net.minecraft.resources.Identifier;
 
 import java.io.File;
@@ -18,7 +19,6 @@ import java.util.stream.Stream;
 
 public class RecipeConfigIO {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-
     public static Path getConfigDir() {
         return Services.PLATFORM.getConfigDirectory().resolve("reliable_recipes");
     }
@@ -60,25 +60,24 @@ public class RecipeConfigIO {
     private static List<RecipeRule> computeRules() {
         List<RecipeRule> rules = new ArrayList<>();
         List<ConfigFile> configs = loadAllConfigFiles();
-
         for (ConfigFile configFile : configs) {
             JsonElement config = configFile.element();
             if (config.isJsonArray()) {
                 for (JsonElement element : config.getAsJsonArray()) {
                     if (element.isJsonObject()) {
-                        RecipeRule rule = RecipeJsonParser.parseRule(element.getAsJsonObject());
+                        RecipeRule rule = RecipeRuleParser.parseRule(element.getAsJsonObject());
                         if (rule != null) rules.add(rule);
                     }
                 }
             } else if (config.isJsonObject() && config.getAsJsonObject().has("recipe_modifications")) {
                 for (JsonElement element : config.getAsJsonObject().getAsJsonArray("recipe_modifications")) {
                     if (element.isJsonObject()) {
-                        RecipeRule rule = RecipeJsonParser.parseRule(element.getAsJsonObject());
+                        RecipeRule rule = RecipeRuleParser.parseRule(element.getAsJsonObject());
                         if (rule != null) rules.add(rule);
                     }
                 }
             } else if (config.isJsonObject()) {
-                RecipeRule rule = RecipeJsonParser.parseRule(config.getAsJsonObject());
+                RecipeRule rule = RecipeRuleParser.parseRule(config.getAsJsonObject());
                 if (rule != null) rules.add(rule);
             }
         }
@@ -88,25 +87,24 @@ public class RecipeConfigIO {
     private static List<TagRule> computeTagRules() {
         List<TagRule> rules = new ArrayList<>();
         List<ConfigFile> configs = loadAllConfigFiles();
-
         for (ConfigFile configFile : configs) {
             JsonElement config = configFile.element();
             if (config.isJsonArray()) {
                 for (JsonElement element : config.getAsJsonArray()) {
                     if (element.isJsonObject()) {
-                        TagRule rule = RecipeJsonParser.parseTagRule(element.getAsJsonObject());
+                        TagRule rule = RecipeRuleParser.parseTagRule(element.getAsJsonObject());
                         if (rule != null) rules.add(rule);
                     }
                 }
             } else if (config.isJsonObject() && config.getAsJsonObject().has("tag_modifications")) {
                 for (JsonElement element : config.getAsJsonObject().getAsJsonArray("tag_modifications")) {
                     if (element.isJsonObject()) {
-                        TagRule rule = RecipeJsonParser.parseTagRule(element.getAsJsonObject());
+                        TagRule rule = RecipeRuleParser.parseTagRule(element.getAsJsonObject());
                         if (rule != null) rules.add(rule);
                     }
                 }
             } else if (config.isJsonObject()) {
-                TagRule rule = RecipeJsonParser.parseTagRule(config.getAsJsonObject());
+                TagRule rule = RecipeRuleParser.parseTagRule(config.getAsJsonObject());
                 if (rule != null) rules.add(rule);
             }
         }
@@ -261,32 +259,47 @@ public class RecipeConfigIO {
 
     private static List<ConfigFile> loadAllConfigFiles() {
         List<ConfigFile> loadedConfigs = new ArrayList<>();
-        Path rootDir = getConfigDir();
-        File dir = rootDir.toFile();
+        Path configDir = getConfigDir();
+        File dir = configDir.toFile();
 
         if (!dir.exists()) {
             if (dir.mkdirs()) {
-                createDefault(rootDir.resolve("recipe_example.json.disabled"));
+                createDefault(configDir.resolve("recipe_example.json.disabled"));
             } else {
-                Constants.LOG.error("Could not create config directory: {}", rootDir);
+                Constants.LOG.error("Could not create config directory: {}", configDir);
             }
         }
 
-        if (dir.exists() && dir.isDirectory()) {
+        List<Path> scanDirs = new ArrayList<>();
+        if (Files.exists(configDir)) {
+            scanDirs.add(configDir);
+        }
+
+        try {
+            Path configParent = Services.PLATFORM.getConfigDirectory().getParent();
+            if (configParent != null) {
+                Path rootReliableRecipes = configParent.resolve("reliable_recipes");
+                if (Files.exists(rootReliableRecipes) && Files.isDirectory(rootReliableRecipes) && !rootReliableRecipes.equals(configDir)) {
+                    scanDirs.add(rootReliableRecipes);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        for (Path rootDir : scanDirs) {
             try (Stream<Path> stream = Files.walk(rootDir)) {
-                stream.filter(Files::isRegularFile)
-                        .filter(path -> path.toString().endsWith(".json"))
-                        .forEach(path -> {
-                            try (FileReader reader = new FileReader(path.toFile())) {
-                                JsonElement root = JsonParser.parseReader(reader);
-                                if (root != null) {
-                                    Path relPath = rootDir.relativize(path);
-                                    loadedConfigs.add(new ConfigFile(path, relPath, root));
-                                }
-                            } catch (Exception e) {
-                                Constants.LOG.error("Failed to load recipe config file: {}", path.getFileName(), e);
-                            }
-                        });
+                stream.filter(path -> Files.isRegularFile(path) && path.toString().endsWith(".json"))
+                      .forEach(path -> {
+                          try (FileReader reader = new FileReader(path.toFile())) {
+                              JsonElement root = JsonParser.parseReader(reader);
+                              if (root != null) {
+                                  Path relPath = rootDir.relativize(path);
+                                  loadedConfigs.add(new ConfigFile(path, relPath, root));
+                              }
+                          } catch (Exception e) {
+                              Constants.LOG.error("Failed to load recipe config file: {}", path.getFileName(), e);
+                          }
+                      });
             } catch (IOException e) {
                 Constants.LOG.error("Failed to walk recipe directory: {}", rootDir, e);
             }
@@ -326,6 +339,28 @@ public class RecipeConfigIO {
         tagItems.add("examplemod:inedible_food");
         tagRemoveExample.add("id", tagItems);
         root.add(tagRemoveExample);
+
+        // Example 4: Add custom recipe
+        JsonObject addExample = new JsonObject();
+        addExample.addProperty("action", "add_recipe");
+        addExample.addProperty("id", "reliable_recipes:example_stick");
+        JsonObject recipeDetails = new JsonObject();
+        recipeDetails.addProperty("type", "minecraft:crafting_shapeless");
+        JsonArray ingredients = new JsonArray();
+        //? if <1.21.2 {
+        /*JsonObject ing = new JsonObject();
+        ing.addProperty("item", "minecraft:dirt");
+        ingredients.add(ing);
+        *///?} else {
+        ingredients.add("minecraft:dirt");
+        //?}
+        recipeDetails.add("ingredients", ingredients);
+        JsonObject result = new JsonObject();
+        result.addProperty("id", "minecraft:stick");
+        result.addProperty("count", 4);
+        recipeDetails.add("result", result);
+        addExample.add("recipe", recipeDetails);
+        root.add(addExample);
 
         try (FileWriter writer = new FileWriter(path.toFile())) {
             GSON.toJson(root, writer);
@@ -453,10 +488,8 @@ public class RecipeConfigIO {
             if (changed) {
                 try (FileWriter writer = new FileWriter(file)) {
                     GSON.toJson(root, writer);
-                    invalidateCache();
-                } catch (IOException e) {
-                    Constants.LOG.error("Failed to update generated config", e);
                 }
+                invalidateCache();
             }
         } catch (Exception e) {
             Constants.LOG.error("Failed to update generated config", e);

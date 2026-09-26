@@ -4,6 +4,7 @@ import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.platform.Services;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.SerializedName;
 
 import java.io.File;
 import java.io.FileReader;
@@ -20,7 +21,13 @@ public class ModConfig {
 
     public boolean showToast = true;
     public boolean showChatMessages = true;
+    @SerializedName(value = "reloadRrv", alternate = {"reloadEmi"})
+    //? if <1.21.2 {
+    /*public boolean reloadRrv = false;
+    *///?} else {
     public boolean reloadRrv = true;
+    //?}
+    @SerializedName(value = "devMode", alternate = {"enableEmiRemoval"})
     public boolean devMode = false;
     public List<String> ignoredTags = new ArrayList<>(List.of("c:hidden_from_recipe_viewers"));
 
@@ -35,9 +42,18 @@ public class ModConfig {
         if (CONFIG_FILE.exists()) {
             try (FileReader reader = new FileReader(CONFIG_FILE)) {
                 INSTANCE = GSON.fromJson(reader, ModConfig.class);
+                if (INSTANCE == null) {
+                    INSTANCE = new ModConfig();
+                    save();
+                } else if (INSTANCE.ignoredTags == null) {
+                    INSTANCE.ignoredTags = new ArrayList<>(List.of("c:hidden_from_recipe_viewers"));
+                } else {
+                    INSTANCE.ignoredTags = new ArrayList<>(INSTANCE.ignoredTags);
+                }
             } catch (Exception e) {
                 Constants.LOG.error("Failed to load reliable_recipes.json", e);
                 INSTANCE = new ModConfig();
+                save();
             }
         } else {
             INSTANCE = new ModConfig();

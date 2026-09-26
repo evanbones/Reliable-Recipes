@@ -1,8 +1,8 @@
 package com.evandev.reliable_recipes.config;
 
 import dev.isxander.yacl3.api.*;
-import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
+import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -26,7 +26,7 @@ public class YaclConfigIntegration {
         generalCategory.option(createBoolOption("show_toast", true, () -> config.showToast, val -> config.showToast = val));
         generalCategory.option(createBoolOption("show_chat_messages", true, () -> config.showChatMessages, val -> config.showChatMessages = val));
         generalCategory.option(createBoolOption("dev_mode", false, () -> config.devMode, val -> config.devMode = val));
-        generalCategory.option(createBoolOption("reload_rrv", true, () -> config.reloadRrv, val -> config.reloadRrv = val));
+        generalCategory.option(createBoolOption("reload_rrv", false, () -> config.reloadRrv, val -> config.reloadRrv = val));
 
         generalCategory.group(ListOption.<String>createBuilder(String.class)
                 .name(Component.translatable("config.reliable_recipes.ignored_tags"))

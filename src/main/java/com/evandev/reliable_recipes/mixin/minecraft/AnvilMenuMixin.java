@@ -13,7 +13,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AnvilMenuMixin extends ItemCombinerMenu {
 
     public AnvilMenuMixin() {
+        //? if <1.21.2 {
+        /*super(null, 0, null, null);
+        *///?} else {
         super(null, 0, null, null, null);
+        //?}
     }
 
     @Inject(method = "createResult", at = @At("RETURN"))
@@ -36,7 +40,11 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
         ItemStack input2 = this.inputSlots.getItem(1);
 
         if (!input1.isEmpty() && !input2.isEmpty() && ReliableRecipesAPI.isRepairBlocked(input1)) {
+            //? if <1.21.2 {
+            /*boolean isRepairAttempt = ItemStack.isSameItem(input1, input2) || input1.getItem().isValidRepairItem(input1, input2);
+            *///?} else {
             boolean isRepairAttempt = ItemStack.isSameItem(input1, input2) || input1.isValidRepairItem(input2);
+            //?}
 
             if (isRepairAttempt) {
                 this.resultSlots.setItem(0, ItemStack.EMPTY);

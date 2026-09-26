@@ -9,6 +9,7 @@ plugins {
 
 val minecraft = stonecutter.current.version
 val mcVersion = stonecutter.current.project.substringBeforeLast('-')
+val javaVersion = property("deps.java_version") as String
 
 tasks.named<ProcessResources>("processResources") {
     fun prop(name: String) = project.property(name) as String
@@ -23,10 +24,10 @@ tasks.named<ProcessResources>("processResources") {
         this["credits"] = prop("mod.credits")
         this["license"] = prop("mod.license")
         this["fabric_loader_version"] = prop("deps.fabric_loader")
-        this["java_version"] = prop("deps.java_version")
+        this["java_version"] = javaVersion
     }
 
-    filesMatching(listOf("fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml")) {
+    filesMatching(listOf("fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml", "*.mixins.json")) {
         expand(props)
     }
 }
@@ -51,6 +52,7 @@ repositories {
         url = uri("https://maven.terraformersmc.com/releases/")
         content {
             includeGroupAndSubgroups("com.terraformersmc")
+            includeGroupAndSubgroups("dev.emi")
         }
     }
     maven {
@@ -96,11 +98,15 @@ dependencies {
     // Mod Menu
     modImplementation("com.terraformersmc:modmenu:${property("deps.modmenu")}")
 
-    // RRV
-    modImplementation("cc.cassian.rrv:reliable-recipe-viewer-fabric:${property("deps.rrv")}")
+    // Recipe viewer: EMI on 1.21.1, RRV on 26.x
+    findProperty("deps.emi")?.let { modImplementation("dev.emi:emi-fabric:$it") }
+    findProperty("deps.rrv")?.let { modImplementation("cc.cassian.rrv:reliable-recipe-viewer-fabric:$it") }
 
     // Mixin Constraints
     include(implementation("com.moulberry:mixinconstraints:${property("deps.mixin_constraints")}")!!)
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks {
@@ -118,6 +124,10 @@ tasks {
     withType<JavaExec>().configureEach {
         jvmArgs("-Dkotlinx.coroutines.debug=off")
     }
+
+    test {
+        useJUnitPlatform()
+    }
 }
 
 loom {
@@ -130,15 +140,15 @@ loom {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(property("deps.java_version") as String)
-    sourceCompatibility = JavaVersion.VERSION_25
-    targetCompatibility = JavaVersion.VERSION_25
+    toolchain.languageVersion = JavaLanguageVersion.of(javaVersion)
+    sourceCompatibility = JavaVersion.toVersion(javaVersion)
+    targetCompatibility = JavaVersion.toVersion(javaVersion)
     withSourcesJar()
 }
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
-    options.release = 25
+    options.release = javaVersion.toInt()
 }
 
 

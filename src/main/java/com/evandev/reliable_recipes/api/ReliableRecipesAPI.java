@@ -1,19 +1,23 @@
 package com.evandev.reliable_recipes.api;
 
-import net.minecraft.util.context.ContextMap;
-//? if <=26.2 {
-/*import com.evandev.reliable_recipes.recipe.BrewingRecipe;
-*///?} else {
-import net.minecraft.world.item.crafting.BrewingRecipe;
-//?}
+import com.evandev.reliable_recipes.config.RecipeRuleParser;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
+//? if <1.21.2 {
+/*import net.minecraft.core.RegistryAccess;
+*///?} else {
+import net.minecraft.util.context.ContextMap;
 import net.minecraft.world.item.crafting.display.RecipeDisplay;
 import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.item.crafting.display.SlotDisplayContext;
-import net.minecraft.world.level.ItemLike;
+//?}
+//? if >=1.21.2 && <=26.2 {
+import com.evandev.reliable_recipes.recipe.BrewingRecipe;
+//?} else if >26.2 {
+/*import net.minecraft.world.item.crafting.BrewingRecipe;
+*///?}
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,7 +53,9 @@ public class ReliableRecipesAPI {
     }
 
     /**
-     * Registers a contextual predicate that determines if an item should be hidden.
+     * Registers a predicate that determines if an item should be hidden from recipes, tags,
+     * and recipe viewers, given the context it's being checked in (e.g. {@code "item"},
+     * {@code "tag:item"}).
      *
      * @param predicate The condition defining whether the stack is hidden for a given context.
      */
@@ -91,34 +97,39 @@ public class ReliableRecipesAPI {
     }
 
     /**
-     * Retrieves the outputs of a recipe by parsing its display configuration.
+     * Retrieves the outputs of a recipe.
      *
      * @param recipe The recipe to analyze.
      * @return A list of ItemStacks representing the outputs of the recipe.
      */
     public static List<ItemStack> getRecipeResults(Recipe<?> recipe) {
+        //? if <1.21.2 {
+        /*ItemStack result = recipe.getResultItem(RegistryAccess.EMPTY);
+        return result.isEmpty() ? List.of() : List.of(result);
+        *///?} else {
         //? if <=26.2 {
-        /*if (recipe instanceof BrewingRecipe brewingRecipe) {
+        if (recipe instanceof BrewingRecipe brewingRecipe) {
             return List.of(brewingRecipe.getOutput());
         }
-        *///?} else {
-        if (recipe instanceof BrewingRecipe brewingRecipe) {
+        //?} else {
+        /*if (recipe instanceof BrewingRecipe brewingRecipe) {
             return List.of(brewingRecipe.getOutput().create());
         }
-        //?}
+        *///?}
         List<ItemStack> results = new ArrayList<>();
         List<RecipeDisplay> displays = recipe.display();
         //? if <=26.2 {
-        /*ContextMap emptyContext = new ContextMap.Builder().create(SlotDisplayContext.CONTEXT);
-        *///?} else {
-        ContextMap emptyContext = ContextMap.EMPTY;
-        //?}
+        ContextMap emptyContext = new ContextMap.Builder().create(SlotDisplayContext.CONTEXT);
+        //?} else {
+        /*ContextMap emptyContext = ContextMap.EMPTY;
+        *///?}
 
         for (RecipeDisplay display : displays) {
             SlotDisplay resultDisplay = display.result();
             results.addAll(resultDisplay.resolveForStacks(emptyContext));
         }
         return results;
+        //?}
     }
 
     /**
@@ -158,6 +169,13 @@ public class ReliableRecipesAPI {
     }
 
     /**
+     * Clears item replacements (primarily for hot reloading).
+     */
+    public static void clearItemReplacements() {
+        REPLACEMENTS.clear();
+    }
+
+    /**
      * Registers a condition to block repairs for certain items.
      *
      * @param predicate The condition evaluated when repairing.
@@ -173,16 +191,18 @@ public class ReliableRecipesAPI {
         REPAIR_BLOCKERS.clear();
     }
 
+    /**
+     * Registers a replacement repair material for an item, used by the anvil, grindstone,
+     * and vanilla item-repair recipes in place of the item's default repair material.
+     * If a custom repair material is already registered for this item, the materials are merged.
+     */
     public static void registerCustomRepairMaterial(Item item, Ingredient material) {
-        if (item == null || material == null) return;
+        if (item == null || material == null || material.isEmpty()) return;
         CUSTOM_REPAIR_MATERIALS.compute(item, (k, existing) -> {
-            if (existing == null) {
+            if (existing == null || existing.isEmpty()) {
                 return material;
             }
-            List<ItemLike> combined = new ArrayList<>();
-            existing.items().forEach(h -> combined.add(h.value()));
-            material.items().forEach(h -> combined.add(h.value()));
-            return Ingredient.of(combined.stream());
+            return RecipeRuleParser.mergeIngredients(List.of(existing, material));
         });
     }
 

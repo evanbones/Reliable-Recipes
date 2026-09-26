@@ -2,8 +2,7 @@ package com.evandev.reliable_recipes.fabric.client;
 
 //? if fabric {
 
-import com.evandev.reliable_recipes.Constants;
-import com.evandev.reliable_recipes.client.RrvInteractions;
+import com.evandev.reliable_recipes.client.ClientRecipeSync;
 import com.evandev.reliable_recipes.client.SharedToastOverlay;
 import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
 import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
@@ -16,23 +15,23 @@ public class ReliableRecipesModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+            //? if <1.21.2 {
+            /*ScreenEvents.afterRender(screen).register((sharedScreen, guiGraphics, mouseX, mouseY, tickDelta) -> {
+                SharedToastOverlay.extract(guiGraphics);
+            });
+            *///?} else {
             ScreenEvents.afterExtract(screen).register((sharedScreen, guiGraphics, mouseX, mouseY, tickDelta) -> {
                 SharedToastOverlay.extract(guiGraphics);
             });
+            //?}
         });
 
         ClientPlayNetworking.registerGlobalReceiver(ClientboundRemoveRecipePayload.TYPE, (payload, context) -> {
-            context.client().execute(() -> {
-                Constants.LOG.info("Received recipe removal notification for: {}", payload.recipeKey().identifier());
-                RrvInteractions.onRecipeRemoved(payload.recipeKey());
-            });
+            context.client().execute(() -> ClientRecipeSync.onRecipeRemoved(payload.recipeKey()));
         });
 
         ClientPlayNetworking.registerGlobalReceiver(ClientboundAddRecipePayload.TYPE, (payload, context) -> {
-            context.client().execute(() -> {
-                Constants.LOG.info("Received recipe restoration notification for: {}", payload.recipeHolder().id().identifier());
-                RrvInteractions.onRecipeAdded(payload.recipeHolder());
-            });
+            context.client().execute(() -> ClientRecipeSync.onRecipeAdded(payload.recipeHolder()));
         });
     }
 }

@@ -1,29 +1,34 @@
 package com.evandev.reliable_recipes.mixin.rrv;
 
+import com.moulberry.mixinconstraints.annotations.IfMinecraftVersion;
+import com.moulberry.mixinconstraints.annotations.IfModLoaded;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import org.spongepowered.asm.mixin.Mixin;
+//? if >=1.21.2 {
 import cc.cassian.rrv.api.recipe.ReliableClientRecipe;
 import cc.cassian.rrv.common.recipe.inventory.RecipeViewScreen;
 import com.evandev.reliable_recipes.client.RrvInteractions;
 import com.mojang.blaze3d.platform.InputConstants;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
-import net.minecraft.network.chat.Component;
-import com.moulberry.mixinconstraints.annotations.IfModLoaded;
-import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
+//?}
 
 @IfModLoaded("rrv")
-@Mixin(RecipeViewScreen.class)
+@IfMinecraftVersion(minVersion = "1.21.2")
+@Mixin(targets = "cc.cassian.rrv.common.recipe.inventory.RecipeViewScreen")
 public abstract class RrvRecipeScreenMixin extends Screen {
 
     protected RrvRecipeScreenMixin(Component title) {
         super(title);
     }
 
+    //? if >=1.21.2 {
     @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
     private void reliableRecipes$onKeyPressed(KeyEvent keyEvent, CallbackInfoReturnable<Boolean> cir) {
         if (keyEvent.key() == InputConstants.KEY_DELETE || keyEvent.key() == InputConstants.KEY_BACKSPACE) {
@@ -62,4 +67,5 @@ public abstract class RrvRecipeScreenMixin extends Screen {
         }
         return null;
     }
+    //?}
 }

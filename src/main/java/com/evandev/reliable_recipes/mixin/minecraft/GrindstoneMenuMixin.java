@@ -16,7 +16,11 @@ public abstract class GrindstoneMenuMixin {
 
     @Shadow
     @Final
+    //? if <1.21.2 {
+    /*Container repairSlots;
+    *///?} else {
     private Container repairSlots;
+    //?}
     @Shadow
     @Final
     private Container resultSlots;

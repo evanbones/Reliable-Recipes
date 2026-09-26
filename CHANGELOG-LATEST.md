@@ -1,4 +1,4 @@
-- Ported to 26.3.
-- Brought into parity with 1.21 version.
-- Added data-driven brewing recipes to 26.1/26.2.
-- Added vanilla recipe JSON loading.
+### Changed
+
+- More 1.21 parity on 26.x.
+- Added 1.21 stonecutter version.

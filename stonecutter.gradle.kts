@@ -6,11 +6,15 @@ plugins {
     id("me.modmuss50.mod-publish-plugin") version "2.2.1" apply false
 }
 
-stonecutter active "26.3-fabric"
+stonecutter active "26.2-fabric"
 
 stonecutter parameters {
     constants.match(node.metadata.project.substringAfterLast('-'), "fabric", "neoforge")
     filters.include("**/*.fsh", "**/*.vsh")
+
+    replacements.string(current.parsed >= "1.21.11") {
+        replace("ResourceLocation", "Identifier")
+    }
 }
 
 stonecutter tasks {

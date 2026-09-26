@@ -1,110 +1,62 @@
 package com.evandev.reliable_recipes.recipe;
 
+import com.evandev.reliable_recipes.config.RecipeRuleParser;
+import com.evandev.reliable_recipes.util.CompatUtil;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeHolder;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
 public class RecipeRule {
     private final Action action;
-    private final Predicate<RecipeHolder<?>> filter;
-    private final Optional<Ingredient> targetInput;
-    private final List<String> replaceTargetStrs;
-    private final JsonElement replaceWithEl;
-    private final Optional<Ingredient> newInput;
+    private final BiPredicate<Identifier, JsonObject> jsonFilter;
+    private final Ingredient targetInput;
+    private final Ingredient newInput;
+    private final List<String> rawTargets;
+    private final JsonElement rawReplacement;
 
     // Removals
-    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter) {
-        this(action, filter, Optional.empty(), Optional.empty(), List.of(), null);
+    public RecipeRule(Action action, BiPredicate<Identifier, JsonObject> filter) {
+        this(action, filter, CompatUtil.emptyIngredient(), CompatUtil.emptyIngredient(), List.of(), null);
     }
 
-    // Prevent Repair
-    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> target) {
-        this(action, filter, target, Optional.empty(), List.of(), null);
+    // JSON replacements
+    public RecipeRule(Action action, BiPredicate<Identifier, JsonObject> filter, List<String> rawTargets, JsonElement rawReplacement) {
+        this(action, filter, CompatUtil.emptyIngredient(), CompatUtil.emptyIngredient(), rawTargets, rawReplacement);
     }
 
-    // Set Repair Material
-    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> target, Optional<Ingredient> material) {
-        this(action, filter, target, material, List.of(), null);
+    // Repair interactions
+    public RecipeRule(Action action, BiPredicate<Identifier, JsonObject> filter, Ingredient target, Ingredient rep) {
+        this(action, filter, target, rep, List.of(), null);
     }
 
-    // Replacements (single target)
-    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, String targetStr, JsonElement replacementEl) {
-        this(action, filter, Optional.empty(), Optional.empty(), targetStr != null && !targetStr.isEmpty() ? List.of(targetStr) : List.of(), replacementEl);
-    }
-
-    // Replacements (multiple targets)
-    public RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, List<String> targetStrs, JsonElement replacementEl) {
-        this(action, filter, Optional.empty(), Optional.empty(), targetStrs, replacementEl);
-    }
-
-    private RecipeRule(Action action, Predicate<RecipeHolder<?>> filter, Optional<Ingredient> targetInput, Optional<Ingredient> newInput, List<String> targetStrs, JsonElement replacementEl) {
+    private RecipeRule(Action action, BiPredicate<Identifier, JsonObject> filter, Ingredient target, Ingredient rep, List<String> rawTargets, JsonElement rawReplacement) {
         this.action = action;
-        this.filter = filter;
-        this.targetInput = targetInput;
-        this.newInput = newInput;
-        this.replaceTargetStrs = targetStrs;
-        this.replaceWithEl = replacementEl;
+        this.jsonFilter = filter;
+        this.targetInput = target;
+        this.newInput = rep;
+        this.rawTargets = rawTargets;
+        this.rawReplacement = rawReplacement;
     }
 
-    public Optional<Ingredient> getNewInput() {
-        return newInput;
-    }
-
-    public boolean test(RecipeHolder<?> holder) {
-        return filter.test(holder);
-    }
-
-    public Action getAction() {
-        return action;
-    }
-
-    public Optional<Ingredient> getTargetInput() {
-        return targetInput;
-    }
-
-    public String getReplaceTargetStr() {
-        return replaceTargetStrs.isEmpty() ? null : replaceTargetStrs.get(0);
-    }
-
-    public List<String> getReplaceTargetStrs() {
-        return replaceTargetStrs;
-    }
-
-    public JsonElement getReplaceWithEl() {
-        return replaceWithEl;
-    }
-
-    public boolean targetsMatch(ItemStack stack) {
-        return matchesAnyItemString(replaceTargetStrs, stack);
-    }
-
-    public boolean replacementMatches(ItemStack stack) {
-        return matchesAnyItemString(replacementAsStrings(), stack);
-    }
-
-    private List<String> replacementAsStrings() {
-        if (replaceWithEl == null) return List.of();
-        List<String> values = new ArrayList<>();
-        if (replaceWithEl.isJsonArray()) {
-            for (JsonElement e : replaceWithEl.getAsJsonArray()) {
-                if (e.isJsonPrimitive()) values.add(e.getAsString());
+    private static Ingredient stringsToIngredient(List<String> values) {
+        List<Ingredient> ingredients = new ArrayList<>();
+        for (String value : values) {
+            Ingredient parsed = RecipeRuleParser.parseIngredientString(value);
+            if (!parsed.isEmpty()) {
+                ingredients.add(parsed);
             }
-        } else if (replaceWithEl.isJsonPrimitive()) {
-            values.add(replaceWithEl.getAsString());
         }
-        return values;
+        return RecipeRuleParser.mergeIngredients(ingredients);
     }
 
     private static boolean matchesAnyItemString(List<String> values, ItemStack stack) {
@@ -142,6 +94,59 @@ public class RecipeRule {
             }
         }
         return false;
+    }
+
+    public boolean testJson(Identifier id, JsonObject recipe) {
+        return jsonFilter.test(id, recipe);
+    }
+
+    public Action getAction() {
+        return action;
+    }
+
+    public Ingredient getTargetInput() {
+        return targetInput;
+    }
+
+    public Ingredient getNewInput() {
+        return newInput;
+    }
+
+    public List<String> getRawTargets() {
+        return rawTargets;
+    }
+
+    public JsonElement getRawReplacement() {
+        return rawReplacement;
+    }
+
+    public boolean targetsMatch(ItemStack stack) {
+        return matchesAnyItemString(rawTargets, stack);
+    }
+
+    public boolean replacementMatches(ItemStack stack) {
+        return matchesAnyItemString(replacementAsStrings(), stack);
+    }
+
+    public Ingredient replacementIngredient() {
+        return stringsToIngredient(replacementAsStrings());
+    }
+
+    public Ingredient targetsIngredient() {
+        return stringsToIngredient(rawTargets);
+    }
+
+    private List<String> replacementAsStrings() {
+        if (rawReplacement == null) return List.of();
+        List<String> values = new ArrayList<>();
+        if (rawReplacement.isJsonArray()) {
+            for (JsonElement e : rawReplacement.getAsJsonArray()) {
+                if (e.isJsonPrimitive()) values.add(e.getAsString());
+            }
+        } else if (rawReplacement.isJsonPrimitive()) {
+            values.add(rawReplacement.getAsString());
+        }
+        return values;
     }
 
     public enum Action {REMOVE, REPLACE_INPUT, REPLACE_OUTPUT, PREVENT_REPAIR, SET_REPAIR_MATERIAL}

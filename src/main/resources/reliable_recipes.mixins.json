@@ -3,18 +3,21 @@
   "minVersion": "0.8",
   "package": "com.evandev.reliable_recipes.mixin",
   "plugin": "com.moulberry.mixinconstraints.ConstraintsMixinPlugin",
-  "compatibilityLevel": "JAVA_25",
+  "compatibilityLevel": "JAVA_${java_version}",
   "mixins": [
     "accessor.HolderReferenceAccessor",
     "accessor.HolderSetNamedAccessor",
     "accessor.RecipeManagerAccessor",
     "minecraft.AnvilMenuMixin",
     "minecraft.GrindstoneMenuMixin",
+    "minecraft.ItemMixin",
     "minecraft.PotionBrewingMixin",
+    "minecraft.RecipeManagerMixin",
     "minecraft.ReloadableServerResourcesMixin",
     "minecraft.RepairItemRecipeMixin"
   ],
   "client": [
+    "emi.EmiRecipeScreenMixin",
     "minecraft.ClientPacketListenerMixin",
     "rrv.RrvRecipeScreenMixin"
   ],

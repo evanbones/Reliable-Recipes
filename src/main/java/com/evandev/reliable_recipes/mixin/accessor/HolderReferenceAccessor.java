@@ -1,11 +1,13 @@
 package com.evandev.reliable_recipes.mixin.accessor;
 
 import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.tags.TagKey;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
+//? if >=1.21.2 {
+import net.minecraft.core.component.DataComponentMap;
+//?}
 
 import java.util.Set;
 
@@ -18,10 +20,12 @@ public interface HolderReferenceAccessor {
     @Mutable
     void setTags(Set<TagKey<?>> tags);
 
+    //? if >=1.21.2 {
     @Accessor("components")
     DataComponentMap getComponents();
 
     @Accessor("components")
     @Mutable
     void setComponents(DataComponentMap components);
+    //?}
 }

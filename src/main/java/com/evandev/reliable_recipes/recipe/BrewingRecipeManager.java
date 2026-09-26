@@ -1,23 +1,22 @@
 package com.evandev.reliable_recipes.recipe;
 
 //? if <=26.2 {
-/*import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
+import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
-import com.evandev.reliable_recipes.mixin.accessor.RecipeManagerAccessor;
+import com.evandev.reliable_recipes.util.CompatUtil;
 import com.google.gson.JsonObject;
-import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionContents;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
+//? if >=1.21.2 {
+import com.evandev.reliable_recipes.mixin.accessor.RecipeManagerAccessor;
+//?}
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,8 +41,12 @@ public class BrewingRecipeManager {
 
     public static void reload(RecipeManager recipeManager) {
         BREWING_RECIPES.clear();
-        RecipeManagerAccessor accessor = (RecipeManagerAccessor) recipeManager;
-        for (RecipeHolder<?> holder : accessor.reliableRecipes$getRecipeMap().byType(BrewingRecipe.TYPE)) {
+        //? if <1.21.2 {
+        /*Iterable<? extends RecipeHolder<?>> holders = recipeManager.getAllRecipesFor(BrewingRecipe.TYPE);
+        *///?} else {
+        Iterable<? extends RecipeHolder<?>> holders = ((RecipeManagerAccessor) recipeManager).reliableRecipes$getRecipeMap().byType(BrewingRecipe.TYPE);
+        //?}
+        for (RecipeHolder<?> holder : holders) {
             if (holder.value() instanceof BrewingRecipe brewingRecipe) {
                 BREWING_RECIPES.add(brewingRecipe);
             }
@@ -114,12 +117,12 @@ public class BrewingRecipeManager {
     public static Optional<ItemStack> getReplacedReagent(ItemStack stack) {
         for (RecipeRule rule : RecipeConfigIO.loadRules()) {
             if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT && rule.replacementMatches(stack)) {
-                for (String rawTarget : rule.getReplaceTargetStrs()) {
+                for (String rawTarget : rule.getRawTargets()) {
                     Identifier loc = Identifier.tryParse(rawTarget.startsWith("#") ? rawTarget.substring(1) : rawTarget);
                     if (loc != null) {
-                        Optional<Holder.Reference<Item>> holder = BuiltInRegistries.ITEM.get(loc);
-                        if (holder.isPresent() && holder.get().value() != Items.AIR) {
-                            return Optional.of(new ItemStack(holder.get().value()));
+                        Item targetItem = CompatUtil.getItem(loc);
+                        if (targetItem != Items.AIR) {
+                            return Optional.of(new ItemStack(targetItem));
                         }
                     }
                 }
@@ -138,17 +141,11 @@ public class BrewingRecipeManager {
         List<RecipeRule> rules = RecipeConfigIO.loadRules();
         if (rules.isEmpty()) return false;
 
-        RecipeHolder<BrewingRecipe> dummyHolder = new RecipeHolder<>(
-                ResourceKey.create(Registries.RECIPE, Identifier.withDefaultNamespace("brewing_vanilla_mix")),
-                new BrewingRecipe(
-                        new BrewingRecipe.BrewingInputMatcher(Optional.of(Ingredient.of(input.getItem())), Optional.empty()),
-                        Ingredient.of(reagent.getItem()),
-                        output
-                )
-        );
+        JsonObject dummyJson = createBrewingRecipeJson(input, reagent, output);
+        Identifier dummyId = Identifier.withDefaultNamespace("brewing_vanilla_mix");
 
         for (RecipeRule rule : rules) {
-            if (rule.getAction() == RecipeRule.Action.REMOVE && rule.test(dummyHolder)) {
+            if (rule.getAction() == RecipeRule.Action.REMOVE && rule.testJson(dummyId, dummyJson)) {
                 return true;
             }
             if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT && rule.targetsMatch(reagent)) {
@@ -182,8 +179,8 @@ public class BrewingRecipeManager {
         if (contents != null && contents.potion().isPresent()) {
             contents.potion().get().unwrapKey().ifPresent(key -> {
                 JsonObject potionContentsObj = new JsonObject();
-                potionContentsObj.addProperty("potion", key.identifier().toString());
-                potionContentsObj.addProperty("potions", key.identifier().toString());
+                potionContentsObj.addProperty("potion", CompatUtil.keyId(key).toString());
+                potionContentsObj.addProperty("potions", CompatUtil.keyId(key).toString());
                 obj.add("potion_contents", potionContentsObj);
 
                 JsonObject componentsObj = new JsonObject();
@@ -194,6 +191,6 @@ public class BrewingRecipeManager {
         return obj;
     }
 }
-*///?} else {
-public class BrewingRecipeManager {}
-//?}
+//?} else {
+/*public class BrewingRecipeManager {}
+*///?}

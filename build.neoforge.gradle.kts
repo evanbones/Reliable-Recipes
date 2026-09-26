@@ -7,6 +7,7 @@ plugins {
 
 val minecraft = stonecutter.current.version
 val mcVersion = stonecutter.current.project.substringBeforeLast('-')
+val javaVersion = property("deps.java_version") as String
 
 tasks.named<ProcessResources>("processResources") {
     fun prop(name: String) = project.property(name) as String
@@ -23,9 +24,10 @@ tasks.named<ProcessResources>("processResources") {
         this["neoforge_loader_version_range"] = prop("deps.neoforge_loader_version_range")
         this["neoforge_version"] = prop("deps.neoforge")
         this["yacl_version"] = prop("deps.yacl").substringBefore('+')
+        this["java_version"] = javaVersion
     }
 
-    filesMatching(listOf("neoforge.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml")) {
+    filesMatching(listOf("neoforge.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml", "*.mixins.json")) {
         expand(props)
     }
 }
@@ -46,6 +48,7 @@ repositories {
         url = uri("https://maven.terraformersmc.com/releases/")
         content {
             includeGroupAndSubgroups("com.terraformersmc")
+            includeGroupAndSubgroups("dev.emi")
         }
     }
     maven {
@@ -127,14 +130,19 @@ tasks {
     withType<JavaExec>().configureEach {
         jvmArgs("-Dkotlinx.coroutines.debug=off")
     }
+
+    // The unit tests are loader-independent and run on the Fabric projects
+    named("compileTestJava") { enabled = false }
+    named("test") { enabled = false }
 }
 
 dependencies {
     // YACL
     implementation("dev.isxander:yet-another-config-lib:${property("deps.yacl")}")
 
-    // RRV
-    implementation("cc.cassian.rrv:reliable-recipe-viewer-neoforge:${property("deps.rrv")}")
+    // Recipe viewer: EMI on 1.21.1, RRV on 26.x
+    findProperty("deps.emi")?.let { implementation("dev.emi:emi-neoforge:$it") }
+    findProperty("deps.rrv")?.let { implementation("cc.cassian.rrv:reliable-recipe-viewer-neoforge:$it") }
 
     // Mixin Constraints
     compileOnly("com.moulberry:mixinconstraints:${property("deps.mixin_constraints")}")
@@ -148,15 +156,15 @@ dependencies {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(property("deps.java_version") as String)
-    sourceCompatibility = JavaVersion.VERSION_25
-    targetCompatibility = JavaVersion.VERSION_25
+    toolchain.languageVersion = JavaLanguageVersion.of(javaVersion)
+    sourceCompatibility = JavaVersion.toVersion(javaVersion)
+    targetCompatibility = JavaVersion.toVersion(javaVersion)
     withSourcesJar()
 }
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
-    options.release = 25
+    options.release = javaVersion.toInt()
 }
 
 publishing {

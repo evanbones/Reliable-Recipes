@@ -4,7 +4,7 @@ import com.moulberry.mixinconstraints.annotations.IfMinecraftVersion;
 import org.spongepowered.asm.mixin.Mixin;
 
 //? if <=26.2 {
-/*import com.evandev.reliable_recipes.recipe.BrewingRecipeManager;
+import com.evandev.reliable_recipes.recipe.BrewingRecipeManager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.alchemy.PotionBrewing;
 import org.spongepowered.asm.mixin.injection.At;
@@ -12,14 +12,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
-*///?}
+//?}
 
 @IfMinecraftVersion(maxVersion = "26.2", maxInclusive = true)
 @Mixin(targets = "net.minecraft.world.item.alchemy.PotionBrewing")
 public class PotionBrewingMixin {
 
     //? if <=26.2 {
-    /*@Inject(method = "hasMix", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "hasMix", at = @At("HEAD"), cancellable = true)
     private void reliableRecipes$customHasMix(ItemStack container, ItemStack ingredient, CallbackInfoReturnable<Boolean> cir) {
         if (BrewingRecipeManager.isSuppressingOverrides()) {
             return;
@@ -92,5 +92,5 @@ public class PotionBrewingMixin {
             cir.setReturnValue(true);
         }
     }
-    *///?}
+    //?}
 }

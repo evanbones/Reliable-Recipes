@@ -15,8 +15,10 @@ import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.PacketDistributor;
+*///?}
+//? if neoforge && >=1.21.2 {
+/*import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 *///?}
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
@@ -27,6 +29,8 @@ import java.nio.file.Path;
 
 public class Services {
     public static final Services PLATFORM = new Services();
+
+    public static Path configDirectoryOverride = null;
 
     public String getPlatformName() {
         //? if fabric {
@@ -50,12 +54,17 @@ public class Services {
         //? if fabric {
         return FabricLoader.getInstance().isDevelopmentEnvironment();
         //?}
-        //? if neoforge {
+        //? if neoforge && <1.21.2 {
+        /*return !FMLLoader.isProduction();
+        *///?} else if neoforge {
         /*return !FMLLoader.getCurrent().isProduction();
         *///?}
     }
 
     public Path getConfigDirectory() {
+        if (configDirectoryOverride != null) {
+            return configDirectoryOverride;
+        }
         //? if fabric {
         return FabricLoader.getInstance().getConfigDir();
         //?}
@@ -68,7 +77,9 @@ public class Services {
         //? if fabric {
         ClientPlayNetworking.send(new DeleteRecipePayload(recipeKey));
         //?}
-        //? if neoforge {
+        //? if neoforge && <1.21.2 {
+        /*PacketDistributor.sendToServer(new DeleteRecipePayload(recipeKey));
+        *///?} else if neoforge {
         /*ClientPacketDistributor.sendToServer(new DeleteRecipePayload(recipeKey));
         *///?}
     }

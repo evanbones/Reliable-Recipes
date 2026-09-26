@@ -13,7 +13,7 @@ public class ModMenuIntegration implements ModMenuApi {
         if (Services.PLATFORM.isModLoaded("yet_another_config_lib_v3")) {
             return YaclConfigIntegration::createScreen;
         }
-        return _ -> null;
+        return parent -> null;
     }
 }
 //?}

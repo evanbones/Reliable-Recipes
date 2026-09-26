@@ -22,9 +22,15 @@ public class ReliableRecipesMod implements ModInitializer {
                 UndoCommand.register(dispatcher)
         );
 
+        //? if <1.21.2 {
+        /*PayloadTypeRegistry.playC2S().register(DeleteRecipePayload.TYPE, DeleteRecipePayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(ClientboundRemoveRecipePayload.TYPE, ClientboundRemoveRecipePayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(ClientboundAddRecipePayload.TYPE, ClientboundAddRecipePayload.STREAM_CODEC);
+        *///?} else {
         PayloadTypeRegistry.serverboundPlay().register(DeleteRecipePayload.TYPE, DeleteRecipePayload.STREAM_CODEC);
         PayloadTypeRegistry.clientboundPlay().register(ClientboundRemoveRecipePayload.TYPE, ClientboundRemoveRecipePayload.STREAM_CODEC);
         PayloadTypeRegistry.clientboundPlay().register(ClientboundAddRecipePayload.TYPE, ClientboundAddRecipePayload.STREAM_CODEC);
+        //?}
 
         ServerPlayNetworking.registerGlobalReceiver(DeleteRecipePayload.TYPE,
                 (payload, context) -> {

@@ -1,15 +1,20 @@
 package com.evandev.reliable_recipes.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Util;
 import net.minecraft.world.item.ItemStack;
+//? if <1.21.2 {
+/*import net.minecraft.Util;
+import net.minecraft.client.gui.GuiGraphics;
+*///?} else {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.util.Util;
+//?}
 
 public class SharedToastOverlay {
     private static final Identifier BACKGROUND_SPRITE = Identifier.withDefaultNamespace("toast/recipe");
@@ -28,7 +33,11 @@ public class SharedToastOverlay {
         showTime = Util.getMillis();
     }
 
+    //? if <1.21.2 {
+    /*public static void extract(GuiGraphics guiGraphics) {
+    *///?} else {
     public static void extract(GuiGraphicsExtractor guiGraphics) {
+    //?}
         if (showTime == -1 || currentMessage == null) return;
 
         Minecraft mc = Minecraft.getInstance();
@@ -56,7 +65,21 @@ public class SharedToastOverlay {
         int toastHeight = 32;
         int xPos = (guiGraphics.guiWidth() - toastWidth) / 2;
         int yPos = getYPos(age, toastHeight);
+        Component title = currentTitle != null ? currentTitle : Component.translatable("toast.reliable_recipes.deleted_title");
 
+        //? if <1.21.2 {
+        /*guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(xPos, yPos, 1000);
+        guiGraphics.blitSprite(BACKGROUND_SPRITE, 0, 0, toastWidth, toastHeight);
+
+        if (!iconStack.isEmpty()) {
+            guiGraphics.renderFakeItem(iconStack, 8, 8);
+        }
+
+        guiGraphics.drawString(mc.font, title, 30, 7, -11534256, false);
+        guiGraphics.drawString(mc.font, currentMessage, 30, 18, -16777216, false);
+        guiGraphics.pose().popPose();
+        *///?} else {
         guiGraphics.nextStratum();
 
         guiGraphics.pose().pushMatrix();
@@ -68,10 +91,11 @@ public class SharedToastOverlay {
             guiGraphics.fakeItem(iconStack, 8, 8);
         }
 
-        guiGraphics.text(mc.font, currentTitle != null ? currentTitle : Component.translatable("toast.reliable_recipes.deleted_title"), 30, 7, -11534256, false);
+        guiGraphics.text(mc.font, title, 30, 7, -11534256, false);
         guiGraphics.text(mc.font, currentMessage, 30, 18, -16777216, false);
 
         guiGraphics.pose().popMatrix();
+        //?}
     }
 
     private static int getYPos(long age, int toastHeight) {

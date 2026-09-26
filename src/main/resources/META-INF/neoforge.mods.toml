@@ -40,8 +40,22 @@ ordering = "NONE"
 side = "CLIENT"
 
 [[dependencies.${mod_id}]]
+modId = "reliable_remover"
+type = "optional"
+versionRange = "[1.0.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "emi"
+type = "optional"
+versionRange = "[1.1.2.4,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
 modId = "rrv"
 type = "optional"
-versionRange = "[7.0.0,)"
+versionRange = "[8.0.0,)"
 ordering = "AFTER"
 side = "BOTH"
