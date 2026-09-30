@@ -5,6 +5,7 @@ import com.moulberry.mixinconstraints.annotations.IfModLoaded;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
+
 //? if <1.21.2 {
 /*import com.evandev.reliable_recipes.compat.emi.EmiInteractions;
 import dev.emi.emi.api.recipe.EmiRecipe;

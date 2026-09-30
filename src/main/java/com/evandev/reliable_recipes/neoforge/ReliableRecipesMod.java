@@ -4,6 +4,7 @@ package com.evandev.reliable_recipes.neoforge;
 /*
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.command.UndoCommand;
+import com.evandev.reliable_recipes.config.ModConfig;
 import com.evandev.reliable_recipes.config.YaclConfigIntegration;
 import com.evandev.reliable_recipes.neoforge.client.ClientPayloadHandler;
 import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
@@ -32,6 +33,8 @@ import org.jetbrains.annotations.NotNull;
 public class ReliableRecipesMod {
 
     public ReliableRecipesMod(IEventBus eventBus) {
+        ModConfig.load();
+
         eventBus.addListener(ReliableRecipesMod::registerRegistries);
         eventBus.addListener(ReliableRecipesMod::registerPayloadHandlers);
 

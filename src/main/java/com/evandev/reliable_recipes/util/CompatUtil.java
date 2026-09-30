@@ -1,6 +1,9 @@
 package com.evandev.reliable_recipes.util;
 
+import net.minecraft.network.codec.StreamCodec;
+import com.google.gson.JsonElement;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.TagKey;
@@ -8,13 +11,20 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+//? if <1.21 {
+/*import net.minecraft.core.Registry;
+import net.minecraft.network.FriendlyByteBuf;
+*///?} else {
+import com.mojang.serialization.JsonOps;
+import io.netty.buffer.ByteBuf;
+//?}
 //? if >=1.21.2 {
 import com.mojang.datafixers.util.Either;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderOwner;
 import net.minecraft.core.HolderSet;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.util.RandomSource;
 //?}
 
@@ -38,6 +48,29 @@ public final class CompatUtil {
         return key.identifier();
         //?}
     }
+
+    //? if <1.21 {
+    /*
+    private static final ResourceKey<Registry<Recipe<?>>> RECIPE_REGISTRY = ResourceKey.createRegistryKey(new Identifier("recipe"));
+    *///?}
+
+    public static ResourceKey<Recipe<?>> recipeKey(Identifier id) {
+        //? if <1.21 {
+        /*return ResourceKey.create(RECIPE_REGISTRY, id);
+        *///?} else {
+        return ResourceKey.create(Registries.RECIPE, id);
+        //?}
+    }
+
+    //? if <1.21 {
+    /*public static StreamCodec<FriendlyByteBuf, ResourceKey<Recipe<?>>> recipeKeyStreamCodec() {
+        return StreamCodec.of((buf, key) -> buf.writeIdentifier(keyId(key)), buf -> recipeKey(buf.readIdentifier()));
+    }
+    *///?} else {
+    public static StreamCodec<ByteBuf, ResourceKey<Recipe<?>>> recipeKeyStreamCodec() {
+        return ResourceKey.streamCodec(Registries.RECIPE);
+    }
+    //?}
 
     public static Identifier recipeId(RecipeHolder<?> holder) {
         //? if <1.21.2 {
@@ -70,6 +103,30 @@ public final class CompatUtil {
         /*return Ingredient.of(tag);
         *///?} else {
         return BuiltInRegistries.ITEM.get(tag).map(Ingredient::of).orElseGet(CompatUtil::emptyIngredient);
+        //?}
+    }
+
+    public static Optional<Ingredient> parseIngredientJson(JsonElement json) {
+        //? if <1.21 {
+        /*try {
+            return Optional.of(Ingredient.fromJson(json));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+        *///?} else {
+        return Ingredient.CODEC.parse(JsonOps.INSTANCE, json).result();
+        //?}
+    }
+
+    public static Optional<JsonElement> ingredientToJson(Ingredient ingredient) {
+        //? if <1.21 {
+        /*try {
+            return Optional.of(ingredient.toJson());
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+        *///?} else {
+        return Ingredient.CODEC.encodeStart(JsonOps.INSTANCE, ingredient).result();
         //?}
     }
 

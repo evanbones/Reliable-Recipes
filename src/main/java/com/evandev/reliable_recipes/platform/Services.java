@@ -8,6 +8,15 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
 //?}
+//? if forge {
+/*import com.evandev.reliable_recipes.forge.ForgeNetworking;
+import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
+import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
+import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.FMLLoader;
+import net.minecraftforge.fml.loading.FMLPaths;
+*///?}
 //? if neoforge {
 /*import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
 import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
@@ -19,6 +28,12 @@ import net.neoforged.neoforge.network.PacketDistributor;
 *///?}
 //? if neoforge && >=1.21.2 {
 /*import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+*///?}
+//? if <1.21 {
+/*import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import io.netty.buffer.Unpooled;
+import net.minecraft.network.FriendlyByteBuf;
 *///?}
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
@@ -36,6 +51,9 @@ public class Services {
         //? if fabric {
         return "Fabric";
         //?}
+        //? if forge {
+        /*return "Forge";
+        *///?}
         //? if neoforge {
         /*return "NeoForge";
         *///?}
@@ -45,7 +63,7 @@ public class Services {
         //? if fabric {
         return FabricLoader.getInstance().isModLoaded(modId);
         //?}
-        //? if neoforge {
+        //? if forge || neoforge {
         /*return ModList.get().isLoaded(modId);
         *///?}
     }
@@ -54,7 +72,7 @@ public class Services {
         //? if fabric {
         return FabricLoader.getInstance().isDevelopmentEnvironment();
         //?}
-        //? if neoforge && <1.21.2 {
+        //? if (forge || neoforge) && <1.21.2 {
         /*return !FMLLoader.isProduction();
         *///?} else if neoforge {
         /*return !FMLLoader.getCurrent().isProduction();
@@ -68,15 +86,20 @@ public class Services {
         //? if fabric {
         return FabricLoader.getInstance().getConfigDir();
         //?}
-        //? if neoforge {
+        //? if forge || neoforge {
         /*return FMLPaths.CONFIGDIR.get();
         *///?}
     }
 
     public void sendDeleteRecipePacket(ResourceKey<Recipe<?>> recipeKey) {
-        //? if fabric {
+        //? if fabric && <1.21 {
+        /*ClientPlayNetworking.send(DeleteRecipePayload.TYPE.id(), encode(DeleteRecipePayload.STREAM_CODEC, new DeleteRecipePayload(recipeKey)));
+        *///?} else if fabric {
         ClientPlayNetworking.send(new DeleteRecipePayload(recipeKey));
         //?}
+        //? if forge {
+        /*ForgeNetworking.sendToServer(new DeleteRecipePayload(recipeKey));
+        *///?}
         //? if neoforge && <1.21.2 {
         /*PacketDistributor.sendToServer(new DeleteRecipePayload(recipeKey));
         *///?} else if neoforge {
@@ -85,20 +108,38 @@ public class Services {
     }
 
     public void sendDeleteRecipePacketToPlayer(ServerPlayer player, ResourceKey<Recipe<?>> recipeKey) {
-        //? if fabric {
+        //? if fabric && <1.21 {
+        /*ServerPlayNetworking.send(player, ClientboundRemoveRecipePayload.TYPE.id(), encode(ClientboundRemoveRecipePayload.STREAM_CODEC, new ClientboundRemoveRecipePayload(recipeKey)));
+        *///?} else if fabric {
         ServerPlayNetworking.send(player, new ClientboundRemoveRecipePayload(recipeKey));
         //?}
+        //? if forge {
+        /*ForgeNetworking.sendToPlayer(player, new ClientboundRemoveRecipePayload(recipeKey));
+        *///?}
         //? if neoforge {
         /*PacketDistributor.sendToPlayer(player, new ClientboundRemoveRecipePayload(recipeKey));
         *///?}
     }
 
     public void sendAddRecipePacketToPlayer(ServerPlayer player, RecipeHolder<?> recipeHolder) {
-        //? if fabric {
+        //? if fabric && <1.21 {
+        /*ServerPlayNetworking.send(player, ClientboundAddRecipePayload.TYPE.id(), encode(ClientboundAddRecipePayload.STREAM_CODEC, new ClientboundAddRecipePayload(recipeHolder)));
+        *///?} else if fabric {
         ServerPlayNetworking.send(player, new ClientboundAddRecipePayload(recipeHolder));
         //?}
+        //? if forge {
+        /*ForgeNetworking.sendToPlayer(player, new ClientboundAddRecipePayload(recipeHolder));
+        *///?}
         //? if neoforge {
         /*PacketDistributor.sendToPlayer(player, new ClientboundAddRecipePayload(recipeHolder));
         *///?}
     }
+
+    //? if <1.21 {
+    /*public static <T> FriendlyByteBuf encode(StreamCodec<? super RegistryFriendlyByteBuf, T> codec, T value) {
+        RegistryFriendlyByteBuf buf = new RegistryFriendlyByteBuf(Unpooled.buffer());
+        codec.encode(buf, value);
+        return buf;
+    }
+    *///?}
 }

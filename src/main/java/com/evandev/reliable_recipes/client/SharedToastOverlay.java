@@ -17,7 +17,11 @@ import net.minecraft.util.Util;
 //?}
 
 public class SharedToastOverlay {
+    //? if <1.21 {
+    /*private static final Identifier BACKGROUND_SPRITE = Identifier.withDefaultNamespace("textures/gui/toasts.png");
+    *///?} else {
     private static final Identifier BACKGROUND_SPRITE = Identifier.withDefaultNamespace("toast/recipe");
+    //?}
     private static final long DISPLAY_DURATION = 5000L;
     private static final long FADE_DURATION = 600L;
 
@@ -70,7 +74,11 @@ public class SharedToastOverlay {
         //? if <1.21.2 {
         /*guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(xPos, yPos, 1000);
+        //? if <1.21 {
+        /^guiGraphics.blit(BACKGROUND_SPRITE, 0, 0, 0, 32, toastWidth, toastHeight, 256, 256);
+        ^///?} else {
         guiGraphics.blitSprite(BACKGROUND_SPRITE, 0, 0, toastWidth, toastHeight);
+        //?}
 
         if (!iconStack.isEmpty()) {
             guiGraphics.renderFakeItem(iconStack, 8, 8);

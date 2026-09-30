@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.evandev.reliable_recipes.mixin",
+  "plugin": "com.moulberry.mixinconstraints.ConstraintsMixinPlugin",
+  "compatibilityLevel": "JAVA_${java_version}",
+  "mixins": [
+    "gtceu.RecipeAdditionHandlerMixin",
+    "gtceu.StagingRecipeDBAccessor"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

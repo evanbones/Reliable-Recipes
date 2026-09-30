@@ -44,17 +44,17 @@ public class ModConfig {
                 INSTANCE = GSON.fromJson(reader, ModConfig.class);
                 if (INSTANCE == null) {
                     INSTANCE = new ModConfig();
-                    save();
                 } else if (INSTANCE.ignoredTags == null) {
                     INSTANCE.ignoredTags = new ArrayList<>(List.of("c:hidden_from_recipe_viewers"));
                 } else {
                     INSTANCE.ignoredTags = new ArrayList<>(INSTANCE.ignoredTags);
                 }
             } catch (Exception e) {
-                Constants.LOG.error("Failed to load reliable_recipes.json", e);
+                Constants.LOG.error("Failed to load reliable_recipes.json, using defaults", e);
                 INSTANCE = new ModConfig();
-                save();
+                return;
             }
+            save();
         } else {
             INSTANCE = new ModConfig();
             save();

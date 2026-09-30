@@ -3,11 +3,11 @@ package com.evandev.reliable_recipes.command;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeUndoCache;
+import com.evandev.reliable_recipes.util.CompatUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.IdentifierArgument;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
 import net.minecraft.resources.Identifier;
@@ -32,7 +32,7 @@ public class UndoCommand {
                 .then(Commands.argument("id", IdentifierArgument.id())
                         .executes(ctx -> {
                             Identifier id = IdentifierArgument.getId(ctx, "id");
-                            ResourceKey<Recipe<?>> recipeKey = ResourceKey.create(Registries.RECIPE, id);
+                            ResourceKey<Recipe<?>> recipeKey = CompatUtil.recipeKey(id);
                             MinecraftServer server = ctx.getSource().getServer();
 
                             // Remove from config

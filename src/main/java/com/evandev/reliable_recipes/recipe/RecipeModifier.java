@@ -18,6 +18,9 @@ import net.minecraft.world.item.Item;
 //? if <1.21.2 {
 /*import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.tags.TagLoader;
+//? if <1.21 {
+/^import net.minecraft.tags.TagManager;
+^///?}
 *///?} else {
 import com.evandev.reliable_recipes.mixin.accessor.HolderReferenceAccessor;
 import com.evandev.reliable_recipes.mixin.accessor.RecipeManagerAccessor;
@@ -63,7 +66,11 @@ public class RecipeModifier {
     /*public static void modifyRecipesJson(Map<Identifier, JsonElement> map, ResourceManager resourceManager) {
         if (resourceManager != null) {
             try {
+                //? if <1.21 {
+                /^TagLoader<Item> tagLoader = new TagLoader<>(BuiltInRegistries.ITEM::getOptional, TagManager.getTagDir(Registries.ITEM));
+                ^///?} else {
                 TagLoader<Item> tagLoader = new TagLoader<>(BuiltInRegistries.ITEM::getOptional, Registries.tagsDirPath(Registries.ITEM));
+                //?}
                 Map<Identifier, Collection<Item>> rawTags = tagLoader.loadAndBuild(resourceManager);
                 Map<Identifier, Set<Item>> itemTags = new HashMap<>();
                 for (Map.Entry<Identifier, Collection<Item>> entry : rawTags.entrySet()) {
@@ -167,6 +174,18 @@ public class RecipeModifier {
         return processCustomRecipeJson(recipeJson, globalReplacements);
     }
 
+    //? if forge {
+    /*/^*
+     * Runs the configured rules against a single recipe's JSON, for mods that load recipes outside the recipe manager.
+     *
+     * @return the mutated JSON, or null if the recipe should be removed.
+     ^/
+    public static JsonObject modifySingleRecipeJson(Identifier id, JsonObject recipeJson) {
+        List<RecipeRule> rules = cachedRules != null ? cachedRules : RecipeConfigIO.loadRules();
+        return processRecipeJson(id, recipeJson, rules, ReliableRecipesAPI.getReplacements()) ? recipeJson : null;
+    }
+
+    *///?}
     /**
      * Applies API replacements and hidden-item checks, which apply to custom recipes as well.
      *

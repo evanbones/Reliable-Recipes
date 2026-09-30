@@ -8,7 +8,6 @@ import com.evandev.reliable_recipes.util.CompatUtil;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.mojang.serialization.JsonOps;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -346,7 +345,7 @@ public class RecipeRuleParser {
             return mergeIngredients(list);
         }
 
-        return Ingredient.CODEC.parse(JsonOps.INSTANCE, json).result().orElseGet(() -> {
+        return CompatUtil.parseIngredientJson(json).orElseGet(() -> {
             if (json.isJsonObject()) {
                 JsonObject obj = json.getAsJsonObject();
                 if (obj.has("id")) {
@@ -373,7 +372,7 @@ public class RecipeRuleParser {
         Set<JsonElement> seen = new HashSet<>();
         for (Ingredient ing : ingredients) {
             if (ing == null || ing.isEmpty()) continue;
-            Ingredient.CODEC.encodeStart(JsonOps.INSTANCE, ing).result().ifPresent(json -> {
+            CompatUtil.ingredientToJson(ing).ifPresent(json -> {
                 if (json.isJsonArray()) {
                     for (JsonElement elem : json.getAsJsonArray()) {
                         if (seen.add(elem)) {
@@ -389,7 +388,7 @@ public class RecipeRuleParser {
         }
 
         if (array.isEmpty()) return Ingredient.EMPTY;
-        return Ingredient.CODEC.parse(JsonOps.INSTANCE, array).result().orElseGet(() -> {
+        return CompatUtil.parseIngredientJson(array).orElseGet(() -> {
             List<ItemStack> stacks = new ArrayList<>();
             for (Ingredient ing : ingredients) {
                 if (ing != null && !ing.isEmpty()) {

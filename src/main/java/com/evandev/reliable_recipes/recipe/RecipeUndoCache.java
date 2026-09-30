@@ -66,7 +66,7 @@ public class RecipeUndoCache {
 
     public static void put(RecipeHolder<?> holder) {
         //? if <1.21.2 {
-        /*DELETED_RECIPES.put(ResourceKey.create(net.minecraft.core.registries.Registries.RECIPE, holder.id()), holder);
+        /*DELETED_RECIPES.put(CompatUtil.recipeKey(holder.id()), holder);
         *///?} else {
         DELETED_RECIPES.put(holder.id(), holder);
         //?}
@@ -77,7 +77,9 @@ public class RecipeUndoCache {
     }
 
     private static List<RecipeHolder<?>> getRecipes(RecipeManager manager) {
-        //? if <1.21.2 {
+        //? if <1.21 {
+        /*return new ArrayList<>(manager.getRecipes().stream().<RecipeHolder<?>>map(RecipeHolder::of).toList());
+        *///?} else if <1.21.2 {
         /*return new ArrayList<>(manager.getRecipes());
         *///?} else {
         RecipeMap currentMap = ((RecipeManagerAccessor) manager).reliableRecipes$getRecipeMap();
@@ -86,7 +88,9 @@ public class RecipeUndoCache {
     }
 
     private static void setRecipes(RecipeManager manager, List<RecipeHolder<?>> recipes) {
-        //? if <1.21.2 {
+        //? if <1.21 {
+        /*manager.replaceRecipes(recipes.stream().<Recipe<?>>map(RecipeHolder::value).toList());
+        *///?} else if <1.21.2 {
         /*manager.replaceRecipes(recipes);
         *///?} else {
         ((RecipeManagerAccessor) manager).reliableRecipes$setRecipeMap(RecipeModifier.createRecipeMap(recipes));

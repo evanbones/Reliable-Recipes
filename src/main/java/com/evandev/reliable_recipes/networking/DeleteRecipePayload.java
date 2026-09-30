@@ -5,7 +5,6 @@ import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeUndoCache;
 import com.evandev.reliable_recipes.util.CompatUtil;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
@@ -27,7 +26,7 @@ public record DeleteRecipePayload(ResourceKey<Recipe<?>> recipeKey) implements C
     public static final Type<DeleteRecipePayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "delete_recipe"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, DeleteRecipePayload> STREAM_CODEC = StreamCodec.composite(
-            ResourceKey.streamCodec(Registries.RECIPE),
+            CompatUtil.recipeKeyStreamCodec(),
             DeleteRecipePayload::recipeKey,
             DeleteRecipePayload::new
     );

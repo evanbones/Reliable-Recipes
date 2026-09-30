@@ -28,15 +28,18 @@ public class ClientRecipeSync {
         Constants.LOG.info("Received recipe removal notification for: {}", recipeId);
 
         //? if <1.21.2 {
-        /*
-        Minecraft client = Minecraft.getInstance();
+        /*Minecraft client = Minecraft.getInstance();
         if (client.getConnection() == null) return;
 
         RecipeManager recipeManager = client.getConnection().getRecipeManager();
         ItemStack icon = ItemStack.EMPTY;
         var recipe = recipeManager.byKey(recipeId).orElse(null);
         if (recipe != null && client.level != null) {
+            //? if <1.21 {
+            /^icon = recipe.getResultItem(client.level.registryAccess());
+            ^///?} else {
             icon = recipe.value().getResultItem(client.level.registryAccess());
+            //?}
         }
 
         if (RecipeUndoCache.removeRecipe(recipeManager, recipeKey) == null) return;

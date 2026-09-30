@@ -1,7 +1,7 @@
 package com.evandev.reliable_recipes.networking;
 
 import com.evandev.reliable_recipes.Constants;
-import net.minecraft.core.registries.Registries;
+import com.evandev.reliable_recipes.util.CompatUtil;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -14,7 +14,7 @@ public record ClientboundRemoveRecipePayload(ResourceKey<Recipe<?>> recipeKey) i
     public static final Type<ClientboundRemoveRecipePayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(Constants.MOD_ID, "remove_recipe"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ClientboundRemoveRecipePayload> STREAM_CODEC = StreamCodec.composite(
-            ResourceKey.streamCodec(Registries.RECIPE),
+            CompatUtil.recipeKeyStreamCodec(),
             ClientboundRemoveRecipePayload::recipeKey,
             ClientboundRemoveRecipePayload::new
     );

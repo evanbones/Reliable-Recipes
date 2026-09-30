@@ -82,7 +82,7 @@ public class RecipeConfigIOTest extends MinecraftTestBase {
 
         List<TagRule> tagRules = RecipeConfigIO.loadTagRules();
         assertEquals(1, tagRules.size());
-        assertEquals(TagRule.Action.REMOVE_FROM_TAG, tagRules.getFirst().action());
+        assertEquals(TagRule.Action.REMOVE_FROM_TAG, tagRules.get(0).action());
 
         Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
         assertEquals(1, customRecipes.size());

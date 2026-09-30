@@ -8,6 +8,10 @@ import net.minecraft.resources.Identifier;
 /*import net.minecraft.core.registries.Registries;
 import net.neoforged.neoforge.registries.RegisterEvent;
 *///?}
+//? if forge {
+/*import net.minecraft.core.registries.Registries;
+import net.minecraftforge.registries.RegisterEvent;
+*///?}
 //?}
 
 public class BrewingRegistration {
@@ -30,6 +34,14 @@ public class BrewingRegistration {
         /^event.register(Registries.RECIPE_SERIALIZER, Identifier.withDefaultNamespace("crafting_transmute"), () -> TransmuteRecipe.SERIALIZER);
         event.register(Registries.RECIPE_TYPE, Identifier.withDefaultNamespace("crafting_transmute"), () -> TransmuteRecipe.TYPE);
         ^///?}
+    }
+    *///?}
+    //? if forge {
+    /*public static void registerForge(RegisterEvent event) {
+        event.register(Registries.RECIPE_SERIALIZER, Identifier.withDefaultNamespace("brewing"), () -> BrewingRecipe.SERIALIZER);
+        event.register(Registries.RECIPE_TYPE, Identifier.withDefaultNamespace("brewing"), () -> BrewingRecipe.TYPE);
+        event.register(Registries.RECIPE_SERIALIZER, Identifier.withDefaultNamespace("crafting_transmute"), () -> TransmuteRecipe.SERIALIZER);
+        event.register(Registries.RECIPE_TYPE, Identifier.withDefaultNamespace("crafting_transmute"), () -> TransmuteRecipe.TYPE);
     }
     *///?}
     //? if >26.2 || fabric {

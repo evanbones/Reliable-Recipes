@@ -3,7 +3,11 @@ package com.evandev.reliable_recipes.mixin.minecraft;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.tag.TagModifier;
 import net.minecraft.client.multiplayer.ClientPacketListener;
+//? if <1.21 {
+/*import net.minecraft.network.protocol.game.ClientboundUpdateTagsPacket;
+*///?} else {
 import net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket;
+//?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

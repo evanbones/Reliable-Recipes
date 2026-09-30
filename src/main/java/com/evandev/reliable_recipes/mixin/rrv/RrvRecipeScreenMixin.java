@@ -5,6 +5,10 @@ import com.moulberry.mixinconstraints.annotations.IfModLoaded;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
+
+//? if <1.21.2 {
+/*import org.spongepowered.asm.mixin.Pseudo;
+*///?}
 //? if >=1.21.2 {
 import cc.cassian.rrv.api.recipe.ReliableClientRecipe;
 import cc.cassian.rrv.common.recipe.inventory.RecipeViewScreen;
@@ -21,6 +25,9 @@ import java.util.List;
 
 @IfModLoaded("rrv")
 @IfMinecraftVersion(minVersion = "1.21.2")
+//? if <1.21.2 {
+/*@Pseudo
+ *///?}
 @Mixin(targets = "cc.cassian.rrv.common.recipe.inventory.RecipeViewScreen")
 public abstract class RrvRecipeScreenMixin extends Screen {
 

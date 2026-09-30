@@ -23,21 +23,25 @@ import dev.emi.emi.recipe.special.EmiAnvilRepairItemRecipe;
 import dev.emi.emi.recipe.special.EmiGrindstoneDisenchantingBookRecipe;
 import dev.emi.emi.recipe.special.EmiGrindstoneDisenchantingRecipe;
 import dev.emi.emi.recipe.special.EmiRepairItemRecipe;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionBrewing;
-import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.crafting.Ingredient;
+//? if <1.21 {
+/^import net.minecraft.world.item.alchemy.PotionUtils;
+^///?} else {
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.level.Level;
+//?}
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,9 +70,13 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
                 for (ItemStack match : matchingInputs) {
                     ItemStack copy = match.copy();
                     if (brewingRecipe.getInputMatcher().potionContents().isPresent() && !brewingRecipe.getInputMatcher().potionContents().get().isEmpty()) {
-                        Identifier potionId = brewingRecipe.getInputMatcher().potionContents().get().getFirst();
+                        Identifier potionId = brewingRecipe.getInputMatcher().potionContents().get().get(0);
+                        //? if <1.21 {
+                        /^BuiltInRegistries.POTION.getOptional(potionId).ifPresent(potion -> PotionUtils.setPotion(copy, potion));
+                        ^///?} else {
                         BuiltInRegistries.POTION.getHolder(ResourceKey.create(Registries.POTION, potionId))
                                 .ifPresent(potionHolder -> copy.set(DataComponents.POTION_CONTENTS, new PotionContents(Optional.of(potionHolder), Optional.empty(), List.of())));
+                        //?}
                     }
                     inputStacks.add(EmiStack.of(copy));
                 }
@@ -95,9 +103,11 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
     }
 
     private void registerReplacedBrewingReagents(EmiRegistry registry) {
+        //? if >=1.21 {
         Level level = Minecraft.getInstance().level;
         if (level == null) return;
         PotionBrewing brewing = level.potionBrewing();
+        //?}
         List<RecipeRule> rules = RecipeConfigIO.loadRules();
 
         BrewingRecipeManager.withVanillaBehavior(() -> {
@@ -114,10 +124,17 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
 
                 for (ItemStack targetStack : targetIngredient.getItems()) {
                     for (Holder.Reference<Potion> basePotion : BuiltInRegistries.POTION.holders().toList()) {
+                        //? if <1.21 {
+                        /^ItemStack containerStack = PotionUtils.setPotion(new ItemStack(Items.POTION), basePotion.value());
+                        if (!PotionBrewing.hasMix(containerStack, targetStack)) continue;
+
+                        ItemStack outputStack = PotionBrewing.mix(targetStack, containerStack);
+                        ^///?} else {
                         ItemStack containerStack = PotionContents.createItemStack(Items.POTION, basePotion);
                         if (!brewing.hasMix(containerStack, targetStack)) continue;
 
                         ItemStack outputStack = brewing.mix(targetStack, containerStack);
+                        //?}
                         if (outputStack.isEmpty()) continue;
 
                         Identifier id = Identifier.fromNamespaceAndPath(Constants.MOD_ID,

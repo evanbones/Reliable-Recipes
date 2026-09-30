@@ -3,14 +3,13 @@ package com.evandev.reliable_recipes.compat.emi;
 //? if <1.21.2 {
 /*import com.evandev.reliable_recipes.config.ModConfig;
 import com.evandev.reliable_recipes.platform.Services;
+import com.evandev.reliable_recipes.util.CompatUtil;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.runtime.EmiReloadManager;
 import dev.emi.emi.screen.RecipeScreen;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.resources.ResourceKey;
 
 public class EmiInteractions {
     public static boolean requestDeletion(EmiRecipe recipe) {
@@ -31,7 +30,7 @@ public class EmiInteractions {
             return false;
         }
 
-        Services.PLATFORM.sendDeleteRecipePacket(ResourceKey.create(Registries.RECIPE, id));
+        Services.PLATFORM.sendDeleteRecipePacket(CompatUtil.recipeKey(id));
         return true;
     }
 

@@ -98,7 +98,7 @@ dependencies {
     // Mod Menu
     modImplementation("com.terraformersmc:modmenu:${property("deps.modmenu")}")
 
-    // Recipe viewer: EMI on 1.21.1, RRV on 26.x
+    // EMI/RRV
     findProperty("deps.emi")?.let { modImplementation("dev.emi:emi-fabric:$it") }
     findProperty("deps.rrv")?.let { modImplementation("cc.cassian.rrv:reliable-recipe-viewer-fabric:$it") }
 
@@ -111,7 +111,7 @@ dependencies {
 
 tasks {
     processResources {
-        exclude("**/neoforge.mods.toml", "**/mods.toml")
+        exclude("**/neoforge.mods.toml", "**/mods.toml", "**/*.neoforge.mixins.json", "**/*.forge.mixins.json")
     }
 
     jar {

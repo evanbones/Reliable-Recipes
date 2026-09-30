@@ -5,15 +5,21 @@ import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.util.CompatUtil;
 import com.google.gson.JsonObject;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
+//? if <1.21 {
+/*import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.Potions;
+*///?} else {
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.alchemy.PotionContents;
+//?}
 //? if >=1.21.2 {
 import com.evandev.reliable_recipes.mixin.accessor.RecipeManagerAccessor;
 //?}
@@ -41,7 +47,9 @@ public class BrewingRecipeManager {
 
     public static void reload(RecipeManager recipeManager) {
         BREWING_RECIPES.clear();
-        //? if <1.21.2 {
+        //? if <1.21 {
+        /*Iterable<? extends RecipeHolder<?>> holders = recipeManager.getAllRecipesFor(BrewingRecipe.TYPE).stream().map(RecipeHolder::of).toList();
+        *///?} else if <1.21.2 {
         /*Iterable<? extends RecipeHolder<?>> holders = recipeManager.getAllRecipesFor(BrewingRecipe.TYPE);
         *///?} else {
         Iterable<? extends RecipeHolder<?>> holders = ((RecipeManagerAccessor) recipeManager).reliableRecipes$getRecipeMap().byType(BrewingRecipe.TYPE);
@@ -175,20 +183,29 @@ public class BrewingRecipeManager {
         obj.addProperty("item", itemKey.toString());
         obj.addProperty("id", itemKey.toString());
 
+        //? if <1.21 {
+        /*Potion potion = PotionUtils.getPotion(stack);
+        if (potion != Potions.EMPTY) {
+            addPotionContents(obj, BuiltInRegistries.POTION.getKey(potion));
+        }
+        *///?} else {
         PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
         if (contents != null && contents.potion().isPresent()) {
-            contents.potion().get().unwrapKey().ifPresent(key -> {
-                JsonObject potionContentsObj = new JsonObject();
-                potionContentsObj.addProperty("potion", CompatUtil.keyId(key).toString());
-                potionContentsObj.addProperty("potions", CompatUtil.keyId(key).toString());
-                obj.add("potion_contents", potionContentsObj);
-
-                JsonObject componentsObj = new JsonObject();
-                componentsObj.add("minecraft:potion_contents", potionContentsObj);
-                obj.add("components", componentsObj);
-            });
+            contents.potion().get().unwrapKey().ifPresent(key -> addPotionContents(obj, CompatUtil.keyId(key)));
         }
+        //?}
         return obj;
+    }
+
+    private static void addPotionContents(JsonObject obj, Identifier potionId) {
+        JsonObject potionContentsObj = new JsonObject();
+        potionContentsObj.addProperty("potion", potionId.toString());
+        potionContentsObj.addProperty("potions", potionId.toString());
+        obj.add("potion_contents", potionContentsObj);
+
+        JsonObject componentsObj = new JsonObject();
+        componentsObj.add("minecraft:potion_contents", potionContentsObj);
+        obj.add("components", componentsObj);
     }
 }
 //?} else {

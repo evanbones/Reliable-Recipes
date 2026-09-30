@@ -7,6 +7,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+//? if <1.21 {
+/*import net.minecraft.core.RegistryAccess;
+*///?}
 //? if >=1.21.2 {
 import com.evandev.reliable_recipes.compat.RrvCompat;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
@@ -19,9 +22,17 @@ import org.spongepowered.asm.mixin.Shadow;
 @Mixin(ReloadableServerResources.class)
 public abstract class ReloadableServerResourcesMixin {
 
-    //? if <1.21.2 {
-    /*
-    @Inject(
+    //? if <1.21 {
+    /*@Inject(
+            method = "updateRegistryTags(Lnet/minecraft/core/RegistryAccess;)V",
+            at = @At("RETURN")
+    )
+    private void reliableRecipes$onTagsLoaded(RegistryAccess registryAccess, CallbackInfo ci) {
+        TagModifier.apply();
+        RecipeModifier.apply();
+    }
+    *///?} else if <1.21.2 {
+    /*@Inject(
             method = "updateRegistryTags()V",
             at = @At("RETURN")
     )

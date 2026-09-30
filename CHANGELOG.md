@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed anvil repair recipes sometimes not hiding in EMI.
 - Fixed issues on 1.20.1.
+- Fixed mod config lazily loading.
 
 ## [3.2.1] - 2026-09-26
 
