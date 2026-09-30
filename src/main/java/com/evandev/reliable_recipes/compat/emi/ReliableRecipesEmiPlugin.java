@@ -18,6 +18,7 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.recipe.EmiAnvilRecipe;
 import dev.emi.emi.recipe.EmiBrewingRecipe;
 import dev.emi.emi.recipe.EmiGrindstoneRecipe;
+import dev.emi.emi.recipe.special.EmiAnvilEnchantRecipe;
 import dev.emi.emi.recipe.special.EmiAnvilRepairItemRecipe;
 import dev.emi.emi.recipe.special.EmiGrindstoneDisenchantingBookRecipe;
 import dev.emi.emi.recipe.special.EmiGrindstoneDisenchantingRecipe;
@@ -146,6 +147,10 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
             }
 
             boolean isRepairRecipe = isRepairRecipe(recipe);
+            if (isRepairRecipe && isBlockedRepair(recipe)) {
+                return true;
+            }
+
             List<EmiStack> outputs = recipe.getOutputs();
             if (outputs == null || outputs.isEmpty()) return false;
 
@@ -402,6 +407,17 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
         return ReliableRecipesAPI.isRepairBlocked(stack);
     }
 
+    private boolean isBlockedRepair(EmiRecipe recipe) {
+        if (recipe instanceof EmiAnvilEnchantRecipe) return false;
+
+        List<EmiIngredient> inputs = recipe.getInputs();
+        if (inputs == null || inputs.isEmpty()) return false;
+
+        boolean isAnvil = !(recipe instanceof EmiGrindstoneRecipe)
+                && recipe.getCategory().getId().getPath().contains("anvil");
+        return hasHiddenInput(isAnvil ? List.of(inputs.get(0)) : inputs, true);
+    }
+
     private boolean isRepairRecipe(EmiRecipe recipe) {
         if (recipe == null) return false;
         if (recipe instanceof EmiGrindstoneDisenchantingRecipe || recipe instanceof EmiGrindstoneDisenchantingBookRecipe) {
@@ -421,5 +437,6 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
     }
 }
 *///?} else {
-public class ReliableRecipesEmiPlugin {}
+public class ReliableRecipesEmiPlugin {
+}
 //?}

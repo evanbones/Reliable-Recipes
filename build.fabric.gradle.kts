@@ -27,7 +27,7 @@ tasks.named<ProcessResources>("processResources") {
         this["java_version"] = javaVersion
     }
 
-    filesMatching(listOf("fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml", "*.mixins.json")) {
+    filesMatching(listOf("fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml", "*.mixins.json", "pack.mcmeta")) {
         expand(props)
     }
 }
@@ -112,6 +112,10 @@ dependencies {
 tasks {
     processResources {
         exclude("**/neoforge.mods.toml", "**/mods.toml")
+    }
+
+    jar {
+        dependsOn("postProcessMainResources")
     }
 
     register<Copy>("buildAndCollect") {

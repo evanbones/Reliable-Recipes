@@ -1,4 +1,4 @@
-### Changed
+### Fixed
 
-- More 1.21 parity on 26.x.
-- Added 1.21 stonecutter version.
+- Fixed anvil repair recipes sometimes not hiding in EMI.
+- Fixed issues on 1.20.1.

@@ -27,7 +27,7 @@ tasks.named<ProcessResources>("processResources") {
         this["java_version"] = javaVersion
     }
 
-    filesMatching(listOf("neoforge.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml", "*.mixins.json")) {
+    filesMatching(listOf("neoforge.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml", "*.mixins.json", "pack.mcmeta")) {
         expand(props)
     }
 }
@@ -114,6 +114,10 @@ neoForge {
 tasks {
     processResources {
         exclude("**/fabric.mod.json", "**/*.accesswidener", "**/mods.toml")
+    }
+
+    jar {
+        dependsOn("postProcessMainResources")
     }
 
     named("createMinecraftArtifacts") {
