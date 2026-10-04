@@ -1,20 +1,24 @@
 package com.evandev.reliable_recipes;
 
-import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
-import com.evandev.reliable_recipes.recipe.RecipeModifier;
+import com.evandev.reliable_recipes.recipe.RecipeJsonMutator;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.test.MinecraftTestBase;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+//? if <1.21.2 {
+/*import com.evandev.reliable_recipes.api.ReliableRecipesAPI;
+import com.evandev.reliable_recipes.recipe.RecipeModifier;
+import net.minecraft.resources.Identifier;
+import java.util.HashMap;
+*///?}
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -47,13 +51,7 @@ public class RecipeModifierTest extends MinecraftTestBase {
         replacement.add("minecraft:bamboo");
         replacement.add("minecraft:stick");
 
-        RecipeModifier.mutateJsonRecursively(
-                recipe,
-                List.of("minecraft:stick"),
-                replacement,
-                RecipeRule.Action.REPLACE_INPUT,
-                true
-        );
+        RecipeJsonMutator.applyReplacement(recipe, RecipeRule.Action.REPLACE_INPUT, List.of("minecraft:stick"), replacement, RecipeJsonMutator.IngredientFormat.OBJECT);
 
         JsonObject keyObj = recipe.getAsJsonObject("key");
         JsonElement stickKey = keyObj.get("#");
@@ -84,13 +82,7 @@ public class RecipeModifierTest extends MinecraftTestBase {
         """;
         JsonObject recipe = JsonParser.parseString(recipeRaw).getAsJsonObject();
 
-        RecipeModifier.mutateJsonRecursively(
-                recipe,
-                List.of("minecraft:coal"),
-                JsonParser.parseString("\"minecraft:charcoal\""),
-                RecipeRule.Action.REPLACE_INPUT,
-                true
-        );
+        RecipeJsonMutator.applyReplacement(recipe, RecipeRule.Action.REPLACE_INPUT, List.of("minecraft:coal"), JsonParser.parseString("\"minecraft:charcoal\""), RecipeJsonMutator.IngredientFormat.OBJECT);
 
         JsonArray ingredients = recipe.getAsJsonArray("ingredients");
         assertEquals(2, ingredients.size());
@@ -112,13 +104,7 @@ public class RecipeModifierTest extends MinecraftTestBase {
         """;
         JsonObject recipe = JsonParser.parseString(recipeRaw).getAsJsonObject();
 
-        RecipeModifier.mutateJsonRecursively(
-                recipe,
-                List.of(),
-                JsonParser.parseString("\"minecraft:golden_apple\""),
-                RecipeRule.Action.REPLACE_OUTPUT,
-                true
-        );
+        RecipeJsonMutator.applyReplacement(recipe, RecipeRule.Action.REPLACE_OUTPUT, List.of(), JsonParser.parseString("\"minecraft:golden_apple\""), RecipeJsonMutator.IngredientFormat.OBJECT);
 
         JsonObject result = recipe.getAsJsonObject("result");
         assertEquals("minecraft:golden_apple", result.get("id").getAsString());
@@ -138,13 +124,7 @@ public class RecipeModifierTest extends MinecraftTestBase {
         """;
         JsonObject recipe = JsonParser.parseString(recipeRaw).getAsJsonObject();
 
-        RecipeModifier.mutateJsonRecursively(
-                recipe,
-                List.of("minecraft:oak_planks"),
-                JsonParser.parseString("\"#minecraft:planks\""),
-                RecipeRule.Action.REPLACE_INPUT,
-                true
-        );
+        RecipeJsonMutator.applyReplacement(recipe, RecipeRule.Action.REPLACE_INPUT, List.of("minecraft:oak_planks"), JsonParser.parseString("\"#minecraft:planks\""), RecipeJsonMutator.IngredientFormat.OBJECT);
 
         JsonObject keyObj = recipe.getAsJsonObject("key");
         JsonObject stickKey = keyObj.get("#").getAsJsonObject();
@@ -153,7 +133,8 @@ public class RecipeModifierTest extends MinecraftTestBase {
         assertEquals("minecraft:planks", stickKey.get("tag").getAsString());
     }
 
-    @Test
+    //? if <1.21.2 {
+    /*@Test
     @DisplayName("Global API replacements via ReliableRecipesAPI")
     void testGlobalApiReplacements() {
         ReliableRecipesAPI.registerItemReplacement("minecraft:dirt", "minecraft:diamond_block");
@@ -180,5 +161,54 @@ public class RecipeModifierTest extends MinecraftTestBase {
         JsonObject modified = map.get(id).getAsJsonObject();
         JsonArray ingredients = modified.getAsJsonArray("ingredients");
         assertEquals("minecraft:diamond_block", ingredients.get(0).getAsJsonObject().get("item").getAsString());
+    }
+    *///?}
+
+    private static final String BLOCK_TYPE_SWAP_RECIPE = """
+        {
+          "type": "minecraft:crafting_shaped",
+          "key": {
+            "A": {
+              "type": "moonlight:block_type_swap",
+              "ingredient": { "item": "minecraft:oak_log" },
+              "block_type": "minecraft:wood_type",
+              "from": "minecraft:oak",
+              "to": "bountifulfares:walnut"
+            },
+            "B": { "item": "bountifulfares:walnut" }
+          },
+          "pattern": ["AB"],
+          "result": { "count": 1, "id": "bountifulfares:walnut_boards" }
+        }
+        """;
+
+    @Test
+    @DisplayName("Replace input ignores non-item fields of typed custom ingredients")
+    void testReplaceInputSkipsTypedIngredientFields() {
+        JsonObject recipe = JsonParser.parseString(BLOCK_TYPE_SWAP_RECIPE).getAsJsonObject();
+
+        RecipeJsonMutator.applyReplacement(recipe, RecipeRule.Action.REPLACE_INPUT, List.of("bountifulfares:walnut"), JsonParser.parseString("\"nomansland:walnuts\""), RecipeJsonMutator.IngredientFormat.OBJECT);
+
+        JsonObject keyObj = recipe.getAsJsonObject("key");
+        assertEquals("bountifulfares:walnut", keyObj.getAsJsonObject("A").get("to").getAsString());
+        assertEquals("nomansland:walnuts", keyObj.getAsJsonObject("B").get("item").getAsString());
+    }
+
+    @Test
+    @DisplayName("JSON mutator ignores non-item fields of typed custom ingredients")
+    void testJsonMutatorSkipsTypedIngredientFields() {
+        JsonObject recipe = JsonParser.parseString(BLOCK_TYPE_SWAP_RECIPE).getAsJsonObject();
+
+        boolean changed = RecipeJsonMutator.mutateRecipe(
+                recipe,
+                Map.of("bountifulfares:walnut", JsonParser.parseString("\"nomansland:walnuts\"")),
+                Map.of(),
+                RecipeJsonMutator.IngredientFormat.STRING
+        );
+
+        assertTrue(changed);
+        JsonObject keyObj = recipe.getAsJsonObject("key");
+        assertEquals("bountifulfares:walnut", keyObj.getAsJsonObject("A").get("to").getAsString());
+        assertEquals("nomansland:walnuts", keyObj.getAsJsonObject("B").get("item").getAsString());
     }
 }

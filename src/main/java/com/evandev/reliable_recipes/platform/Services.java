@@ -47,18 +47,6 @@ public class Services {
 
     public static Path configDirectoryOverride = null;
 
-    public String getPlatformName() {
-        //? if fabric {
-        return "Fabric";
-        //?}
-        //? if forge {
-        /*return "Forge";
-        *///?}
-        //? if neoforge {
-        /*return "NeoForge";
-        *///?}
-    }
-
     public boolean isModLoaded(String modId) {
         //? if fabric {
         return FabricLoader.getInstance().isModLoaded(modId);

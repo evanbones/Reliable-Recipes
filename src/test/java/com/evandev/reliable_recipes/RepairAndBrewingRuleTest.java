@@ -3,7 +3,6 @@ package com.evandev.reliable_recipes;
 import com.evandev.reliable_recipes.config.RecipeRuleParser;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.test.MinecraftTestBase;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;

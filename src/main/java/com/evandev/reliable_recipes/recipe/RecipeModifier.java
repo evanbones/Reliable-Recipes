@@ -48,7 +48,6 @@ import java.util.stream.Stream;
 import java.util.*;
 
 public class RecipeModifier {
-    private static final ThreadLocal<Boolean> MODIFYING_JSON = ThreadLocal.withInitial(() -> false);
     private static List<RecipeRule> cachedRules = null;
     private static Map<Identifier, Set<Item>> currentItemTags = null;
 
@@ -57,10 +56,6 @@ public class RecipeModifier {
     //?} else if >26.2 {
     /*private static final Codec<Recipe<?>> RECIPE_CODEC = Recipe.DIRECT_CODEC;
     *///?}
-
-    public static boolean isModifyingJson() {
-        return MODIFYING_JSON.get();
-    }
 
     //? if <1.21.2 {
     /*public static void modifyRecipesJson(Map<Identifier, JsonElement> map, ResourceManager resourceManager) {
@@ -100,59 +95,56 @@ public class RecipeModifier {
         return item.builtInRegistryHolder().is(tagKey);
     }
 
-    /**
+    //? if <1.21.2 {
+    /*/^*
      * Applies the configured rules to a map of raw recipe JSON (as found in data packs),
-     * removing, mutating and adding recipes in place.
-     */
+     * removing, mutating, and adding recipes in place.
+     ^/
     public static void modifyRecipesJson(Map<Identifier, JsonElement> map) {
-        MODIFYING_JSON.set(true);
-        try {
-            cachedRules = new ArrayList<>(RecipeConfigIO.loadRules());
-            Map<Identifier, JsonElement> newMap = new HashMap<>();
-            Map<String, String> globalReplacements = ReliableRecipesAPI.getReplacements();
+        cachedRules = new ArrayList<>(RecipeConfigIO.loadRules());
+        Map<Identifier, JsonElement> newMap = new HashMap<>();
+        Map<String, String> globalReplacements = ReliableRecipesAPI.getReplacements();
 
-            for (Map.Entry<Identifier, JsonElement> entry : map.entrySet()) {
-                Identifier id = entry.getKey();
-                JsonElement element = entry.getValue();
+        for (Map.Entry<Identifier, JsonElement> entry : map.entrySet()) {
+            Identifier id = entry.getKey();
+            JsonElement element = entry.getValue();
 
-                if (!element.isJsonObject()) {
-                    newMap.put(id, element);
-                    continue;
-                }
-
-                JsonObject recipeJson = element.getAsJsonObject();
-                if (processRecipeJson(id, recipeJson, cachedRules, globalReplacements)) {
-                    newMap.put(id, recipeJson);
-                }
+            if (!element.isJsonObject()) {
+                newMap.put(id, element);
+                continue;
             }
 
-            // Custom recipes loaded from reliable_recipes/
-            Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
-            for (Map.Entry<Identifier, JsonElement> customEntry : customRecipes.entrySet()) {
-                Identifier id = customEntry.getKey();
-                JsonElement element = customEntry.getValue();
-
-                if (!element.isJsonObject()) {
-                    newMap.put(id, element);
-                    continue;
-                }
-
-                JsonObject recipeJson = element.getAsJsonObject().deepCopy();
-                if (processCustomRecipeJson(recipeJson, globalReplacements)) {
-                    newMap.put(id, recipeJson);
-                }
+            JsonObject recipeJson = element.getAsJsonObject();
+            if (processRecipeJson(id, recipeJson, cachedRules, globalReplacements)) {
+                newMap.put(id, recipeJson);
             }
-
-            if (!customRecipes.isEmpty()) {
-                Constants.LOG.info("Loaded {} custom recipe(s) from reliable_recipes", customRecipes.size());
-            }
-
-            map.clear();
-            map.putAll(newMap);
-        } finally {
-            MODIFYING_JSON.set(false);
         }
+
+        // Custom recipes loaded from reliable_recipes/
+        Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
+        for (Map.Entry<Identifier, JsonElement> customEntry : customRecipes.entrySet()) {
+            Identifier id = customEntry.getKey();
+            JsonElement element = customEntry.getValue();
+
+            if (!element.isJsonObject()) {
+                newMap.put(id, element);
+                continue;
+            }
+
+            JsonObject recipeJson = element.getAsJsonObject().deepCopy();
+            if (processCustomRecipeJson(recipeJson, globalReplacements)) {
+                newMap.put(id, recipeJson);
+            }
+        }
+
+        if (!customRecipes.isEmpty()) {
+            Constants.LOG.info("Loaded {} custom recipe(s) from reliable_recipes", customRecipes.size());
+        }
+
+        map.clear();
+        map.putAll(newMap);
     }
+    *///?}
 
     /**
      * Runs the configured rules against a single recipe's JSON, mutating it in place.
@@ -202,261 +194,12 @@ public class RecipeModifier {
     }
 
     private static void applyRuleReplacement(JsonObject recipeJson, RecipeRule rule) {
-        //? if <1.21.2 {
-        /*boolean startContext = (rule.getAction() == RecipeRule.Action.REPLACE_INPUT);
-        mutateJsonRecursively(recipeJson, rule.getRawTargets(), rule.getRawReplacement(), rule.getAction(), startContext);
-        *///?} else {
-        // 26.x recipe JSON uses plain strings for items and tags, which RecipeJsonMutator understands
-        JsonElement replacement = rule.getRawReplacement();
-        if (replacement == null) return;
-
-        Map<String, JsonElement> replacements = new HashMap<>();
-        if (rule.getAction() == RecipeRule.Action.REPLACE_OUTPUT && rule.getRawTargets().isEmpty()) {
-            replacements.put("", replacement);
-        } else {
-            for (String target : rule.getRawTargets()) {
-                if (target != null && !target.isEmpty()) {
-                    replacements.put(target, replacement);
-                }
-            }
-        }
-
-        if (rule.getAction() == RecipeRule.Action.REPLACE_INPUT) {
-            RecipeJsonMutator.mutateRecipe(recipeJson, replacements, Map.of());
-        } else {
-            RecipeJsonMutator.mutateRecipe(recipeJson, Map.of(), replacements);
-        }
-        //?}
+        RecipeJsonMutator.applyRule(recipeJson, rule, RecipeJsonMutator.NATIVE_FORMAT);
     }
 
     private static void applyGlobalReplacement(JsonObject recipeJson, String from, String to) {
-        //? if <1.21.2 {
-        /*mutateJsonRecursively(recipeJson, List.of(from), new JsonPrimitive(to), null, true);
-        *///?} else {
         Map<String, JsonElement> replacements = Map.of(from, new JsonPrimitive(to));
-        RecipeJsonMutator.mutateRecipe(recipeJson, replacements, replacements);
-        //?}
-    }
-
-    public static void mutateJsonRecursively(JsonElement parent, List<String> targets, JsonElement rawReplacement, RecipeRule.Action action, boolean isTargetContext) {
-        mutateJsonRecursively(parent, targets, rawReplacement, action, isTargetContext, false);
-    }
-
-    public static void mutateJsonRecursively(JsonElement parent, List<String> targets, JsonElement rawReplacement, RecipeRule.Action action, boolean isTargetContext, boolean isIngredientList) {
-        if (parent.isJsonObject()) {
-            JsonObject obj = parent.getAsJsonObject();
-            List<Map.Entry<String, JsonElement>> entries = new ArrayList<>(obj.entrySet());
-
-            for (Map.Entry<String, JsonElement> entry : entries) {
-                String key = entry.getKey();
-                JsonElement child = entry.getValue();
-
-                boolean nextContext = getNextContext(action, isTargetContext, key);
-                boolean childIsIngredientList = isIngredientListKey(key);
-
-                if (child.isJsonObject()) {
-                    JsonObject childObj = child.getAsJsonObject();
-                    String matchedKey = getMatchingKey(childObj, targets, action, nextContext);
-
-                    if (matchedKey != null && nextContext) {
-                        if (rawReplacement.isJsonArray()) {
-                            JsonArray newArr = new JsonArray();
-                            for (JsonElement rep : rawReplacement.getAsJsonArray()) {
-                                if (rep.isJsonPrimitive()) {
-                                    JsonObject newObj = childObj.deepCopy();
-                                    String repStr = rep.getAsString();
-                                    newObj.remove(matchedKey);
-                                    if (repStr.startsWith("#")) newObj.addProperty("tag", repStr.substring(1));
-                                    else newObj.addProperty(matchedKey.equals("tag") ? "item" : matchedKey, repStr);
-                                    newArr.add(newObj);
-                                } else {
-                                    newArr.add(rep.deepCopy());
-                                }
-                            }
-                            obj.add(key, newArr);
-                        } else if (rawReplacement.isJsonPrimitive()) {
-                            String repStr = rawReplacement.getAsString();
-                            childObj.remove(matchedKey);
-                            if (repStr.startsWith("#")) childObj.addProperty("tag", repStr.substring(1));
-                            else childObj.addProperty(matchedKey.equals("tag") ? "item" : matchedKey, repStr);
-                        } else {
-                            obj.add(key, rawReplacement.deepCopy());
-                        }
-                    } else if (action == RecipeRule.Action.REPLACE_OUTPUT && nextContext && targets.isEmpty() && rawReplacement.isJsonObject()) {
-                        obj.add(key, rawReplacement.deepCopy());
-                    } else {
-                        mutateJsonRecursively(child, targets, rawReplacement, action, nextContext, childIsIngredientList);
-                    }
-                } else if (child.isJsonPrimitive() && child.getAsJsonPrimitive().isString()) {
-                    boolean isMatch = nextContext && (targets.contains(child.getAsString()) || (action == RecipeRule.Action.REPLACE_OUTPUT && targets.isEmpty()));
-                    if (isMatch) {
-                        if (key.equals("tag") && rawReplacement.isJsonPrimitive()) {
-                            String repStr = rawReplacement.getAsString();
-                            obj.remove("tag");
-                            if (repStr.startsWith("#")) obj.addProperty("tag", repStr.substring(1));
-                            else obj.addProperty("item", repStr);
-                        } else if (rawReplacement.isJsonArray()) {
-                            JsonArray newArr = new JsonArray();
-                            for (JsonElement rep : rawReplacement.getAsJsonArray()) {
-                                if (rep.isJsonPrimitive()) {
-                                    JsonObject newObj = new JsonObject();
-                                    String repStr = rep.getAsString();
-                                    if (repStr.startsWith("#")) newObj.addProperty("tag", repStr.substring(1));
-                                    else newObj.addProperty(key.equals("tag") ? "tag" : "item", repStr);
-                                    newArr.add(newObj);
-                                } else {
-                                    newArr.add(rep.deepCopy());
-                                }
-                            }
-                            obj.add(key, newArr);
-                        } else {
-                            obj.add(key, rawReplacement.deepCopy());
-                        }
-                    }
-                } else {
-                    mutateJsonRecursively(child, targets, rawReplacement, action, nextContext, childIsIngredientList);
-                }
-            }
-        } else if (parent.isJsonArray()) {
-            JsonArray oldArray = parent.getAsJsonArray();
-            JsonArray newArray = new JsonArray();
-            boolean changed = false;
-
-            for (int i = 0; i < oldArray.size(); i++) {
-                JsonElement child = oldArray.get(i);
-
-                if (child.isJsonObject()) {
-                    JsonObject childObj = child.getAsJsonObject();
-                    String matchedKey = getMatchingKey(childObj, targets, action, isTargetContext);
-
-                    if (matchedKey != null && isTargetContext) {
-                        changed = true;
-                        if (rawReplacement.isJsonArray()) {
-                            if (isIngredientList) {
-                                JsonArray newArr = new JsonArray();
-                                for (JsonElement rep : rawReplacement.getAsJsonArray()) {
-                                    if (rep.isJsonPrimitive()) {
-                                        JsonObject newObj = childObj.deepCopy();
-                                        String repStr = rep.getAsString();
-                                        newObj.remove(matchedKey);
-                                        if (repStr.startsWith("#")) newObj.addProperty("tag", repStr.substring(1));
-                                        else newObj.addProperty(matchedKey.equals("tag") ? "item" : matchedKey, repStr);
-                                        newArr.add(newObj);
-                                    } else {
-                                        newArr.add(rep.deepCopy());
-                                    }
-                                }
-                                newArray.add(newArr);
-                            } else {
-                                for (JsonElement rep : rawReplacement.getAsJsonArray()) {
-                                    if (rep.isJsonPrimitive()) {
-                                        JsonObject newObj = childObj.deepCopy();
-                                        String repStr = rep.getAsString();
-                                        newObj.remove(matchedKey);
-                                        if (repStr.startsWith("#")) newObj.addProperty("tag", repStr.substring(1));
-                                        else newObj.addProperty(matchedKey.equals("tag") ? "item" : matchedKey, repStr);
-                                        newArray.add(newObj);
-                                    } else {
-                                        newArray.add(rep.deepCopy());
-                                    }
-                                }
-                            }
-                        } else if (rawReplacement.isJsonPrimitive()) {
-                            JsonObject newObj = childObj.deepCopy();
-                            String repStr = rawReplacement.getAsString();
-                            newObj.remove(matchedKey);
-                            if (repStr.startsWith("#")) newObj.addProperty("tag", repStr.substring(1));
-                            else newObj.addProperty(matchedKey.equals("tag") ? "item" : matchedKey, repStr);
-                            newArray.add(newObj);
-                        } else {
-                            newArray.add(rawReplacement.deepCopy());
-                        }
-                    } else if (action == RecipeRule.Action.REPLACE_OUTPUT && isTargetContext && targets.isEmpty() && rawReplacement.isJsonObject()) {
-                        changed = true;
-                        newArray.add(rawReplacement.deepCopy());
-                    } else {
-                        newArray.add(child);
-                        mutateJsonRecursively(child, targets, rawReplacement, action, isTargetContext, false);
-                    }
-                } else if (child.isJsonPrimitive() && child.getAsJsonPrimitive().isString()) {
-                    boolean isMatch = isTargetContext && (targets.contains(child.getAsString()) || (action == RecipeRule.Action.REPLACE_OUTPUT && targets.isEmpty()));
-                    if (isMatch) {
-                        changed = true;
-                        if (rawReplacement.isJsonArray()) {
-                            if (isIngredientList) {
-                                JsonArray newArr = new JsonArray();
-                                for (JsonElement rep : rawReplacement.getAsJsonArray()) {
-                                    if (rep.isJsonPrimitive()) {
-                                        String repStr = rep.getAsString();
-                                        JsonObject newObj = new JsonObject();
-                                        if (repStr.startsWith("#")) newObj.addProperty("tag", repStr.substring(1));
-                                        else newObj.addProperty("item", repStr);
-                                        newArr.add(newObj);
-                                    } else {
-                                        newArr.add(rep.deepCopy());
-                                    }
-                                }
-                                newArray.add(newArr);
-                            } else {
-                                for (JsonElement rep : rawReplacement.getAsJsonArray()) newArray.add(rep.deepCopy());
-                            }
-                        } else {
-                            newArray.add(rawReplacement.deepCopy());
-                        }
-                    } else {
-                        newArray.add(child);
-                    }
-                } else {
-                    newArray.add(child);
-                    mutateJsonRecursively(child, targets, rawReplacement, action, isTargetContext, false);
-                }
-            }
-
-            if (changed) {
-                while (!oldArray.isEmpty()) oldArray.remove(0);
-                for (int i = 0; i < newArray.size(); i++) oldArray.add(newArray.get(i));
-            }
-        }
-    }
-
-    private static boolean isIngredientListKey(String key) {
-        String lower = key.toLowerCase(Locale.ROOT);
-        return lower.endsWith("ingredients") || lower.endsWith("inputs");
-    }
-
-    private static boolean getNextContext(RecipeRule.Action action, boolean isTargetContext, String key) {
-        boolean isOutputKey = key.equals("result") || key.equals("results") || key.equals("output");
-
-        if (action == RecipeRule.Action.REPLACE_OUTPUT && isOutputKey) {
-            return true;
-        } else if (action == RecipeRule.Action.REPLACE_INPUT && isOutputKey) {
-            return false;
-        }
-
-        return isTargetContext;
-    }
-
-    private static String getMatchingKey(JsonObject obj, List<String> targets, RecipeRule.Action action, boolean isTargetContext) {
-        if (action == RecipeRule.Action.REPLACE_OUTPUT && isTargetContext && targets.isEmpty()) {
-            if (obj.has("id") && obj.get("id").isJsonPrimitive()) return "id";
-            if (obj.has("item") && obj.get("item").isJsonPrimitive()) return "item";
-            if (obj.has("result") && obj.get("result").isJsonPrimitive()) return "result";
-            if (obj.has("output") && obj.get("output").isJsonPrimitive()) return "output";
-        }
-        if (obj.has("item") && obj.get("item").isJsonPrimitive() && targets.contains(obj.get("item").getAsString()))
-            return "item";
-        if (obj.has("id") && obj.get("id").isJsonPrimitive() && targets.contains(obj.get("id").getAsString()))
-            return "id";
-        if (obj.has("result") && obj.get("result").isJsonPrimitive() && targets.contains(obj.get("result").getAsString()))
-            return "result";
-        if (obj.has("output") && obj.get("output").isJsonPrimitive() && targets.contains(obj.get("output").getAsString()))
-            return "output";
-        if (obj.has("tag") && obj.get("tag").isJsonPrimitive()) {
-            String tagVal = obj.get("tag").getAsString();
-            if (targets.contains("#" + tagVal) || targets.contains(tagVal))
-                return "tag";
-        }
-        return null;
+        RecipeJsonMutator.mutateRecipe(recipeJson, replacements, replacements, RecipeJsonMutator.NATIVE_FORMAT);
     }
 
     private static boolean shouldHideRecipeJson(JsonObject jsonObject) {
@@ -590,7 +333,6 @@ public class RecipeModifier {
     public static void apply(RecipeManager manager, HolderLookup.Provider registries) {
         reset();
 
-        MODIFYING_JSON.set(true);
         try {
             cachedRules = new ArrayList<>(RecipeConfigIO.loadRules());
             applyGlobalRules();
@@ -662,7 +404,6 @@ public class RecipeModifier {
             //?}
         } finally {
             cachedRules = null;
-            MODIFYING_JSON.set(false);
         }
     }
 

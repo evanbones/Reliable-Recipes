@@ -20,23 +20,12 @@ import net.minecraft.world.level.block.Blocks;
 import java.util.*;
 
 public class TagModifier {
-    private static final ThreadLocal<Boolean> APPLYING_TAGS = ThreadLocal.withInitial(() -> false);
-
-    public static boolean isApplyingTags() {
-        return APPLYING_TAGS.get();
-    }
-
     public static void apply() {
-        APPLYING_TAGS.set(true);
-        try {
-            applyToRegistry(BuiltInRegistries.ITEM, "Item");
-            applyToRegistry(BuiltInRegistries.BLOCK, "Block");
+        applyToRegistry(BuiltInRegistries.ITEM, "Item");
+        applyToRegistry(BuiltInRegistries.BLOCK, "Block");
 
-            if (ReliableRecipesAPI.hasItemHidingCapabilities()) {
-                applyHiddenItemRules();
-            }
-        } finally {
-            APPLYING_TAGS.set(false);
+        if (ReliableRecipesAPI.hasItemHidingCapabilities()) {
+            applyHiddenItemRules();
         }
     }
 

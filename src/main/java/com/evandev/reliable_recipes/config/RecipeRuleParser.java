@@ -33,7 +33,6 @@ public class RecipeRuleParser {
             "action", "target", "replacement", "material", "items", "tags", "tag", "filter"
     );
 
-    private static final Set<String> OUTPUT_KEYS = Set.of("result", "output", "results");
     private static final Set<String> NON_INPUT_KEYS = Set.of("result", "output", "results", SYNTHETIC_TYPE_KEY, SYNTHETIC_RESULTS_KEY);
 
     public static RecipeRule parseRule(JsonObject mod) {

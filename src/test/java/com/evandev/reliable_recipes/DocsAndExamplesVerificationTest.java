@@ -2,7 +2,7 @@ package com.evandev.reliable_recipes;
 
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.config.RecipeRuleParser;
-import com.evandev.reliable_recipes.recipe.RecipeModifier;
+import com.evandev.reliable_recipes.recipe.RecipeJsonMutator;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.tag.TagRule;
 import com.evandev.reliable_recipes.test.MinecraftTestBase;
@@ -22,7 +22,6 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -123,13 +122,7 @@ public class DocsAndExamplesVerificationTest extends MinecraftTestBase {
             assertTrue(rule.testJson(Identifier.withDefaultNamespace( "iron_pickaxe"), recipe));
             assertFalse(rule.testJson(Identifier.fromNamespaceAndPath("othermod", "iron_pickaxe"), recipe));
 
-            RecipeModifier.mutateJsonRecursively(
-                    recipe,
-                    rule.getRawTargets(),
-                    rule.getRawReplacement(),
-                    rule.getAction(),
-                    true
-            );
+            RecipeJsonMutator.applyRule(recipe, rule, RecipeJsonMutator.IngredientFormat.OBJECT);
 
             JsonElement replaced = recipe.getAsJsonObject("key").get("#");
             assertTrue(replaced.isJsonArray());
@@ -169,13 +162,7 @@ public class DocsAndExamplesVerificationTest extends MinecraftTestBase {
 
             assertTrue(rule.testJson(Identifier.withDefaultNamespace("cake"), cakeRecipe));
 
-            RecipeModifier.mutateJsonRecursively(
-                    cakeRecipe,
-                    rule.getRawTargets(),
-                    rule.getRawReplacement(),
-                    rule.getAction(),
-                    true
-            );
+            RecipeJsonMutator.applyRule(cakeRecipe, rule, RecipeJsonMutator.IngredientFormat.OBJECT);
 
             assertEquals("minecraft:golden_apple", cakeRecipe.getAsJsonObject("result").get("id").getAsString());
         }
