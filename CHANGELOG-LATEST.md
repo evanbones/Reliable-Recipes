@@ -1,7 +1,3 @@
-### Changed
-
-- Configs and rules are now server-authoritative.
-
 ### Fixed
 
-- Fixed numerous possible issues on dedicated servers.
+- Fixed hiding an item removing recipes that use a tag with the same name.

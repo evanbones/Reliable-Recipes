@@ -46,6 +46,7 @@ import java.util.stream.Stream;
 *///?}
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class RecipeModifier {
     private static List<RecipeRule> cachedRules = null;
@@ -202,53 +203,74 @@ public class RecipeModifier {
     }
 
     private static boolean shouldHideRecipeJson(JsonObject jsonObject) {
+        return shouldHideRecipeJson(jsonObject, RecipeModifier::isItemHidden);
+    }
+
+    public static boolean shouldHideRecipeJson(JsonObject jsonObject, Predicate<String> isItemHidden) {
         try {
             JsonElement resultElement = jsonObject.has("result") ? jsonObject.get("result") :
                     (jsonObject.has("results") ? jsonObject.get("results") :
                             (jsonObject.has("output") ? jsonObject.get("output") : null));
             if (resultElement != null) {
-                if (resultElement.isJsonObject() && isItemHidden(getResultItemId(resultElement.getAsJsonObject())))
+                if (resultElement.isJsonObject() && isItemHidden.test(getResultItemId(resultElement.getAsJsonObject())))
                     return true;
-                if (resultElement.isJsonPrimitive() && isItemHidden(resultElement.getAsJsonPrimitive().getAsString()))
+                if (resultElement.isJsonPrimitive() && isItemHidden.test(resultElement.getAsJsonPrimitive().getAsString()))
                     return true;
                 if (resultElement.isJsonArray()) {
                     for (JsonElement element : resultElement.getAsJsonArray()) {
-                        if (element.isJsonObject() && isItemHidden(getResultItemId(element.getAsJsonObject())))
+                        if (element.isJsonObject() && isItemHidden.test(getResultItemId(element.getAsJsonObject())))
                             return true;
-                        if (element.isJsonPrimitive() && isItemHidden(element.getAsString())) return true;
+                        if (element.isJsonPrimitive() && isItemHidden.test(element.getAsString())) return true;
                     }
                 }
             }
 
-            for (String key : List.of("input", "reagent", "ingredients", "key")) {
-                if (jsonObject.has(key)) {
-                    if (checkJsonForHiddenItem(jsonObject.get(key))) return true;
+            if (jsonObject.has("key") && jsonObject.get("key").isJsonObject()) {
+                for (Map.Entry<String, JsonElement> slot : jsonObject.getAsJsonObject("key").entrySet()) {
+                    if (isIngredientHidden(slot.getValue(), isItemHidden)) return true;
                 }
+            }
+
+            if (jsonObject.has("ingredients")) {
+                JsonElement ingredients = jsonObject.get("ingredients");
+                if (ingredients.isJsonArray()) {
+                    for (JsonElement slot : ingredients.getAsJsonArray()) {
+                        if (isIngredientHidden(slot, isItemHidden)) return true;
+                    }
+                } else if (isIngredientHidden(ingredients, isItemHidden)) {
+                    return true;
+                }
+            }
+
+            for (String key : List.of("input", "reagent")) {
+                if (jsonObject.has(key) && isIngredientHidden(jsonObject.get(key), isItemHidden)) return true;
             }
         } catch (Exception ignored) {
         }
         return false;
     }
 
-    private static boolean checkJsonForHiddenItem(JsonElement element) {
-        if (element == null) return false;
-        if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
-            return isItemHidden(element.getAsString());
+    private static boolean isIngredientHidden(JsonElement element, Predicate<String> isItemHidden) {
+        if (element == null || element.isJsonNull()) return false;
+        if (element.isJsonPrimitive()) {
+            if (!element.getAsJsonPrimitive().isString()) return false;
+            String id = element.getAsString();
+            return !id.startsWith("#") && isItemHidden.test(id);
         }
         if (element.isJsonArray()) {
-            for (JsonElement e : element.getAsJsonArray()) {
-                if (checkJsonForHiddenItem(e)) return true;
+            JsonArray options = element.getAsJsonArray();
+            if (options.isEmpty()) return false;
+            for (JsonElement option : options) {
+                if (!isIngredientHidden(option, isItemHidden)) return false;
             }
+            return true;
         }
         if (element.isJsonObject()) {
             JsonObject obj = element.getAsJsonObject();
-            if (obj.has("item") && obj.get("item").isJsonPrimitive() && isItemHidden(obj.get("item").getAsString()))
-                return true;
-            if (obj.has("id") && obj.get("id").isJsonPrimitive() && isItemHidden(obj.get("id").getAsString()))
-                return true;
-            for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
-                if (checkJsonForHiddenItem(entry.getValue())) return true;
-            }
+            if (obj.has("tag")) return false;
+            if (obj.has("item")) return isIngredientHidden(obj.get("item"), isItemHidden);
+            if (obj.has("items")) return isIngredientHidden(obj.get("items"), isItemHidden);
+            if (obj.has("ingredient")) return isIngredientHidden(obj.get("ingredient"), isItemHidden);
         }
         return false;
     }
