@@ -48,10 +48,11 @@ import java.util.stream.Stream;
 import java.util.*;
 
 public class RecipeModifier {
-    //? if >=1.21.2 && <=26.2 {
-    private static final Codec<Recipe<?>> RECIPE_CODEC = Recipe.CODEC;
     private static List<RecipeRule> cachedRules = null;
     private static Map<Identifier, Set<Item>> currentItemTags = null;
+
+    //? if >=1.21.2 && <=26.2 {
+    private static final Codec<Recipe<?>> RECIPE_CODEC = Recipe.CODEC;
     //?} else if >26.2 {
     /*private static final Codec<Recipe<?>> RECIPE_CODEC = Recipe.DIRECT_CODEC;
      *///?}
