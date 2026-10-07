@@ -1,5 +1,6 @@
 package com.evandev.reliable_recipes.command;
 
+import com.evandev.reliable_recipes.config.ConfigSync;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeUndoCache;
@@ -63,6 +64,8 @@ public class UndoCommand {
                             } else {
                                 ctx.getSource().sendFailure(Component.translatable("commands.reliable_recipes.undo.failure", id.toString()));
                             }
+
+                            ConfigSync.sendToAll(server);
                             return 1;
                         })
                 )

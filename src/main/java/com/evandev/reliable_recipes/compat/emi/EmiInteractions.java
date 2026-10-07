@@ -30,6 +30,11 @@ public class EmiInteractions {
             return false;
         }
 
+        if (!Services.PLATFORM.canSendToServer()) {
+            mc.player.sendSystemMessage(Component.translatable("toast.reliable_recipes.server_missing"));
+            return false;
+        }
+
         Services.PLATFORM.sendDeleteRecipePacket(CompatUtil.recipeKey(id));
         return true;
     }

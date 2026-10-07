@@ -48,14 +48,13 @@ import java.util.stream.Stream;
 import java.util.*;
 
 public class RecipeModifier {
-    private static List<RecipeRule> cachedRules = null;
-    private static Map<Identifier, Set<Item>> currentItemTags = null;
-
     //? if >=1.21.2 && <=26.2 {
     private static final Codec<Recipe<?>> RECIPE_CODEC = Recipe.CODEC;
+    private static List<RecipeRule> cachedRules = null;
+    private static Map<Identifier, Set<Item>> currentItemTags = null;
     //?} else if >26.2 {
     /*private static final Codec<Recipe<?>> RECIPE_CODEC = Recipe.DIRECT_CODEC;
-    *///?}
+     *///?}
 
     //? if <1.21.2 {
     /*public static void modifyRecipesJson(Map<Identifier, JsonElement> map, ResourceManager resourceManager) {
@@ -178,18 +177,17 @@ public class RecipeModifier {
     }
 
     *///?}
+
     /**
      * Applies API replacements and hidden-item checks, which apply to custom recipes as well.
      *
      * @return false if the recipe should be removed.
      */
     private static boolean processCustomRecipeJson(JsonObject recipeJson, Map<String, String> globalReplacements) {
-        // Global API Replacements
         for (Map.Entry<String, String> rep : globalReplacements.entrySet()) {
             applyGlobalReplacement(recipeJson, rep.getKey(), rep.getValue());
         }
 
-        // Hidden items output check
         return !ReliableRecipesAPI.hasItemHidingCapabilities() || !shouldHideRecipeJson(recipeJson);
     }
 
@@ -319,10 +317,22 @@ public class RecipeModifier {
         reset();
         applyGlobalRules();
     }
+
+    /^*
+     * Client-side version of {@link #apply()}. Leaves the undo cache alone, since in singleplayer it belongs to the server.
+     ^/
+    public static void applyClient() {
+        resetRules();
+        applyGlobalRules();
+    }
     *///?}
 
     public static void reset() {
         RecipeUndoCache.clear();
+        resetRules();
+    }
+
+    private static void resetRules() {
         ReliableRecipesAPI.clearRepairBlockers();
         ReliableRecipesAPI.clearCustomRepairMaterials();
         cachedRules = null;
@@ -478,7 +488,7 @@ public class RecipeModifier {
         return RecipeMap.create(recipes);
         //?} else {
         /*return RecipeMap.create(new RecipeHolderLookup(recipes));
-        *///?}
+         *///?}
     }
     //?}
 

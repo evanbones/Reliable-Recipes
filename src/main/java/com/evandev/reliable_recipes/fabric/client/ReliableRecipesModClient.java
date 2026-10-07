@@ -6,7 +6,9 @@ import com.evandev.reliable_recipes.client.ClientRecipeSync;
 import com.evandev.reliable_recipes.client.SharedToastOverlay;
 import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
 import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
+import com.evandev.reliable_recipes.networking.ClientboundSyncConfigPayload;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 //? if <1.21 {
@@ -39,6 +41,11 @@ public class ReliableRecipesModClient implements ClientModInitializer {
             ClientboundAddRecipePayload payload = ClientboundAddRecipePayload.STREAM_CODEC.decode(new RegistryFriendlyByteBuf(buf));
             client.execute(() -> ClientRecipeSync.onRecipeAdded(payload.recipeHolder()));
         });
+
+        ClientPlayNetworking.registerGlobalReceiver(ClientboundSyncConfigPayload.TYPE.id(), (client, handler, buf, responseSender) -> {
+            ClientboundSyncConfigPayload payload = ClientboundSyncConfigPayload.STREAM_CODEC.decode(new RegistryFriendlyByteBuf(buf));
+            client.execute(() -> ClientRecipeSync.onConfigSynced(payload.channels()));
+        });
         *///?} else {
         ClientPlayNetworking.registerGlobalReceiver(ClientboundRemoveRecipePayload.TYPE, (payload, context) -> {
             context.client().execute(() -> ClientRecipeSync.onRecipeRemoved(payload.recipeKey()));
@@ -47,7 +54,13 @@ public class ReliableRecipesModClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(ClientboundAddRecipePayload.TYPE, (payload, context) -> {
             context.client().execute(() -> ClientRecipeSync.onRecipeAdded(payload.recipeHolder()));
         });
+
+        ClientPlayNetworking.registerGlobalReceiver(ClientboundSyncConfigPayload.TYPE, (payload, context) -> {
+            context.client().execute(() -> ClientRecipeSync.onConfigSynced(payload.channels()));
+        });
         //?}
+
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(ClientRecipeSync::onDisconnect));
     }
 }
 //?}

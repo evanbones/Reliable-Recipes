@@ -5,6 +5,7 @@ package com.evandev.reliable_recipes.forge;
 import com.evandev.reliable_recipes.client.ClientRecipeSync;
 import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
 import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
+import com.evandev.reliable_recipes.networking.ClientboundSyncConfigPayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -26,6 +27,12 @@ public class ForgeNetworking {
             NetworkRegistry.acceptMissingOr(PROTOCOL_VERSION),
             NetworkRegistry.acceptMissingOr(PROTOCOL_VERSION)
     );
+    private static final SimpleChannel SYNC_CHANNEL = NetworkRegistry.newSimpleChannel(
+            Identifier.fromNamespaceAndPath(Constants.MOD_ID, "sync"),
+            () -> PROTOCOL_VERSION,
+            NetworkRegistry.acceptMissingOr(PROTOCOL_VERSION),
+            NetworkRegistry.acceptMissingOr(PROTOCOL_VERSION)
+    );
     private static int nextId = 0;
 
     public static void register() {
@@ -39,10 +46,16 @@ public class ForgeNetworking {
                 (payload, context) -> ClientRecipeSync.onRecipeRemoved(payload.recipeKey()));
         register(ClientboundAddRecipePayload.class, ClientboundAddRecipePayload.STREAM_CODEC, NetworkDirection.PLAY_TO_CLIENT,
                 (payload, context) -> ClientRecipeSync.onRecipeAdded(payload.recipeHolder()));
+        register(SYNC_CHANNEL, 0, ClientboundSyncConfigPayload.class, ClientboundSyncConfigPayload.STREAM_CODEC, NetworkDirection.PLAY_TO_CLIENT,
+                (payload, context) -> ClientRecipeSync.onConfigSynced(payload.channels()));
     }
 
     private static <T> void register(Class<T> type, StreamCodec<? super RegistryFriendlyByteBuf, T> codec, NetworkDirection direction, BiConsumer<T, NetworkEvent.Context> handler) {
-        CHANNEL.messageBuilder(type, nextId++, direction)
+        register(CHANNEL, nextId++, type, codec, direction, handler);
+    }
+
+    private static <T> void register(SimpleChannel channel, int id, Class<T> type, StreamCodec<? super RegistryFriendlyByteBuf, T> codec, NetworkDirection direction, BiConsumer<T, NetworkEvent.Context> handler) {
+        channel.messageBuilder(type, id, direction)
                 .encoder((payload, buf) -> codec.encode(new RegistryFriendlyByteBuf(buf), payload))
                 .decoder(buf -> codec.decode(new RegistryFriendlyByteBuf(buf)))
                 .consumerMainThread((payload, context) -> handler.accept(payload, context.get()))
@@ -53,9 +66,24 @@ public class ForgeNetworking {
         CHANNEL.sendToServer(payload);
     }
 
+    public static boolean isServerPresent() {
+        var connection = net.minecraft.client.Minecraft.getInstance().getConnection();
+        return connection != null && CHANNEL.isRemotePresent(connection.getConnection());
+    }
+
+    public static boolean isPresent(ServerPlayer player) {
+        return CHANNEL.isRemotePresent(player.connection.connection);
+    }
+
     public static void sendToPlayer(ServerPlayer player, Object payload) {
-        if (CHANNEL.isRemotePresent(player.connection.connection)) {
+        if (isPresent(player)) {
             CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), payload);
+        }
+    }
+
+    public static void sendSyncToPlayer(ServerPlayer player, ClientboundSyncConfigPayload payload) {
+        if (SYNC_CHANNEL.isRemotePresent(player.connection.connection)) {
+            SYNC_CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), payload);
         }
     }
 }

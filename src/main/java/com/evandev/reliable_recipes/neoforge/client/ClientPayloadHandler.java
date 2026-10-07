@@ -4,6 +4,7 @@ package com.evandev.reliable_recipes.neoforge.client;
 /*import com.evandev.reliable_recipes.client.ClientRecipeSync;
 import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
 import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
+import com.evandev.reliable_recipes.networking.ClientboundSyncConfigPayload;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public class ClientPayloadHandler {
@@ -14,6 +15,10 @@ public class ClientPayloadHandler {
 
     public static void handleAdd(final ClientboundAddRecipePayload payload, final IPayloadContext context) {
         context.enqueueWork(() -> ClientRecipeSync.onRecipeAdded(payload.recipeHolder()));
+    }
+
+    public static void handleSyncConfig(final ClientboundSyncConfigPayload payload, final IPayloadContext context) {
+        context.enqueueWork(() -> ClientRecipeSync.onConfigSynced(payload.channels()));
     }
 }
 *///?}

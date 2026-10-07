@@ -4,11 +4,14 @@ package com.evandev.reliable_recipes.neoforge;
 /*
 import com.evandev.reliable_recipes.Constants;
 import com.evandev.reliable_recipes.command.UndoCommand;
+import com.evandev.reliable_recipes.config.ConfigSync;
+import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.config.ModConfig;
 import com.evandev.reliable_recipes.config.YaclConfigIntegration;
 import com.evandev.reliable_recipes.neoforge.client.ClientPayloadHandler;
 import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
 import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
+import com.evandev.reliable_recipes.networking.ClientboundSyncConfigPayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import com.evandev.reliable_recipes.recipe.BrewingRegistration;
 import net.minecraft.client.gui.screens.Screen;
@@ -22,6 +25,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLConstructModEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
@@ -34,6 +38,7 @@ public class ReliableRecipesMod {
 
     public ReliableRecipesMod(IEventBus eventBus) {
         ModConfig.load();
+        ConfigSync.register(Constants.MOD_ID, RecipeConfigIO::createSyncSnapshot, RecipeConfigIO::invalidateCache);
 
         eventBus.addListener(ReliableRecipesMod::registerRegistries);
         eventBus.addListener(ReliableRecipesMod::registerPayloadHandlers);
@@ -65,8 +70,13 @@ public class ReliableRecipesMod {
         UndoCommand.register(event.getDispatcher());
     }
 
+    @SubscribeEvent
+    public static void onDatapackSync(OnDatapackSyncEvent event) {
+        event.getRelevantPlayers().forEach(ConfigSync::sendTo);
+    }
+
     public static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
-        final PayloadRegistrar registrar = event.registrar("1");
+        final PayloadRegistrar registrar = event.registrar("1").optional();
 
         registrar.playToServer(
                 DeleteRecipePayload.TYPE,
@@ -89,6 +99,12 @@ public class ReliableRecipesMod {
                 ClientboundAddRecipePayload.TYPE,
                 ClientboundAddRecipePayload.STREAM_CODEC,
                 ClientPayloadHandler::handleAdd
+        );
+
+        registrar.playToClient(
+                ClientboundSyncConfigPayload.TYPE,
+                ClientboundSyncConfigPayload.STREAM_CODEC,
+                ClientPayloadHandler::handleSyncConfig
         );
     }
 }

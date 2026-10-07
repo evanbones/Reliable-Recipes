@@ -1,7 +1,10 @@
 package com.evandev.reliable_recipes.client;
 
 import com.evandev.reliable_recipes.Constants;
+import com.evandev.reliable_recipes.config.ConfigSync;
 import com.evandev.reliable_recipes.config.ModConfig;
+import com.evandev.reliable_recipes.platform.Services;
+import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.util.CompatUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -14,9 +17,12 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+
+import java.util.List;
+import java.util.Map;
+
 //? if <1.21.2 {
 /*import com.evandev.reliable_recipes.compat.emi.EmiInteractions;
-import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeUndoCache;
 import net.minecraft.world.item.crafting.RecipeManager;
 *///?}
@@ -42,7 +48,7 @@ public class ClientRecipeSync {
             //?}
         }
 
-        if (RecipeUndoCache.removeRecipe(recipeManager, recipeKey) == null) return;
+        if (RecipeUndoCache.removeUntracked(recipeManager, recipeKey) == null) return;
 
         if (ModConfig.get().reloadRrv && Services.PLATFORM.isModLoaded("emi")) {
             EmiInteractions.reload();
@@ -62,6 +68,50 @@ public class ClientRecipeSync {
         //?}
     }
 
+    /**
+     * Switches to the rule files the server sent. Does nothing in singleplayer since the server has the same config folder as the client.
+     */
+    public static void onConfigSynced(Map<String, List<ConfigSync.SyncedFile>> channels) {
+        if (Minecraft.getInstance().hasSingleplayerServer()) return;
+
+        if (ConfigSync.applyRemote(channels)) {
+            Constants.LOG.info("Using rule files from the server");
+            reapplyClientRules();
+            reloadRecipeViewers();
+        }
+    }
+
+    public static void onDisconnect() {
+        if (ConfigSync.clearRemote()) {
+            reapplyClientRules();
+        }
+    }
+
+    /**
+     * Whether the connected server has Reliable Recipes, so the tags it sends already have the rules applied.
+     */
+    public static boolean isServerAuthoritative() {
+        return !Minecraft.getInstance().hasSingleplayerServer() && Services.PLATFORM.canSendToServer();
+    }
+
+    private static void reapplyClientRules() {
+        //? if <1.21.2 {
+        /*RecipeModifier.applyClient();
+         *///?} else {
+        RecipeModifier.applyGlobalRules();
+        //?}
+    }
+
+    private static void reloadRecipeViewers() {
+        //? if <1.21.2 {
+        /*if (Services.PLATFORM.isModLoaded("emi")) {
+            EmiInteractions.reload();
+        }
+        *///?} else {
+        RrvInteractions.refresh();
+        //?}
+    }
+
     private static void showRemovalFeedback(Identifier recipeId, ItemStack icon) {
         Minecraft client = Minecraft.getInstance();
         ModConfig config = ModConfig.get();
@@ -71,14 +121,14 @@ public class ClientRecipeSync {
             Component hover = Component.translatable("commands.reliable_recipes.undo.hover");
             MutableComponent undoText = Component.translatable("toast.reliable_recipes.undo")
                     .withStyle(style -> style
-                            .withColor(ChatFormatting.RED)
-                            .withBold(true)
-                            //? if <1.21.2 {
-                            /*.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))
-                            *///?} else {
-                            .withClickEvent(new ClickEvent.RunCommand(command))
-                            .withHoverEvent(new HoverEvent.ShowText(hover))
+                                    .withColor(ChatFormatting.RED)
+                                    .withBold(true)
+                                    //? if <1.21.2 {
+                                    /*.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
+                                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover))
+                                    *///?} else {
+                                    .withClickEvent(new ClickEvent.RunCommand(command))
+                                    .withHoverEvent(new HoverEvent.ShowText(hover))
                             //?}
                     );
 

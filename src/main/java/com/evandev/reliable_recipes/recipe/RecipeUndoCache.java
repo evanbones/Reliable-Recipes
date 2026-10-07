@@ -29,6 +29,19 @@ public class RecipeUndoCache {
      * @return the removed recipe, or null if the manager doesn't contain it.
      */
     public static RecipeHolder<?> removeRecipe(RecipeManager manager, ResourceKey<Recipe<?>> recipeKey) {
+        RecipeHolder<?> removed = removeUntracked(manager, recipeKey);
+        if (removed != null) {
+            DELETED_RECIPES.put(recipeKey, removed);
+        }
+        return removed;
+    }
+
+    /**
+     * Removes a recipe without remembering it. Used for the client's copy of the recipes.
+     *
+     * @return the removed recipe, or null if the manager doesn't contain it.
+     */
+    public static RecipeHolder<?> removeUntracked(RecipeManager manager, ResourceKey<Recipe<?>> recipeKey) {
         List<RecipeHolder<?>> updatedRecipes = new ArrayList<>();
         RecipeHolder<?> removed = null;
         for (RecipeHolder<?> holder : getRecipes(manager)) {
@@ -40,7 +53,6 @@ public class RecipeUndoCache {
         }
 
         if (removed != null) {
-            DELETED_RECIPES.put(recipeKey, removed);
             setRecipes(manager, updatedRecipes);
         }
         return removed;

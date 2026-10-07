@@ -257,7 +257,23 @@ public class RecipeConfigIO {
         outputMap.put(recipeId, recipeJson);
     }
 
+    /**
+     * Reads the rule files to send to clients. See {@link ConfigSync}.
+     */
+    public static List<ConfigSync.SyncedFile> createSyncSnapshot() {
+        List<ConfigSync.SyncedFile> files = new ArrayList<>();
+        for (Path rootDir : getScanDirs()) {
+            files.addAll(ConfigSync.readDirectory(rootDir));
+        }
+        return files;
+    }
+
     private static List<ConfigFile> loadAllConfigFiles() {
+        List<ConfigSync.SyncedFile> remoteFiles = ConfigSync.getRemoteFiles(Constants.MOD_ID);
+        if (remoteFiles != null) {
+            return parseSyncedFiles(remoteFiles);
+        }
+
         List<ConfigFile> loadedConfigs = new ArrayList<>();
         Path configDir = getConfigDir();
         File dir = configDir.toFile();
@@ -270,23 +286,7 @@ public class RecipeConfigIO {
             }
         }
 
-        List<Path> scanDirs = new ArrayList<>();
-        if (Files.exists(configDir)) {
-            scanDirs.add(configDir);
-        }
-
-        try {
-            Path configParent = Services.PLATFORM.getConfigDirectory().getParent();
-            if (configParent != null) {
-                Path rootReliableRecipes = configParent.resolve("reliable_recipes");
-                if (Files.exists(rootReliableRecipes) && Files.isDirectory(rootReliableRecipes) && !rootReliableRecipes.equals(configDir)) {
-                    scanDirs.add(rootReliableRecipes);
-                }
-            }
-        } catch (Exception ignored) {
-        }
-
-        for (Path rootDir : scanDirs) {
+        for (Path rootDir : getScanDirs()) {
             try (Stream<Path> stream = Files.walk(rootDir)) {
                 stream.filter(path -> Files.isRegularFile(path) && path.toString().endsWith(".json"))
                       .forEach(path -> {
@@ -306,6 +306,42 @@ public class RecipeConfigIO {
         }
 
         return loadedConfigs;
+    }
+
+    private static List<ConfigFile> parseSyncedFiles(List<ConfigSync.SyncedFile> files) {
+        List<ConfigFile> loadedConfigs = new ArrayList<>();
+        for (ConfigSync.SyncedFile file : files) {
+            try {
+                JsonElement root = JsonParser.parseString(file.content());
+                if (root != null) {
+                    Path relPath = Path.of(file.path());
+                    loadedConfigs.add(new ConfigFile(relPath, relPath, root));
+                }
+            } catch (Exception e) {
+                Constants.LOG.error("Failed to load recipe config file from server: {}", file.path(), e);
+            }
+        }
+        return loadedConfigs;
+    }
+
+    private static List<Path> getScanDirs() {
+        Path configDir = getConfigDir();
+        List<Path> scanDirs = new ArrayList<>();
+        if (Files.exists(configDir)) {
+            scanDirs.add(configDir);
+        }
+
+        try {
+            Path configParent = Services.PLATFORM.getConfigDirectory().getParent();
+            if (configParent != null) {
+                Path rootReliableRecipes = configParent.resolve("reliable_recipes");
+                if (Files.exists(rootReliableRecipes) && Files.isDirectory(rootReliableRecipes) && !rootReliableRecipes.equals(configDir)) {
+                    scanDirs.add(rootReliableRecipes);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return scanDirs;
     }
 
     private static void createDefault(Path path) {

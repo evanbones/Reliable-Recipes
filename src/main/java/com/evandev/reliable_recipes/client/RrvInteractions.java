@@ -42,6 +42,11 @@ public class RrvInteractions {
             return false;
         }
 
+        if (!Services.PLATFORM.canSendToServer()) {
+            mc.player.sendSystemMessage(Component.translatable("toast.reliable_recipes.server_missing"));
+            return false;
+        }
+
         Identifier recipeId = recipe.getId();
         if (recipeId != null) {
             Services.PLATFORM.sendDeleteRecipePacket(ResourceKey.create(Registries.RECIPE, recipeId));
@@ -104,10 +109,24 @@ public class RrvInteractions {
             ReliableRecipeViewerClient.LOCAL_RECIPES = RecipeModifier.createRecipeMap(updated);
         }
 
+        refreshCaches();
+        return icon;
+    }
+
+    /**
+     * Rebuilds RRV's caches so it picks up changed rules.
+     */
+    public static void refresh() {
+        if (!Services.PLATFORM.isModLoaded("rrv")) return;
+
+        closeRecipeViewScreen();
+        refreshCaches();
+    }
+
+    private static void refreshCaches() {
         ClientRecipeCache.INSTANCE.buildRecipeCache(true);
         ItemFilters.clearCaches(true);
         ItemViewOverlay.INSTANCE.updateDisplayedItems();
-        return icon;
     }
 
     public static void onRecipeAdded(RecipeHolder<?> recipeHolder) {
@@ -123,9 +142,7 @@ public class RrvInteractions {
             ReliableRecipeViewerClient.LOCAL_RECIPES = RecipeModifier.createRecipeMap(updated);
         }
 
-        ClientRecipeCache.INSTANCE.buildRecipeCache(true);
-        ItemFilters.clearCaches(true);
-        ItemViewOverlay.INSTANCE.updateDisplayedItems();
+        refreshCaches();
     }
 }
 //?} else {

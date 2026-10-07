@@ -3,6 +3,7 @@ package com.evandev.reliable_recipes.platform;
 //? if fabric {
 import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
 import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
+import com.evandev.reliable_recipes.networking.ClientboundSyncConfigPayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -12,6 +13,7 @@ import net.fabricmc.loader.api.FabricLoader;
 /*import com.evandev.reliable_recipes.forge.ForgeNetworking;
 import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
 import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
+import com.evandev.reliable_recipes.networking.ClientboundSyncConfigPayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLLoader;
@@ -20,6 +22,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 //? if neoforge {
 /*import com.evandev.reliable_recipes.networking.ClientboundAddRecipePayload;
 import com.evandev.reliable_recipes.networking.ClientboundRemoveRecipePayload;
+import com.evandev.reliable_recipes.networking.ClientboundSyncConfigPayload;
 import com.evandev.reliable_recipes.networking.DeleteRecipePayload;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
@@ -79,6 +82,24 @@ public class Services {
         *///?}
     }
 
+    /**
+     * Whether the connected server has Reliable Recipes and can receive {@link DeleteRecipePayload} (client-only)
+     */
+    public boolean canSendToServer() {
+        //? if fabric && <1.21 {
+        /*return ClientPlayNetworking.canSend(DeleteRecipePayload.TYPE.id());
+        *///?} else if fabric {
+        return ClientPlayNetworking.canSend(DeleteRecipePayload.TYPE);
+        //?}
+        //? if forge {
+        /*return ForgeNetworking.isServerPresent();
+        *///?}
+        //? if neoforge {
+        /*var connection = net.minecraft.client.Minecraft.getInstance().getConnection();
+        return connection != null && connection.hasChannel(DeleteRecipePayload.TYPE);
+        *///?}
+    }
+
     public void sendDeleteRecipePacket(ResourceKey<Recipe<?>> recipeKey) {
         //? if fabric && <1.21 {
         /*ClientPlayNetworking.send(DeleteRecipePayload.TYPE.id(), encode(DeleteRecipePayload.STREAM_CODEC, new DeleteRecipePayload(recipeKey)));
@@ -95,31 +116,59 @@ public class Services {
         *///?}
     }
 
-    public void sendDeleteRecipePacketToPlayer(ServerPlayer player, ResourceKey<Recipe<?>> recipeKey) {
+    /**
+     * @return false if the player doesn't have Reliable Recipes and the packet wasn't sent
+     */
+    public boolean sendDeleteRecipePacketToPlayer(ServerPlayer player, ResourceKey<Recipe<?>> recipeKey) {
         //? if fabric && <1.21 {
-        /*ServerPlayNetworking.send(player, ClientboundRemoveRecipePayload.TYPE.id(), encode(ClientboundRemoveRecipePayload.STREAM_CODEC, new ClientboundRemoveRecipePayload(recipeKey)));
+        /*if (!ServerPlayNetworking.canSend(player, ClientboundRemoveRecipePayload.TYPE.id())) return false;
+        ServerPlayNetworking.send(player, ClientboundRemoveRecipePayload.TYPE.id(), encode(ClientboundRemoveRecipePayload.STREAM_CODEC, new ClientboundRemoveRecipePayload(recipeKey)));
         *///?} else if fabric {
+        if (!ServerPlayNetworking.canSend(player, ClientboundRemoveRecipePayload.TYPE)) return false;
         ServerPlayNetworking.send(player, new ClientboundRemoveRecipePayload(recipeKey));
         //?}
         //? if forge {
-        /*ForgeNetworking.sendToPlayer(player, new ClientboundRemoveRecipePayload(recipeKey));
+        /*if (!ForgeNetworking.isPresent(player)) return false;
+        ForgeNetworking.sendToPlayer(player, new ClientboundRemoveRecipePayload(recipeKey));
         *///?}
         //? if neoforge {
-        /*PacketDistributor.sendToPlayer(player, new ClientboundRemoveRecipePayload(recipeKey));
+        /*if (!player.connection.hasChannel(ClientboundRemoveRecipePayload.TYPE)) return false;
+        PacketDistributor.sendToPlayer(player, new ClientboundRemoveRecipePayload(recipeKey));
+        *///?}
+        return true;
+    }
+
+    public void sendSyncConfigPacketToPlayer(ServerPlayer player, ClientboundSyncConfigPayload payload) {
+        //? if fabric && <1.21 {
+        /*if (!ServerPlayNetworking.canSend(player, ClientboundSyncConfigPayload.TYPE.id())) return;
+        ServerPlayNetworking.send(player, ClientboundSyncConfigPayload.TYPE.id(), encode(ClientboundSyncConfigPayload.STREAM_CODEC, payload));
+        *///?} else if fabric {
+        if (!ServerPlayNetworking.canSend(player, ClientboundSyncConfigPayload.TYPE)) return;
+        ServerPlayNetworking.send(player, payload);
+        //?}
+        //? if forge {
+        /*ForgeNetworking.sendSyncToPlayer(player, payload);
+        *///?}
+        //? if neoforge {
+        /*if (!player.connection.hasChannel(ClientboundSyncConfigPayload.TYPE)) return;
+        PacketDistributor.sendToPlayer(player, payload);
         *///?}
     }
 
     public void sendAddRecipePacketToPlayer(ServerPlayer player, RecipeHolder<?> recipeHolder) {
         //? if fabric && <1.21 {
-        /*ServerPlayNetworking.send(player, ClientboundAddRecipePayload.TYPE.id(), encode(ClientboundAddRecipePayload.STREAM_CODEC, new ClientboundAddRecipePayload(recipeHolder)));
+        /*if (!ServerPlayNetworking.canSend(player, ClientboundAddRecipePayload.TYPE.id())) return;
+        ServerPlayNetworking.send(player, ClientboundAddRecipePayload.TYPE.id(), encode(ClientboundAddRecipePayload.STREAM_CODEC, new ClientboundAddRecipePayload(recipeHolder)));
         *///?} else if fabric {
+        if (!ServerPlayNetworking.canSend(player, ClientboundAddRecipePayload.TYPE)) return;
         ServerPlayNetworking.send(player, new ClientboundAddRecipePayload(recipeHolder));
         //?}
         //? if forge {
         /*ForgeNetworking.sendToPlayer(player, new ClientboundAddRecipePayload(recipeHolder));
         *///?}
         //? if neoforge {
-        /*PacketDistributor.sendToPlayer(player, new ClientboundAddRecipePayload(recipeHolder));
+        /*if (!player.connection.hasChannel(ClientboundAddRecipePayload.TYPE)) return;
+        PacketDistributor.sendToPlayer(player, new ClientboundAddRecipePayload(recipeHolder));
         *///?}
     }
 
