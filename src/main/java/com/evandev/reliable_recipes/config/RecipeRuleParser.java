@@ -72,7 +72,7 @@ public class RecipeRuleParser {
         }
         BiPredicate<Identifier, JsonObject> filter = parseFilter(filterEl);
 
-        return switch (actionStr) {
+        RecipeRule rule = switch (actionStr) {
             case "remove", "remove_recipe", "remove_output" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
             case "replace_input" -> {
                 List<String> rawTargets = extractStrings(mod.get("target"));
@@ -89,6 +89,24 @@ public class RecipeRuleParser {
                 yield null;
             }
         };
+        if (rule != null) {
+            rule.setLiteralIds(extractLiteralIds(filterEl));
+        }
+        return rule;
+    }
+
+    private static List<String> extractLiteralIds(JsonElement filterEl) {
+        List<String> ids = new ArrayList<>();
+        if (!filterEl.isJsonObject()) return ids;
+        for (Map.Entry<String, JsonElement> entry : filterEl.getAsJsonObject().entrySet()) {
+            String key = entry.getKey().trim().replaceAll(":$", "").trim();
+            if (!key.equals("id") && !key.equals("pattern") && !key.equals("patterns")) continue;
+            for (String value : extractStrings(entry.getValue())) {
+                boolean regex = value.startsWith("/") && value.endsWith("/") && value.length() > 2;
+                if (!regex && !value.startsWith("#") && !value.startsWith("+#")) ids.add(value);
+            }
+        }
+        return ids;
     }
 
     public static TagRule parseTagRule(JsonObject mod) {

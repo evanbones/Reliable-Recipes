@@ -25,6 +25,7 @@ import net.minecraft.tags.TagLoader;
 import com.evandev.reliable_recipes.mixin.accessor.HolderReferenceAccessor;
 import com.evandev.reliable_recipes.mixin.accessor.RecipeManagerAccessor;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderSet;
@@ -103,6 +104,7 @@ public class RecipeModifier {
      ^/
     public static void modifyRecipesJson(Map<Identifier, JsonElement> map) {
         cachedRules = new ArrayList<>(RecipeConfigIO.loadRules());
+        warnUnmatchedIds(cachedRules, map.keySet());
         Map<Identifier, JsonElement> newMap = new HashMap<>();
         Map<String, String> globalReplacements = ReliableRecipesAPI.getReplacements();
 
@@ -191,6 +193,25 @@ public class RecipeModifier {
         }
 
         return !ReliableRecipesAPI.hasItemHidingCapabilities() || !shouldHideRecipeJson(recipeJson);
+    }
+
+    /**
+     * Warns about rules whose {@code id} filter names a recipe that doesn't exist, which usually means the item id was used by mistake.
+     */
+    private static void warnUnmatchedIds(List<RecipeRule> rules, Collection<Identifier> recipeIds) {
+        Set<String> known = new HashSet<>();
+        for (Identifier id : recipeIds) {
+            known.add(id.toString());
+            known.add(id.getPath());
+        }
+        for (RecipeRule rule : rules) {
+            for (String id : rule.getLiteralIds()) {
+                if (!known.contains(id)) {
+                    Constants.LOG.warn("A {} rule filters on recipe id '{}', but no loaded recipe has that id. To match recipes by the item they make, use 'target' or 'output' instead of 'id'.",
+                            rule.getAction().name().toLowerCase(Locale.ROOT), id);
+                }
+            }
+        }
     }
 
     private static void applyRuleReplacement(JsonObject recipeJson, RecipeRule rule) {
@@ -341,9 +362,6 @@ public class RecipeModifier {
         applyGlobalRules();
     }
 
-    /^*
-     * Client-side version of {@link #apply()}. Leaves the undo cache alone, since in singleplayer it belongs to the server.
-     ^/
     public static void applyClient() {
         resetRules();
         applyGlobalRules();
@@ -376,6 +394,12 @@ public class RecipeModifier {
             RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
             RecipeMap currentMap = managerAccessor.reliableRecipes$getRecipeMap();
             List<RecipeHolder<?>> validRecipes = new ArrayList<>();
+
+            List<Identifier> recipeIds = new ArrayList<>();
+            for (RecipeHolder<?> recipeHolder : currentMap.values()) {
+                recipeIds.add(CompatUtil.recipeId(recipeHolder));
+            }
+            warnUnmatchedIds(cachedRules, recipeIds);
 
             RegistryOps<JsonElement> ops = registries.createSerializationContext(JsonOps.INSTANCE);
             int removedCount = 0;
@@ -442,8 +466,11 @@ public class RecipeModifier {
 
     public static RecipeHolder<?> processRecipe(RecipeHolder<?> recipeHolder, List<RecipeRule> rules, Map<String, String> globalReplacements, RegistryOps<JsonElement> ops) {
         try {
-            Optional<JsonElement> encodeResult = RECIPE_CODEC.encodeStart(ops, recipeHolder.value()).result();
+            DataResult<JsonElement> encoded = RECIPE_CODEC.encodeStart(ops, recipeHolder.value());
+            Optional<JsonElement> encodeResult = encoded.result();
             if (encodeResult.isEmpty() || !encodeResult.get().isJsonObject()) {
+                Constants.LOG.debug("Skipping recipe {}, it could not be encoded to a JSON object: {}", CompatUtil.recipeId(recipeHolder),
+                        encoded.error().map(DataResult.Error::message).orElse("encoded to " + encodeResult.map(JsonElement::toString).orElse("nothing")));
                 return recipeHolder;
             }
 

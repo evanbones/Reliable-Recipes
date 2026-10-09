@@ -137,6 +137,39 @@ public class RecipeRuleParserTest extends MinecraftTestBase {
     }
 
     @Test
+    @DisplayName("Literal recipe ids are collected from the id filter, but regexes and tags are not")
+    void testLiteralIds() {
+        RecipeRule rule = RecipeRuleParser.parseRule(JsonParser.parseString("""
+        {
+          "action": "replace_output",
+          "replacement": "farmersdelight:fried_egg",
+          "id": ["kaleidoscope_cookery:fried_egg", "/.*egg.*/", "#c:eggs"]
+        }
+        """).getAsJsonObject());
+        assertNotNull(rule);
+        assertEquals(List.of("kaleidoscope_cookery:fried_egg"), rule.getLiteralIds());
+
+        RecipeRule filtered = RecipeRuleParser.parseRule(JsonParser.parseString("""
+        {
+          "action": "remove",
+          "filter": { "pattern": "minecraft:cake" }
+        }
+        """).getAsJsonObject());
+        assertNotNull(filtered);
+        assertEquals(List.of("minecraft:cake"), filtered.getLiteralIds());
+
+        RecipeRule byTarget = RecipeRuleParser.parseRule(JsonParser.parseString("""
+        {
+          "action": "replace_output",
+          "target": "kaleidoscope_cookery:fried_egg",
+          "replacement": "farmersdelight:fried_egg"
+        }
+        """).getAsJsonObject());
+        assertNotNull(byTarget);
+        assertTrue(byTarget.getLiteralIds().isEmpty());
+    }
+
+    @Test
     @DisplayName("Parse prevent_repair action")
     void testParsePreventRepair() {
         String json = """

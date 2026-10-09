@@ -23,6 +23,7 @@ public class RecipeRule {
     private final Ingredient newInput;
     private final List<String> rawTargets;
     private final JsonElement rawReplacement;
+    private List<String> literalIds = List.of();
 
     // Removals
     public RecipeRule(Action action, BiPredicate<Identifier, JsonObject> filter) {
@@ -118,6 +119,14 @@ public class RecipeRule {
 
     public JsonElement getRawReplacement() {
         return rawReplacement;
+    }
+
+    public List<String> getLiteralIds() {
+        return literalIds;
+    }
+
+    public void setLiteralIds(List<String> literalIds) {
+        this.literalIds = List.copyOf(literalIds);
     }
 
     public boolean targetsMatch(ItemStack stack) {
