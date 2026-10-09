@@ -29,7 +29,7 @@ tasks.named<ProcessResources>("processResources") {
         this["license"] = prop("mod.license")
         this["forge_loader_version_range"] = prop("deps.forge_loader_version_range")
         this["forge_version"] = prop("deps.forge")
-        this["yacl_version"] = prop("deps.yacl").substringBefore('+')
+        this["yacl_version"] = (findProperty("deps.yacl") as String?)?.substringBefore('+') ?: "0"
         this["java_version"] = javaVersion
     }
     inputs.properties(props)
@@ -163,7 +163,7 @@ dependencies {
     annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
 
     // YACL
-    modImplementation("dev.isxander:yet-another-config-lib:${property("deps.yacl")}")
+    findProperty("deps.yacl")?.let { modImplementation("dev.isxander:yet-another-config-lib:$it") }
 
     // EMI
     findProperty("deps.emi")?.let { modImplementation("dev.emi:emi-forge:$it") }

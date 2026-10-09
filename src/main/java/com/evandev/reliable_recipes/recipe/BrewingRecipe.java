@@ -231,20 +231,34 @@ public class BrewingRecipe implements Recipe<Container> {
         return this.input.matches(container.getItem(0));
     }
 
+    //? if <1.19.4 {
+    /^@Override
+    public ItemStack assemble(Container container) {
+        return this.output.copy();
+    }
+    ^///?} else {
     @Override
     public ItemStack assemble(Container container, RegistryAccess registries) {
         return this.output.copy();
     }
+    //?}
 
     @Override
     public boolean canCraftInDimensions(int width, int height) {
         return true;
     }
 
+    //? if <1.19.4 {
+    /^@Override
+    public ItemStack getResultItem() {
+        return this.output;
+    }
+    ^///?} else {
     @Override
     public ItemStack getResultItem(RegistryAccess registries) {
         return this.output;
     }
+    //?}
 
     @Override
     public NonNullList<Ingredient> getIngredients() {

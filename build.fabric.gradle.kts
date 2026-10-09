@@ -93,7 +93,7 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("deps.fabric_api")}")
 
     // YACL
-    modImplementation("dev.isxander:yet-another-config-lib:${property("deps.yacl")}")
+    findProperty("deps.yacl")?.let { modImplementation("dev.isxander:yet-another-config-lib:$it") }
 
     // Mod Menu
     modImplementation("com.terraformersmc:modmenu:${property("deps.modmenu")}")

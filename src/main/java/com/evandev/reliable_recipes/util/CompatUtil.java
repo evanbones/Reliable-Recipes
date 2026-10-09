@@ -20,6 +20,10 @@ import net.minecraft.network.FriendlyByteBuf;
 import com.mojang.serialization.JsonOps;
 import io.netty.buffer.ByteBuf;
 //?}
+//? if <1.21.2 {
+/*import net.minecraft.core.RegistryAccess;
+import org.jetbrains.annotations.Nullable;
+*///?}
 //? if >=1.21.2 {
 import com.mojang.datafixers.util.Either;
 import net.minecraft.core.Holder;
@@ -52,6 +56,16 @@ public final class CompatUtil {
     //? if <1.21 {
     /*
     private static final ResourceKey<Registry<Recipe<?>>> RECIPE_REGISTRY = ResourceKey.createRegistryKey(new Identifier("recipe"));
+    *///?}
+
+    //? if <1.21.2 {
+    /*public static ItemStack resultItem(Recipe<?> recipe, @Nullable RegistryAccess registries) {
+        //? if <1.19.4 {
+        /^return recipe.getResultItem();
+        ^///?} else {
+        return recipe.getResultItem(registries != null ? registries : RegistryAccess.EMPTY);
+        //?}
+    }
     *///?}
 
     public static ResourceKey<Recipe<?>> recipeKey(Identifier id) {

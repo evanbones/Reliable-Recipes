@@ -42,7 +42,7 @@ public class ClientRecipeSync {
         var recipe = recipeManager.byKey(recipeId).orElse(null);
         if (recipe != null && client.level != null) {
             //? if <1.21 {
-            /^icon = recipe.getResultItem(client.level.registryAccess());
+            /^icon = CompatUtil.resultItem(recipe, client.level.registryAccess());
             ^///?} else {
             icon = recipe.value().getResultItem(client.level.registryAccess());
             //?}

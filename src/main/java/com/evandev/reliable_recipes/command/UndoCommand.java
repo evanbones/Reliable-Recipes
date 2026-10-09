@@ -60,7 +60,11 @@ public class UndoCommand {
                                     Services.PLATFORM.sendAddRecipePacketToPlayer(p, restored);
                                 });
 
+                                //? if <1.20 {
+                                /*ctx.getSource().sendSuccess(Component.translatable("commands.reliable_recipes.undo.success", id.toString()), true);
+                                *///?} else {
                                 ctx.getSource().sendSuccess(() -> Component.translatable("commands.reliable_recipes.undo.success", id.toString()), true);
+                                //?}
                             } else {
                                 ctx.getSource().sendFailure(Component.translatable("commands.reliable_recipes.undo.failure", id.toString()));
                             }

@@ -15,7 +15,11 @@ public class ClientEvents {
 
     @SubscribeEvent
     public static void onScreenRender(ScreenEvent.Render.Post event) {
+        //? if <1.20 {
+        /^SharedToastOverlay.extract(event.getPoseStack());
+        ^///?} else {
         SharedToastOverlay.extract(event.getGuiGraphics());
+        //?}
     }
 
     @SubscribeEvent

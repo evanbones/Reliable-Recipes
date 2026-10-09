@@ -1,6 +1,7 @@
 package com.evandev.reliable_recipes.recipe;
 
-//? if <1.21 {
+//? if <1.19.3 {
+//?} else if <1.21 {
 /*import com.google.gson.JsonObject;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementRewards;

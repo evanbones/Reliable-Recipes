@@ -1,6 +1,17 @@
 package com.evandev.reliable_recipes.mixin.gtceu;
 
-//? if forge {
+//? if forge && <1.20 {
+/*
+import com.moulberry.mixinconstraints.annotations.IfModLoaded;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
+
+@IfModLoaded("gtceu")
+@Pseudo
+@Mixin(targets = "com.gregtechceu.gtceu.api.recipe.lookup.RecipeAdditionHandler", remap = false)
+public abstract class RecipeAdditionHandlerMixin {
+}
+*///?} else if forge {
 /*import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;

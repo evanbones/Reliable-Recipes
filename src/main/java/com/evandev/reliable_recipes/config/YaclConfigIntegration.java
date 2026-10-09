@@ -1,8 +1,10 @@
 package com.evandev.reliable_recipes.config;
 
+//? if >=1.20 {
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
+//?}
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -11,6 +13,12 @@ import java.util.function.Supplier;
 
 public class YaclConfigIntegration {
 
+    //? if <1.20 {
+    /*
+    public static Screen createScreen(Screen parent) {
+        return parent;
+    }
+    *///?} else {
     public static Screen createScreen(Screen parent) {
         ModConfig config = ModConfig.get();
         ModConfig defaults = new ModConfig();
@@ -53,4 +61,5 @@ public class YaclConfigIntegration {
                 .controller(TickBoxControllerBuilder::create)
                 .build();
     }
+    //?}
 }

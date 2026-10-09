@@ -12,6 +12,7 @@ import net.minecraft.util.GsonHelper;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
+import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.level.Level;
 
 public class TransmuteRecipe implements CraftingRecipe {
@@ -209,8 +210,17 @@ public class TransmuteRecipe implements CraftingRecipe {
         }
     }
 
+    //? if <1.19.4 {
+    /^@Override
+    public ItemStack assemble(final CraftingContainer input) {
+        return this.assemble(input, null);
+    }
+
+    public ItemStack assemble(final CraftingContainer input, RegistryAccess registries) {
+    ^///?} else {
     @Override
     public ItemStack assemble(final CraftingContainer input, RegistryAccess registries) {
+    //?}
         if (this.addMaterialCountToResult) {
             int materialCount = 0;
             ItemStack inputIngredient = ItemStack.EMPTY;
@@ -244,10 +254,17 @@ public class TransmuteRecipe implements CraftingRecipe {
         return width * height >= this.minMaterialCount() + 1;
     }
 
+    //? if <1.19.4 {
+    /^@Override
+    public ItemStack getResultItem() {
+        return this.result;
+    }
+    ^///?} else {
     @Override
     public ItemStack getResultItem(RegistryAccess registries) {
         return this.result;
     }
+    //?}
 
     @Override
     public NonNullList<Ingredient> getIngredients() {
@@ -270,7 +287,9 @@ public class TransmuteRecipe implements CraftingRecipe {
         return RecipeType.CRAFTING;
     }
 
+    //? if >=1.19.3 {
     @Override
+    //?}
     public CraftingBookCategory category() {
         return this.category;
     }

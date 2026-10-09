@@ -104,7 +104,7 @@ public class ReliableRecipesAPI {
      */
     public static List<ItemStack> getRecipeResults(Recipe<?> recipe) {
         //? if <1.21.2 {
-        /*ItemStack result = recipe.getResultItem(RegistryAccess.EMPTY);
+        /*ItemStack result = com.evandev.reliable_recipes.util.CompatUtil.resultItem(recipe, null);
         return result.isEmpty() ? List.of() : List.of(result);
         *///?} else {
         //? if <=26.2 {

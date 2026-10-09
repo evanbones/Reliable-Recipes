@@ -32,6 +32,20 @@ stonecutter parameters {
             replace("\\b(?:ResourceLocation|Identifier)\\.$factory\\(", "$idCompat.$factory(", Regex.escape("$idCompat.$factory("), "$idClass.$factory(")
         }
     }
+
+    replacements.regex(current.parsed < "1.20") {
+        fun swap(from: String, to: String) = replace(Regex.escape(from), to, Regex.escape(to), from)
+        swap("import net.minecraft.client.gui.GuiGraphics;", "import com.evandev.reliable_recipes.client.legacy.GuiGraphics;")
+        swap("ItemStack.isSameItem(", "com.evandev.reliable_recipes.util.legacy.ItemStackCompat.isSameItem(")
+    }
+
+    replacements.regex(current.parsed < "1.19.3") {
+        fun swap(from: String, to: String) = replace(Regex.escape(from), to, Regex.escape(to), from)
+        val legacyUtil = "com.evandev.reliable_recipes.util.legacy"
+        swap("import net.minecraft.core.registries.BuiltInRegistries;", "import $legacyUtil.BuiltInRegistries;")
+        swap("import net.minecraft.core.registries.Registries;", "import $legacyUtil.Registries;")
+        swap("import net.minecraft.world.item.crafting.CraftingBookCategory;", "import $legacyUtil.CraftingBookCategory;")
+    }
 }
 
 stonecutter tasks {

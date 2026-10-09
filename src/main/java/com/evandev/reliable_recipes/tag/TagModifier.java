@@ -95,7 +95,11 @@ public class TagModifier {
                     }
                 }
 
+                //? if <1.19.3 {
+                /*var holder = registry.getHolderOrThrow(registry.getResourceKey(object).orElseThrow());
+                *///?} else {
                 var holder = registry.wrapAsHolder(object);
+                //?}
                 var tags = holder.tags().toList();
 
                 if (shouldRemoveAll) {
@@ -174,7 +178,11 @@ public class TagModifier {
         Map<Object, Set<T>> batchedRemovals = new HashMap<>();
 
         for (T hiddenValue : hiddenValues) {
+            //? if <1.19.3 {
+            /*var holder = registry.getHolderOrThrow(registry.getResourceKey(hiddenValue).orElseThrow());
+            *///?} else {
             var holder = registry.wrapAsHolder(hiddenValue);
+            //?}
             for (TagKey<T> tagKey : holder.tags().toList()) {
                 if (ignoredTags != null && ignoredTags.contains(tagKey.location().toString())) {
                     continue;

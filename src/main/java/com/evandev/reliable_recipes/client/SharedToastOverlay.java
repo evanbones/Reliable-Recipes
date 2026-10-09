@@ -37,6 +37,12 @@ public class SharedToastOverlay {
         showTime = Util.getMillis();
     }
 
+    //? if <1.20 {
+    /*public static void extract(com.mojang.blaze3d.vertex.PoseStack poseStack) {
+        extract(new GuiGraphics(poseStack));
+    }
+    *///?}
+
     //? if <1.21.2 {
     /*public static void extract(GuiGraphics guiGraphics) {
     *///?} else {
@@ -73,7 +79,11 @@ public class SharedToastOverlay {
 
         //? if <1.21.2 {
         /*guiGraphics.pose().pushPose();
+        //? if <1.20 {
+        /^guiGraphics.pose().translate(xPos, yPos, 500);
+        ^///?} else {
         guiGraphics.pose().translate(xPos, yPos, 1000);
+        //?}
         //? if <1.21 {
         /^guiGraphics.blit(BACKGROUND_SPRITE, 0, 0, 0, 32, toastWidth, toastHeight, 256, 256);
         ^///?} else {
