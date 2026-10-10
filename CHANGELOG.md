@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.2] - 2026-10-10
+
+### Changed
+
+- Logging improvements.
+
+### Fixed
+
+- Fixed recipes with a hidden input being removed before KubeJS (and similar mods) could replace that input on 1.21.1 and below.
+- Fixed brewing recipes not reloading when KubeJS is installed on 1.21.1 and below.
+
 ## [3.4.1] - 2026-10-07
 
 ### Fixed
