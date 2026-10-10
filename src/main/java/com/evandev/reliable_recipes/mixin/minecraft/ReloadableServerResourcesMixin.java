@@ -3,7 +3,9 @@ package com.evandev.reliable_recipes.mixin.minecraft;
 import com.evandev.reliable_recipes.recipe.RecipeModifier;
 import com.evandev.reliable_recipes.tag.TagModifier;
 import net.minecraft.server.ReloadableServerResources;
+import net.minecraft.world.item.crafting.RecipeManager;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -15,12 +17,13 @@ import com.evandev.reliable_recipes.compat.RrvCompat;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.platform.Services;
 import net.minecraft.server.ReloadableServerRegistries;
-import net.minecraft.world.item.crafting.RecipeManager;
-import org.spongepowered.asm.mixin.Shadow;
 //?}
 
 @Mixin(ReloadableServerResources.class)
 public abstract class ReloadableServerResourcesMixin {
+
+    @Shadow
+    public abstract RecipeManager getRecipeManager();
 
     //? if <1.21 {
     /*@Inject(
@@ -29,7 +32,7 @@ public abstract class ReloadableServerResourcesMixin {
     )
     private void reliableRecipes$onTagsLoaded(RegistryAccess registryAccess, CallbackInfo ci) {
         TagModifier.apply();
-        RecipeModifier.apply();
+        RecipeModifier.apply(this.getRecipeManager());
     }
     *///?} else if <1.21.2 {
     /*@Inject(
@@ -38,12 +41,9 @@ public abstract class ReloadableServerResourcesMixin {
     )
     private void reliableRecipes$onTagsLoaded(CallbackInfo ci) {
         TagModifier.apply();
-        RecipeModifier.apply();
+        RecipeModifier.apply(this.getRecipeManager());
     }
     *///?} else {
-    @Shadow
-    public abstract RecipeManager getRecipeManager();
-
     @Shadow
     public abstract ReloadableServerRegistries.Holder fullRegistries();
 

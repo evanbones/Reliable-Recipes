@@ -18,6 +18,10 @@ import net.minecraft.world.item.Item;
 //? if <1.21.2 {
 /*import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.tags.TagLoader;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
 //? if <1.21 {
 /^import net.minecraft.tags.TagManager;
 ^///?}
@@ -118,7 +122,7 @@ public class RecipeModifier {
             }
 
             JsonObject recipeJson = element.getAsJsonObject();
-            if (processRecipeJson(id, recipeJson, cachedRules, globalReplacements)) {
+            if (processRecipeJson(id, recipeJson, cachedRules, globalReplacements, false)) {
                 newMap.put(id, recipeJson);
             }
         }
@@ -135,7 +139,7 @@ public class RecipeModifier {
             }
 
             JsonObject recipeJson = element.getAsJsonObject().deepCopy();
-            if (processCustomRecipeJson(recipeJson, globalReplacements)) {
+            if (processCustomRecipeJson(recipeJson, globalReplacements, false)) {
                 newMap.put(id, recipeJson);
             }
         }
@@ -154,7 +158,7 @@ public class RecipeModifier {
      *
      * @return false if the recipe should be removed.
      */
-    private static boolean processRecipeJson(Identifier id, JsonObject recipeJson, List<RecipeRule> rules, Map<String, String> globalReplacements) {
+    private static boolean processRecipeJson(Identifier id, JsonObject recipeJson, List<RecipeRule> rules, Map<String, String> globalReplacements, boolean checkInputs) {
         // Evaluate user rules from config
         for (RecipeRule rule : rules) {
             if (rule.testJson(id, recipeJson)) {
@@ -166,7 +170,7 @@ public class RecipeModifier {
             }
         }
 
-        return processCustomRecipeJson(recipeJson, globalReplacements);
+        return processCustomRecipeJson(recipeJson, globalReplacements, checkInputs);
     }
 
     //? if forge {
@@ -177,7 +181,7 @@ public class RecipeModifier {
      ^/
     public static JsonObject modifySingleRecipeJson(Identifier id, JsonObject recipeJson) {
         List<RecipeRule> rules = cachedRules != null ? cachedRules : RecipeConfigIO.loadRules();
-        return processRecipeJson(id, recipeJson, rules, ReliableRecipesAPI.getReplacements()) ? recipeJson : null;
+        return processRecipeJson(id, recipeJson, rules, ReliableRecipesAPI.getReplacements(), true) ? recipeJson : null;
     }
 
     *///?}
@@ -187,12 +191,12 @@ public class RecipeModifier {
      *
      * @return false if the recipe should be removed.
      */
-    private static boolean processCustomRecipeJson(JsonObject recipeJson, Map<String, String> globalReplacements) {
+    private static boolean processCustomRecipeJson(JsonObject recipeJson, Map<String, String> globalReplacements, boolean checkInputs) {
         for (Map.Entry<String, String> rep : globalReplacements.entrySet()) {
             applyGlobalReplacement(recipeJson, rep.getKey(), rep.getValue());
         }
 
-        return !ReliableRecipesAPI.hasItemHidingCapabilities() || !shouldHideRecipeJson(recipeJson);
+        return !ReliableRecipesAPI.hasItemHidingCapabilities() || !shouldHideRecipeJson(recipeJson, RecipeModifier::isItemHidden, checkInputs);
     }
 
     /**
@@ -223,11 +227,7 @@ public class RecipeModifier {
         RecipeJsonMutator.mutateRecipe(recipeJson, replacements, replacements, RecipeJsonMutator.NATIVE_FORMAT);
     }
 
-    private static boolean shouldHideRecipeJson(JsonObject jsonObject) {
-        return shouldHideRecipeJson(jsonObject, RecipeModifier::isItemHidden);
-    }
-
-    public static boolean shouldHideRecipeJson(JsonObject jsonObject, Predicate<String> isItemHidden) {
+    public static boolean shouldHideRecipeJson(JsonObject jsonObject, Predicate<String> isItemHidden, boolean checkInputs) {
         try {
             JsonElement resultElement = jsonObject.has("result") ? jsonObject.get("result") :
                     (jsonObject.has("results") ? jsonObject.get("results") :
@@ -246,6 +246,8 @@ public class RecipeModifier {
                 }
             }
 
+            if (!checkInputs) return false;
+
             if (jsonObject.has("key") && jsonObject.get("key").isJsonObject()) {
                 for (Map.Entry<String, JsonElement> slot : jsonObject.getAsJsonObject("key").entrySet()) {
                     if (isIngredientHidden(slot.getValue(), isItemHidden)) return true;
@@ -263,7 +265,7 @@ public class RecipeModifier {
                 }
             }
 
-            for (String key : List.of("input", "reagent")) {
+            for (String key : List.of("ingredient", "input", "reagent")) {
                 if (jsonObject.has(key) && isIngredientHidden(jsonObject.get(key), isItemHidden)) return true;
             }
         } catch (Exception ignored) {
@@ -357,9 +359,37 @@ public class RecipeModifier {
     }
 
     //? if <1.21.2 {
-    /*public static void apply() {
+    /*public static void apply(RecipeManager manager) {
         reset();
         applyGlobalRules();
+        hideRecipesWithHiddenInputs(manager);
+        BrewingRecipeManager.reload(manager);
+    }
+
+    private static void hideRecipesWithHiddenInputs(RecipeManager manager) {
+        if (!ReliableRecipesAPI.hasItemHidingCapabilities()) return;
+
+        List<RecipeHolder<?>> recipes = RecipeUndoCache.getRecipes(manager);
+        int originalCount = recipes.size();
+        recipes.removeIf(holder -> {
+            try {
+                if (!hasHiddenIngredient(holder.value().getIngredients(), ReliableRecipesAPI::isItemHidden)) return false;
+            } catch (Exception e) {
+                return false;
+            }
+            RecipeUndoCache.put(holder);
+            return true;
+        });
+
+        if (recipes.size() < originalCount) {
+            RecipeUndoCache.setRecipes(manager, recipes);
+            Constants.LOG.info("RecipeModifier removed {} recipes with hidden inputs.", originalCount - recipes.size());
+        }
+    }
+
+    public static boolean hasHiddenIngredient(List<Ingredient> ingredients, Predicate<ItemStack> isItemHidden) {
+        return ingredients.stream().map(Ingredient::getItems)
+                .anyMatch(options -> options.length > 0 && Arrays.stream(options).allMatch(isItemHidden));
     }
 
     public static void applyClient() {
@@ -433,7 +463,7 @@ public class RecipeModifier {
                 }
                 JsonObject json = entry.getValue().getAsJsonObject().deepCopy();
                 try {
-                    if (!processCustomRecipeJson(json, globalReplacements)) continue;
+                    if (!processCustomRecipeJson(json, globalReplacements, true)) continue;
 
                     Optional<Recipe<?>> parsed = RECIPE_CODEC.parse(ops, json).result();
                     if (parsed.isPresent()) {
@@ -478,7 +508,7 @@ public class RecipeModifier {
             JsonObject original = json.deepCopy();
             addSyntheticKeys(json, recipeHolder);
 
-            boolean keep = processRecipeJson(CompatUtil.recipeId(recipeHolder), json, rules, globalReplacements);
+            boolean keep = processRecipeJson(CompatUtil.recipeId(recipeHolder), json, rules, globalReplacements, true);
             json.remove(RecipeRuleParser.SYNTHETIC_TYPE_KEY);
             json.remove(RecipeRuleParser.SYNTHETIC_RESULTS_KEY);
 

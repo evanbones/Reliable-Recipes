@@ -88,7 +88,7 @@ public class RecipeUndoCache {
         DELETED_RECIPES.clear();
     }
 
-    private static List<RecipeHolder<?>> getRecipes(RecipeManager manager) {
+    static List<RecipeHolder<?>> getRecipes(RecipeManager manager) {
         //? if <1.21 {
         /*return new ArrayList<>(manager.getRecipes().stream().<RecipeHolder<?>>map(RecipeHolder::of).toList());
         *///?} else if <1.21.2 {
@@ -99,7 +99,7 @@ public class RecipeUndoCache {
         //?}
     }
 
-    private static void setRecipes(RecipeManager manager, List<RecipeHolder<?>> recipes) {
+    static void setRecipes(RecipeManager manager, List<RecipeHolder<?>> recipes) {
         //? if <1.21 {
         /*manager.replaceRecipes(recipes.stream().<Recipe<?>>map(RecipeHolder::value).toList());
         *///?} else if <1.21.2 {

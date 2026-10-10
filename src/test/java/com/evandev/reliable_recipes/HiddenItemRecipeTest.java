@@ -6,6 +6,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+//? if <1.21.2 {
+/*import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.Ingredient;
+
+import java.util.List;
+import java.util.function.Predicate;
+*///?}
 
 import java.util.Set;
 
@@ -16,7 +24,7 @@ public class HiddenItemRecipeTest extends MinecraftTestBase {
     private static boolean hidden(String recipeJson, String... hiddenItems) {
         Set<String> items = Set.of(hiddenItems);
         JsonObject recipe = JsonParser.parseString(recipeJson).getAsJsonObject();
-        return RecipeModifier.shouldHideRecipeJson(recipe, items::contains);
+        return RecipeModifier.shouldHideRecipeJson(recipe, items::contains, true);
     }
 
     // From Reliable Remover issue #95
@@ -241,4 +249,48 @@ public class HiddenItemRecipeTest extends MinecraftTestBase {
                 {"type": "minecraft:crafting_shaped", "key": {"X": null}, "result": {"item": "minecraft:stone"}}
                 """, "minecraft:dirt"));
     }
+
+    @Test
+    @DisplayName("Single ingredient recipes like stonecutting have their input checked")
+    void testSingleIngredient() {
+        String recipe = """
+                {
+                  "type": "minecraft:stonecutting",
+                  "count": 4,
+                  "ingredient": {"item": "create:andesite_alloy"},
+                  "result": "createdeco:andesite_bars"
+                }
+                """;
+        assertTrue(hidden(recipe, "create:andesite_alloy"));
+        assertFalse(hidden(recipe, "minecraft:stone"));
+    }
+
+    @Test
+    @DisplayName("Inputs are left alone when only outputs are checked, so other mods can still replace them")
+    void testOutputOnlyCheck() {
+        String recipe = """
+                {
+                  "type": "minecraft:crafting_shaped",
+                  "key": {"b": {"item": "create:andesite_alloy"}},
+                  "pattern": ["bbb", "bbb"],
+                  "result": {"count": 16, "item": "createdeco:andesite_bars"}
+                }
+                """;
+        JsonObject json = JsonParser.parseString(recipe).getAsJsonObject();
+        assertFalse(RecipeModifier.shouldHideRecipeJson(json, "create:andesite_alloy"::equals, false));
+        assertTrue(RecipeModifier.shouldHideRecipeJson(json, "createdeco:andesite_bars"::equals, false));
+        assertTrue(RecipeModifier.shouldHideRecipeJson(json, "create:andesite_alloy"::equals, true));
+    }
+    //? if <1.21.2 {
+
+    /*@Test
+    @DisplayName("Loaded ingredients are only hidden once every option is hidden")
+    void testLoadedIngredients() {
+        Predicate<ItemStack> dirtHidden = stack -> stack.is(Items.DIRT);
+        assertTrue(RecipeModifier.hasHiddenIngredient(List.of(Ingredient.of(Items.STICK), Ingredient.of(Items.DIRT)), dirtHidden));
+        assertFalse(RecipeModifier.hasHiddenIngredient(List.of(Ingredient.of(Items.DIRT, Items.COARSE_DIRT)), dirtHidden));
+        assertFalse(RecipeModifier.hasHiddenIngredient(List.of(Ingredient.EMPTY, Ingredient.of(Items.STICK)), dirtHidden));
+        assertFalse(RecipeModifier.hasHiddenIngredient(List.of(), dirtHidden));
+    }
+    *///?}
 }
