@@ -3,7 +3,9 @@
     "minVersion": "0.8",
     "package": "com.evandev.reliable_recipes.mixin",
     "compatibilityLevel": "JAVA_${java_version}",
-    "mixins": [],
+    "mixins": [
+        "accessor.ContextAwareReloadListenerAccessor"
+    ],
     "client": [],
     "server": [],
     "injectors": {

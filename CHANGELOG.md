@@ -5,16 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.4.2] - 2026-10-10
+## [3.5.0] - 2026-10-10
+
+### Added
+
+- Custom recipes now respect Fabric and NeoForge load conditions (`fabric:load_conditions` and `neoforge:conditions`).
 
 ### Changed
 
 - Logging improvements.
+- Recipe files laid out like a data pack now override the recipe they mirror, instead of being added under the `reliable_recipes` namespace.
 
 ### Fixed
 
 - Fixed recipes with a hidden input being removed before KubeJS (and similar mods) could replace that input on 1.21.1 and below.
 - Fixed brewing recipes not reloading when KubeJS is installed on 1.21.1 and below.
+- Fixed custom recipes that reuse an existing recipe's ID breaking recipe loading on 1.21.2+.
 
 ## [3.4.1] - 2026-10-07
 

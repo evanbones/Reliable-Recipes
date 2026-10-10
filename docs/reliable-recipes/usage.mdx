@@ -84,3 +84,5 @@ You can drop arbitrary standard Minecraft or modded recipe JSON files directly i
 ```
 
 * **Recipe ID:** If you provide an `"id"` field (e.g. `"id": "reliable_recipes:my_recipe"` or `"id": "minecraft:cake"`), that ID will be used. Providing an existing recipe ID overrides the existing recipe. If `"id"` is omitted, Reliable Recipes automatically derives an ID from the relative file path.
+* **Overriding Recipes:** Files laid out like a data pack override the recipe they mirror. If no such recipe exists, the file is added as a new recipe under the `reliable_recipes` namespace instead.
+* **Load Conditions:** Fabric's `"fabric:load_conditions"` and NeoForge's `"neoforge:conditions"` are respected. A recipe whose conditions fail is skipped, leaving any recipe it would have overridden in place.

@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.evandev.reliable_recipes.compat.RrvCompat;
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.platform.Services;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.server.ReloadableServerRegistries;
 //?}
 
@@ -54,7 +55,8 @@ public abstract class ReloadableServerResourcesMixin {
     private void reliableRecipes$onTagsLoaded(CallbackInfo ci) {
         RecipeConfigIO.invalidateCache();
         TagModifier.apply();
-        RecipeModifier.apply(this.getRecipeManager(), this.fullRegistries().lookup());
+        HolderLookup.Provider registries = this.fullRegistries().lookup();
+        RecipeModifier.apply(this.getRecipeManager(), registries, Services.PLATFORM.recipeConditions((ReloadableServerResources) (Object) this, registries));
 
         if (Services.PLATFORM.isModLoaded("rrv")) {
             RrvCompat.syncRecipesToAllClients();

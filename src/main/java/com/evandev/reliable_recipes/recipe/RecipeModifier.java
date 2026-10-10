@@ -64,7 +64,7 @@ public class RecipeModifier {
      *///?}
 
     //? if <1.21.2 {
-    /*public static void modifyRecipesJson(Map<Identifier, JsonElement> map, ResourceManager resourceManager) {
+    /*public static void modifyRecipesJson(Map<Identifier, JsonElement> map, ResourceManager resourceManager, Predicate<JsonObject> recipeConditions) {
         if (resourceManager != null) {
             try {
                 //? if <1.21 {
@@ -83,7 +83,7 @@ public class RecipeModifier {
             }
         }
         try {
-            modifyRecipesJson(map);
+            modifyRecipesJson(map, recipeConditions);
         } finally {
             currentItemTags = null;
         }
@@ -106,7 +106,7 @@ public class RecipeModifier {
      * Applies the configured rules to a map of raw recipe JSON (as found in data packs),
      * removing, mutating, and adding recipes in place.
      ^/
-    public static void modifyRecipesJson(Map<Identifier, JsonElement> map) {
+    private static void modifyRecipesJson(Map<Identifier, JsonElement> map, Predicate<JsonObject> recipeConditions) {
         cachedRules = new ArrayList<>(RecipeConfigIO.loadRules());
         warnUnmatchedIds(cachedRules, map.keySet());
         Map<Identifier, JsonElement> newMap = new HashMap<>();
@@ -127,31 +127,46 @@ public class RecipeModifier {
             }
         }
 
-        // Custom recipes loaded from reliable_recipes/
-        Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
-        for (Map.Entry<Identifier, JsonElement> customEntry : customRecipes.entrySet()) {
-            Identifier id = customEntry.getKey();
-            JsonElement element = customEntry.getValue();
-
-            if (!element.isJsonObject()) {
-                newMap.put(id, element);
-                continue;
-            }
-
-            JsonObject recipeJson = element.getAsJsonObject().deepCopy();
-            if (processCustomRecipeJson(recipeJson, globalReplacements, false)) {
-                newMap.put(id, recipeJson);
-            }
-        }
-
-        if (!customRecipes.isEmpty()) {
-            Constants.LOG.info("Loaded {} custom recipe(s) from reliable_recipes", customRecipes.size());
-        }
+        newMap.putAll(loadCustomRecipes(map.keySet(), recipeConditions, globalReplacements, false));
 
         map.clear();
         map.putAll(newMap);
     }
     *///?}
+
+    /**
+     * Loads the custom recipes from reliable_recipes/ whose load conditions pass, keyed by the ID each loads under.
+     */
+    private static Map<Identifier, JsonObject> loadCustomRecipes(Set<Identifier> existingIds, Predicate<JsonObject> recipeConditions, Map<String, String> globalReplacements, boolean checkInputs) {
+        Map<Identifier, JsonObject> recipes = new LinkedHashMap<>();
+        int replaced = 0;
+
+        for (RecipeConfigIO.CustomRecipe customRecipe : RecipeConfigIO.loadCustomRecipes()) {
+            Identifier id = customRecipe.resolveId(existingIds);
+            JsonObject json = customRecipe.json().deepCopy();
+            try {
+                if (!recipeConditions.test(json)) {
+                    Constants.LOG.debug("Skipping custom recipe {}, its load conditions were not met", id);
+                    continue;
+                }
+            } catch (Exception e) {
+                Constants.LOG.error("Failed to check load conditions for custom recipe {}", id, e);
+                continue;
+            }
+            if (!processCustomRecipeJson(json, globalReplacements, checkInputs)) continue;
+
+            if (existingIds.contains(id)) {
+                Constants.LOG.debug("Custom recipe {} replaces the existing recipe", id);
+                replaced++;
+            }
+            recipes.put(id, json);
+        }
+
+        if (!recipes.isEmpty()) {
+            Constants.LOG.info("Loaded {} custom recipe(s) from reliable_recipes, replacing {} existing recipe(s)", recipes.size(), replaced);
+        }
+        return recipes;
+    }
 
     /**
      * Runs the configured rules against a single recipe's JSON, mutating it in place.
@@ -411,7 +426,7 @@ public class RecipeModifier {
     }
 
     //? if >=1.21.2 {
-    public static void apply(RecipeManager manager, HolderLookup.Provider registries) {
+    public static void apply(RecipeManager manager, HolderLookup.Provider registries, Predicate<JsonObject> recipeConditions) {
         reset();
 
         try {
@@ -454,32 +469,17 @@ public class RecipeModifier {
                 }
             }
 
-            Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
-            for (Map.Entry<Identifier, JsonElement> entry : customRecipes.entrySet()) {
-                Identifier id = entry.getKey();
-                if (!entry.getValue().isJsonObject()) {
-                    Constants.LOG.error("Custom recipe {} is not a JSON object", id);
-                    continue;
-                }
-                JsonObject json = entry.getValue().getAsJsonObject().deepCopy();
+            Map<Identifier, JsonObject> customRecipes = loadCustomRecipes(new HashSet<>(recipeIds), recipeConditions, globalReplacements, true);
+            validRecipes.removeIf(holder -> customRecipes.containsKey(CompatUtil.recipeId(holder)));
+            customRecipes.forEach((id, json) -> {
                 try {
-                    if (!processCustomRecipeJson(json, globalReplacements, true)) continue;
-
-                    Optional<Recipe<?>> parsed = RECIPE_CODEC.parse(ops, json).result();
-                    if (parsed.isPresent()) {
-                        ResourceKey<Recipe<?>> key = ResourceKey.create(Registries.RECIPE, id);
-                        validRecipes.add(new RecipeHolder<>(key, parsed.get()));
-                    } else {
-                        Constants.LOG.error("Failed to parse custom recipe: {}", id);
-                    }
+                    RECIPE_CODEC.parse(ops, json)
+                            .resultOrPartial(error -> Constants.LOG.error("Failed to parse custom recipe {}: {}", id, error))
+                            .ifPresent(recipe -> validRecipes.add(new RecipeHolder<>(ResourceKey.create(Registries.RECIPE, id), recipe)));
                 } catch (Exception e) {
                     Constants.LOG.error("Error loading custom recipe: {}", id, e);
                 }
-            }
-
-            if (!customRecipes.isEmpty()) {
-                Constants.LOG.info("Loaded {} custom recipe(s) from reliable_recipes", customRecipes.size());
-            }
+            });
 
             if (removedCount > 0 || replacedCount > 0) {
                 Constants.LOG.info("RecipeModifier removed {} and replaced contents in {} recipes.", removedCount, replacedCount);

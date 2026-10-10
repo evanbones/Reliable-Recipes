@@ -5,8 +5,8 @@ import com.evandev.reliable_recipes.platform.Services;
 import com.evandev.reliable_recipes.recipe.RecipeRule;
 import com.evandev.reliable_recipes.tag.TagRule;
 import com.google.gson.*;
-
 import net.minecraft.resources.Identifier;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileReader;
@@ -19,16 +19,13 @@ import java.util.stream.Stream;
 
 public class RecipeConfigIO {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static List<RecipeRule> cachedRules;
+    private static List<TagRule> cachedTagRules;
+    private static List<CustomRecipe> cachedCustomRecipes;
+
     public static Path getConfigDir() {
         return Services.PLATFORM.getConfigDirectory().resolve("reliable_recipes");
     }
-
-    public record ConfigFile(Path path, Path relativePath, JsonElement element) {
-    }
-
-    private static List<RecipeRule> cachedRules;
-    private static List<TagRule> cachedTagRules;
-    private static Map<Identifier, JsonElement> cachedCustomRecipes;
 
     public static List<RecipeRule> loadRules() {
         if (cachedRules == null) {
@@ -44,7 +41,7 @@ public class RecipeConfigIO {
         return cachedTagRules;
     }
 
-    public static Map<Identifier, JsonElement> loadCustomRecipes() {
+    public static List<CustomRecipe> loadCustomRecipes() {
         if (cachedCustomRecipes == null) {
             cachedCustomRecipes = computeCustomRecipes();
         }
@@ -111,8 +108,8 @@ public class RecipeConfigIO {
         return rules;
     }
 
-    private static Map<Identifier, JsonElement> computeCustomRecipes() {
-        Map<Identifier, JsonElement> customRecipes = new LinkedHashMap<>();
+    private static List<CustomRecipe> computeCustomRecipes() {
+        Map<Identifier, CustomRecipe> customRecipes = new LinkedHashMap<>();
         List<ConfigFile> configs = loadAllConfigFiles();
 
         for (ConfigFile configFile : configs) {
@@ -176,7 +173,7 @@ public class RecipeConfigIO {
             }
         }
 
-        return customRecipes;
+        return new ArrayList<>(customRecipes.values());
     }
 
     private static boolean isRecipeElement(JsonObject obj) {
@@ -187,7 +184,7 @@ public class RecipeConfigIO {
         return obj.has("type") && obj.get("type").isJsonPrimitive();
     }
 
-    private static void processRecipeObject(JsonObject rawObj, Path relPath, int index, int totalInFile, Map<Identifier, JsonElement> outputMap) {
+    private static void processRecipeObject(JsonObject rawObj, Path relPath, int index, int totalInFile, Map<Identifier, CustomRecipe> outputMap) {
         JsonObject recipeJson;
         if (rawObj.has("action")) {
             String action = rawObj.get("action").getAsString();
@@ -199,7 +196,6 @@ public class RecipeConfigIO {
                     }
                 } else {
                     recipeJson = rawObj.deepCopy();
-                    recipeJson.remove("action");
                 }
             } else {
                 return;
@@ -208,53 +204,55 @@ public class RecipeConfigIO {
             recipeJson = rawObj.deepCopy();
         }
 
-        Identifier recipeId = null;
-        boolean explicitId = false;
-
-        if (recipeJson.has("id") && recipeJson.get("id").isJsonPrimitive() && recipeJson.get("id").getAsJsonPrimitive().isString()) {
-            String idStr = recipeJson.get("id").getAsString().trim();
-            if (!idStr.isEmpty()) {
-                if (idStr.contains(":")) {
-                    recipeId = Identifier.tryParse(idStr);
-                } else {
-                    recipeId = Identifier.tryParse("reliable_recipes:" + idStr);
-                }
-                if (recipeId != null) {
-                    explicitId = true;
-                }
-            }
-        }
-
-        if (recipeId == null) {
-            String pathStr = relPath.toString().replace('\\', '/');
-            if (pathStr.endsWith(".json")) {
-                pathStr = pathStr.substring(0, pathStr.length() - 5);
-            }
-            String sanitized = pathStr.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9/._-]", "_");
-            if (sanitized.startsWith("/")) sanitized = sanitized.substring(1);
-            if (totalInFile > 1) {
-                sanitized += "_" + index;
-            }
-            recipeId = Identifier.tryParse("reliable_recipes:" + sanitized);
-            if (recipeId == null) {
-                recipeId = Identifier.fromNamespaceAndPath("reliable_recipes", "recipe_" + outputMap.size());
-            }
-        }
-
-        if (!explicitId && outputMap.containsKey(recipeId)) {
-            int counter = 1;
-            Identifier candidate;
-            do {
-                candidate = Identifier.tryParse(recipeId.toString() + "_" + counter++);
-            } while (candidate != null && outputMap.containsKey(candidate));
-            if (candidate != null) {
-                recipeId = candidate;
-            }
-        }
-
+        Identifier explicitId = parseExplicitId(recipeJson);
         recipeJson.remove("id");
         recipeJson.remove("action");
-        outputMap.put(recipeId, recipeJson);
+
+        if (explicitId != null) {
+            outputMap.put(explicitId, new CustomRecipe(explicitId, null, recipeJson));
+            return;
+        }
+
+        String path = relPath.toString().replace('\\', '/');
+        if (path.endsWith(".json")) {
+            path = path.substring(0, path.length() - 5);
+        }
+        path = path.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9/._-]", "_");
+        if (path.startsWith("/")) path = path.substring(1);
+
+        Identifier overrideId = totalInFile == 1 ? findDatapackId(path) : null;
+        if (totalInFile > 1) {
+            path += "_" + index;
+        }
+
+        Identifier id = Identifier.fromNamespaceAndPath(Constants.MOD_ID, path);
+        for (int counter = 1; outputMap.containsKey(id); counter++) {
+            id = Identifier.fromNamespaceAndPath(Constants.MOD_ID, path + "_" + counter);
+        }
+        outputMap.put(id, new CustomRecipe(id, overrideId, recipeJson));
+    }
+
+    private static @Nullable Identifier parseExplicitId(JsonObject recipeJson) {
+        if (!recipeJson.has("id") || !recipeJson.get("id").isJsonPrimitive() || !recipeJson.getAsJsonPrimitive("id").isString()) {
+            return null;
+        }
+        String idStr = recipeJson.get("id").getAsString().trim();
+        if (idStr.isEmpty()) return null;
+        return Identifier.tryParse(idStr.contains(":") ? idStr : Constants.MOD_ID + ":" + idStr);
+    }
+
+    /**
+     * Finds the recipe a file path mirrors when it's laid out like a data pack
+     */
+    private static @Nullable Identifier findDatapackId(String path) {
+        String[] segments = path.split("/");
+        for (int i = 0; i + 2 < segments.length; i++) {
+            if (segments[i + 1].equals("recipe") || segments[i + 1].equals("recipes")) {
+                String recipePath = String.join("/", Arrays.copyOfRange(segments, i + 2, segments.length));
+                return Identifier.tryParse(segments[i] + ":" + recipePath);
+            }
+        }
+        return null;
     }
 
     /**
@@ -289,17 +287,17 @@ public class RecipeConfigIO {
         for (Path rootDir : getScanDirs()) {
             try (Stream<Path> stream = Files.walk(rootDir)) {
                 stream.filter(path -> Files.isRegularFile(path) && path.toString().endsWith(".json"))
-                      .forEach(path -> {
-                          try (FileReader reader = new FileReader(path.toFile())) {
-                              JsonElement root = JsonParser.parseReader(reader);
-                              if (root != null) {
-                                  Path relPath = rootDir.relativize(path);
-                                  loadedConfigs.add(new ConfigFile(path, relPath, root));
-                              }
-                          } catch (Exception e) {
-                              Constants.LOG.error("Failed to load recipe config file: {}", path.getFileName(), e);
-                          }
-                      });
+                        .forEach(path -> {
+                            try (FileReader reader = new FileReader(path.toFile())) {
+                                JsonElement root = JsonParser.parseReader(reader);
+                                if (root != null) {
+                                    Path relPath = rootDir.relativize(path);
+                                    loadedConfigs.add(new ConfigFile(path, relPath, root));
+                                }
+                            } catch (Exception e) {
+                                Constants.LOG.error("Failed to load recipe config file: {}", path.getFileName(), e);
+                            }
+                        });
             } catch (IOException e) {
                 Constants.LOG.error("Failed to walk recipe directory: {}", rootDir, e);
             }
@@ -529,6 +527,21 @@ public class RecipeConfigIO {
             }
         } catch (Exception e) {
             Constants.LOG.error("Failed to update generated config", e);
+        }
+    }
+
+    public record ConfigFile(Path path, Path relativePath, JsonElement element) {
+    }
+
+    /**
+     * A recipe added by a file in reliable_recipes/.
+     *
+     * @param id         the ID it loads under, from its "id" field or its file path
+     * @param overrideId for a file laid out like a data pack, the recipe it mirrors, which it replaces if that recipe exists
+     */
+    public record CustomRecipe(Identifier id, @Nullable Identifier overrideId, JsonObject json) {
+        public Identifier resolveId(Set<Identifier> existingIds) {
+            return overrideId != null && existingIds.contains(overrideId) ? overrideId : id;
         }
     }
 }
