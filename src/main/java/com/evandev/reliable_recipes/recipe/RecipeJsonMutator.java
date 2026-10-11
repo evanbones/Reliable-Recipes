@@ -82,6 +82,7 @@ public class RecipeJsonMutator {
         }
 
         if (action == RecipeRule.Action.REPLACE_INPUT) {
+            if (!mentionsAny(recipe, replacements)) return;
             mutateRecipe(recipe, replacements, Map.of(), format);
         } else {
             mutateRecipe(recipe, Map.of(), replacements, format);
@@ -288,6 +289,28 @@ public class RecipeJsonMutator {
     private static JsonElement wildcard(Map<String, JsonElement> reps) {
         JsonElement rep = reps.get("*");
         return rep != null ? rep : reps.get("");
+    }
+
+    private static boolean mentionsAny(JsonElement element, Map<String, JsonElement> replacements) {
+        if (element.isJsonPrimitive()) {
+            if (!element.getAsJsonPrimitive().isString()) return false;
+            String value = element.getAsString();
+            if (replacements.containsKey(value)) return true;
+            if (value.startsWith("#")) return replacements.containsKey(value.substring(1));
+            return replacements.containsKey("#" + value);
+        }
+        if (element.isJsonArray()) {
+            for (JsonElement child : element.getAsJsonArray()) {
+                if (mentionsAny(child, replacements)) return true;
+            }
+            return false;
+        }
+        if (element.isJsonObject()) {
+            for (Map.Entry<String, JsonElement> entry : element.getAsJsonObject().entrySet()) {
+                if (mentionsAny(entry.getValue(), replacements)) return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isIngredientListKey(String key) {
