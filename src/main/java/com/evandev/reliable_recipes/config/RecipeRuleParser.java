@@ -91,6 +91,7 @@ public class RecipeRuleParser {
         };
         if (rule != null) {
             rule.setLiteralIds(extractLiteralIds(filterEl));
+            rule.setNeedsRecipeJson(filterNeedsJson(filterEl));
         }
         return rule;
     }
@@ -263,9 +264,20 @@ public class RecipeRuleParser {
 
     private static Predicate<String> getStringMatcher(JsonElement element, boolean autoExpandTags) {
         if (element.isJsonArray()) {
-            Predicate<String> p = s -> false;
-            for (JsonElement e : element.getAsJsonArray()) p = p.or(getStringMatcher(e, autoExpandTags));
-            return p;
+            Set<String> literals = new HashSet<>();
+            Predicate<String> p = null;
+            for (JsonElement e : element.getAsJsonArray()) {
+                if (isLiteralString(e)) {
+                    literals.add(e.getAsString());
+                } else {
+                    Predicate<String> inner = getStringMatcher(e, autoExpandTags);
+                    p = p == null ? inner : p.or(inner);
+                }
+            }
+            if (literals.isEmpty()) return p == null ? s -> false : p;
+            if (p == null) return literals::contains;
+            Predicate<String> rest = p;
+            return s -> literals.contains(s) || rest.test(s);
         }
 
         if (element.isJsonObject()) {
@@ -334,6 +346,42 @@ public class RecipeRuleParser {
         }
 
         return str::equals;
+    }
+
+    private static boolean isLiteralString(JsonElement element) {
+        if (!element.isJsonPrimitive()) return false;
+        String str = element.getAsString();
+        if (str.startsWith("/") && str.endsWith("/") && str.length() > 2) return false;
+        return !str.startsWith("#") && !str.startsWith("+#");
+    }
+
+    private static boolean filterNeedsJson(JsonElement json) {
+        if (!json.isJsonObject()) return false;
+        JsonObject obj = json.getAsJsonObject();
+        for (String rawKey : obj.keySet()) {
+            if (IGNORED_KEYS.contains(rawKey)) continue;
+            String key = rawKey.trim().replaceAll(":$", "").trim();
+            if (IGNORED_KEYS.contains(key)) continue;
+            JsonElement criterion = obj.get(rawKey);
+            switch (key) {
+                case "not" -> {
+                    if (filterNeedsJson(criterion)) return true;
+                }
+                case "or", "and" -> {
+                    for (JsonElement e : criterion.getAsJsonArray()) {
+                        if (filterNeedsJson(e)) return true;
+                    }
+                }
+                case "mod", "id", "pattern", "patterns" -> {
+                }
+                case "type", "input", "reagent", "ingredient", "ingredients", "output", "result", "results" -> {
+                    return true;
+                }
+                default -> {
+                }
+            }
+        }
+        return false;
     }
 
     private static List<String> extractStrings(JsonElement element) {

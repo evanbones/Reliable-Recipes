@@ -294,7 +294,7 @@ public class DocsAndExamplesVerificationTest extends MinecraftTestBase {
             """;
             Files.writeString(dir.resolve("flint.json"), json);
 
-            Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
+            Map<Identifier, JsonElement> customRecipes = customRecipesById();
             Identifier id = Identifier.fromNamespaceAndPath("reliable_recipes", "flint_from_gravel");
             assertTrue(customRecipes.containsKey(id));
             assertEquals("minecraft:crafting_shapeless", customRecipes.get(id).getAsJsonObject().get("type").getAsString());
@@ -325,7 +325,7 @@ public class DocsAndExamplesVerificationTest extends MinecraftTestBase {
             """;
             Files.writeString(dir.resolve("dirt.json"), json);
 
-            Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
+            Map<Identifier, JsonElement> customRecipes = customRecipesById();
             Identifier id = Identifier.fromNamespaceAndPath("reliable_recipes", "dirt_to_stick");
             assertTrue(customRecipes.containsKey(id));
             assertEquals("minecraft:crafting_shapeless", customRecipes.get(id).getAsJsonObject().get("type").getAsString());
@@ -657,7 +657,7 @@ public class DocsAndExamplesVerificationTest extends MinecraftTestBase {
             assertEquals(2, rules.size());
             List<TagRule> tagRules = RecipeConfigIO.loadTagRules();
             assertEquals(1, tagRules.size());
-            Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
+            Map<Identifier, JsonElement> customRecipes = customRecipesById();
             assertEquals(1, customRecipes.size());
         }
 
@@ -688,7 +688,7 @@ public class DocsAndExamplesVerificationTest extends MinecraftTestBase {
             """;
             Files.writeString(dir.resolve("diamond_box.json"), json);
 
-            Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
+            Map<Identifier, JsonElement> customRecipes = customRecipesById();
             assertEquals(1, customRecipes.size());
             Identifier id = customRecipes.keySet().iterator().next();
             assertEquals("diamond_box", id.getPath());

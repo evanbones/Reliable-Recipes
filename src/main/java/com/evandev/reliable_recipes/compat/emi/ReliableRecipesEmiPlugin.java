@@ -49,6 +49,7 @@ import java.util.Optional;
 
 @EmiEntrypoint
 public class ReliableRecipesEmiPlugin implements EmiPlugin {
+    private static final JsonObject EMPTY_RECIPE_JSON = new JsonObject();
 
     @Override
     public void register(EmiRegistry registry) {
@@ -195,11 +196,12 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
         if (rules.isEmpty()) return false;
 
         Identifier recipeId = recipe.getId() != null ? recipe.getId() : Identifier.withDefaultNamespace("emi_recipe");
-        JsonObject recipeJson = createJsonFromEmiRecipe(recipe);
+        JsonObject recipeJson = null;
 
         for (RecipeRule rule : rules) {
             if (rule.getAction() == RecipeRule.Action.REMOVE) {
-                if (rule.testJson(recipeId, recipeJson)) {
+                if (recipeJson == null && rule.needsRecipeJson()) recipeJson = createJsonFromEmiRecipe(recipe);
+                if (rule.testJson(recipeId, recipeJson != null ? recipeJson : EMPTY_RECIPE_JSON)) {
                     return true;
                 }
             }

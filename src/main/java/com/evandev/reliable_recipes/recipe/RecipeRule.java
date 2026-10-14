@@ -24,6 +24,7 @@ public class RecipeRule {
     private final List<String> rawTargets;
     private final JsonElement rawReplacement;
     private List<String> literalIds = List.of();
+    private boolean needsRecipeJson = true;
 
     // Removals
     public RecipeRule(Action action, BiPredicate<Identifier, JsonObject> filter) {
@@ -127,6 +128,14 @@ public class RecipeRule {
 
     public void setLiteralIds(List<String> literalIds) {
         this.literalIds = List.copyOf(literalIds);
+    }
+
+    public boolean needsRecipeJson() {
+        return needsRecipeJson;
+    }
+
+    public void setNeedsRecipeJson(boolean needsRecipeJson) {
+        this.needsRecipeJson = needsRecipeJson;
     }
 
     public boolean targetsMatch(ItemStack stack) {

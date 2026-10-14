@@ -156,7 +156,7 @@ public class RecipeModifierTest extends MinecraftTestBase {
         Identifier id = Identifier.withDefaultNamespace("test_dirt");
         map.put(id, recipe);
 
-        RecipeModifier.modifyRecipesJson(map);
+        RecipeModifier.modifyRecipesJson(map, null, json -> true);
 
         JsonObject modified = map.get(id).getAsJsonObject();
         JsonArray ingredients = modified.getAsJsonArray("ingredients");

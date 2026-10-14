@@ -2,6 +2,8 @@ package com.evandev.reliable_recipes.test;
 
 import com.evandev.reliable_recipes.config.RecipeConfigIO;
 import com.evandev.reliable_recipes.platform.Services;
+import com.google.gson.JsonElement;
+import net.minecraft.resources.Identifier;
 import net.minecraft.SharedConstants;
 import net.minecraft.server.Bootstrap;
 import org.junit.jupiter.api.BeforeAll;
@@ -15,6 +17,8 @@ import net.minecraft.data.registries.VanillaRegistries;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public abstract class MinecraftTestBase {
     private static boolean bootstrapped = false;
@@ -43,5 +47,13 @@ public abstract class MinecraftTestBase {
         Path dir = Path.of("build", "tmp", "test-config");
         Files.createDirectories(dir);
         Services.configDirectoryOverride = dir;
+    }
+
+    protected static Map<Identifier, JsonElement> customRecipesById() {
+        Map<Identifier, JsonElement> byId = new LinkedHashMap<>();
+        for (RecipeConfigIO.CustomRecipe recipe : RecipeConfigIO.loadCustomRecipes()) {
+            byId.put(recipe.id(), recipe.json());
+        }
+        return byId;
     }
 }

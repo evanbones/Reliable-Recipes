@@ -45,6 +45,36 @@ public class RecipeRuleParserTest extends MinecraftTestBase {
     }
 
     @Test
+    @DisplayName("Id-only filters mix literal ids and regexes without needing recipe JSON")
+    void testIdOnlyFilterSkipsRecipeJson() {
+        RecipeRule idOnly = RecipeRuleParser.parseRule(JsonParser.parseString("""
+        {
+          "action": "remove_recipe",
+          "id": ["minecraft:wooden_pickaxe", "/minecraft:stone_.*/", "wooden_hoe"],
+          "not": { "mod": "othermod" }
+        }
+        """).getAsJsonObject());
+        assertNotNull(idOnly);
+        assertFalse(idOnly.needsRecipeJson());
+
+        JsonObject empty = new JsonObject();
+        assertTrue(idOnly.testJson(Identifier.withDefaultNamespace("wooden_pickaxe"), empty));
+        assertTrue(idOnly.testJson(Identifier.withDefaultNamespace("stone_axe"), empty));
+        assertTrue(idOnly.testJson(Identifier.withDefaultNamespace("wooden_hoe"), empty));
+        assertFalse(idOnly.testJson(Identifier.withDefaultNamespace("wooden_sword"), empty));
+        assertFalse(idOnly.testJson(Identifier.fromNamespaceAndPath("othermod", "wooden_hoe"), empty));
+
+        RecipeRule typed = RecipeRuleParser.parseRule(JsonParser.parseString("""
+        {
+          "action": "remove_recipe",
+          "or": [{ "id": "minecraft:stick" }, { "output": "minecraft:stick" }]
+        }
+        """).getAsJsonObject());
+        assertNotNull(typed);
+        assertTrue(typed.needsRecipeJson());
+    }
+
+    @Test
     @DisplayName("Parse remove_recipe with brewing type and input filter")
     void testParseRemoveBrewingRecipe() {
         String json = """

@@ -101,6 +101,41 @@ public class RecipeModifier {
         return item.builtInRegistryHolder().is(tagKey);
     }
 
+    /**
+     * The API replacements with each tag key also applied to the items in that tag, so recipes naming a tagged item
+     * directly are rewritten too.
+     */
+    public static Map<String, String> getExpandedReplacements() {
+        Map<String, String> replacements = ReliableRecipesAPI.getReplacements();
+        Map<String, String> expanded = new LinkedHashMap<>();
+        List<Identifier> excludedTags = new ArrayList<>();
+        for (Map.Entry<String, String> entry : replacements.entrySet()) {
+            if (!entry.getKey().equals(entry.getValue())) {
+                expanded.put(entry.getKey(), entry.getValue());
+            } else if (entry.getKey().startsWith("#")) {
+                Identifier tagId = Identifier.tryParse(entry.getKey().substring(1));
+                if (tagId != null) excludedTags.add(tagId);
+            }
+        }
+
+        for (Map.Entry<String, String> entry : replacements.entrySet()) {
+            String key = entry.getKey();
+            String replacement = entry.getValue();
+            if (!key.startsWith("#") || key.equals(replacement)) continue;
+            Identifier tagId = Identifier.tryParse(key.substring(1));
+            if (tagId == null) continue;
+
+            for (Item item : BuiltInRegistries.ITEM) {
+                if (!isItemInTag(item, tagId)) continue;
+                String itemId = BuiltInRegistries.ITEM.getKey(item).toString();
+                if (itemId.equals(replacement) || replacements.containsKey(itemId)) continue;
+                if (excludedTags.stream().anyMatch(excluded -> isItemInTag(item, excluded))) continue;
+                expanded.putIfAbsent(itemId, replacement);
+            }
+        }
+        return expanded;
+    }
+
     //? if <1.21.2 {
     /*/^*
      * Applies the configured rules to a map of raw recipe JSON (as found in data packs),
@@ -110,7 +145,7 @@ public class RecipeModifier {
         cachedRules = new ArrayList<>(RecipeConfigIO.loadRules());
         warnUnmatchedIds(cachedRules, map.keySet());
         Map<Identifier, JsonElement> newMap = new HashMap<>();
-        Map<String, String> globalReplacements = ReliableRecipesAPI.getReplacements();
+        Map<String, String> globalReplacements = getExpandedReplacements();
 
         for (Map.Entry<Identifier, JsonElement> entry : map.entrySet()) {
             Identifier id = entry.getKey();
@@ -433,7 +468,7 @@ public class RecipeModifier {
             cachedRules = new ArrayList<>(RecipeConfigIO.loadRules());
             applyGlobalRules();
 
-            Map<String, String> globalReplacements = ReliableRecipesAPI.getReplacements();
+            Map<String, String> globalReplacements = getExpandedReplacements();
             boolean needsJson = !cachedRules.isEmpty() || !globalReplacements.isEmpty() || ReliableRecipesAPI.hasItemHidingCapabilities();
 
             RecipeManagerAccessor managerAccessor = (RecipeManagerAccessor) manager;
@@ -452,7 +487,7 @@ public class RecipeModifier {
 
             for (RecipeHolder<?> recipeHolder : currentMap.values()) {
                 RecipeHolder<?> processed;
-                if (shouldHideRecipe(recipeHolder)) {
+                if (shouldHideRecipe(recipeHolder, globalReplacements)) {
                     processed = null;
                 } else if (!needsJson) {
                     processed = recipeHolder;
@@ -549,12 +584,14 @@ public class RecipeModifier {
         }
     }
 
-    private static boolean shouldHideRecipe(RecipeHolder<?> holder) {
+    private static boolean shouldHideRecipe(RecipeHolder<?> holder, Map<String, String> globalReplacements) {
         if (!ReliableRecipesAPI.hasItemHidingCapabilities()) return false;
         try {
             List<ItemStack> outputs = ReliableRecipesAPI.getRecipeResults(holder.value());
             for (ItemStack stack : outputs) {
-                if (!stack.isEmpty() && ReliableRecipesAPI.isItemHidden(stack)) {
+                // A replaced output is swapped when the JSON is processed, so the recipe survives
+                if (!stack.isEmpty() && !globalReplacements.containsKey(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString())
+                        && ReliableRecipesAPI.isItemHidden(stack)) {
                     return true;
                 }
             }

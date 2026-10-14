@@ -84,7 +84,7 @@ public class RecipeConfigIOTest extends MinecraftTestBase {
         assertEquals(1, tagRules.size());
         assertEquals(TagRule.Action.REMOVE_FROM_TAG, tagRules.get(0).action());
 
-        Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
+        Map<Identifier, JsonElement> customRecipes = customRecipesById();
         assertEquals(1, customRecipes.size());
         Identifier expectedId = Identifier.fromNamespaceAndPath("reliable_recipes", "flint_from_gravel");
         assertTrue(customRecipes.containsKey(expectedId));
@@ -118,7 +118,7 @@ public class RecipeConfigIOTest extends MinecraftTestBase {
         """;
         Files.writeString(subDir.resolve("diamond_from_sticks.json"), recipeJson);
 
-        Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
+        Map<Identifier, JsonElement> customRecipes = customRecipesById();
         assertEquals(1, customRecipes.size());
 
         Identifier key = customRecipes.keySet().iterator().next();
@@ -155,7 +155,7 @@ public class RecipeConfigIOTest extends MinecraftTestBase {
         """;
         Files.writeString(reliableRecipesDir.resolve("direct_add.json"), content);
 
-        Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
+        Map<Identifier, JsonElement> customRecipes = customRecipesById();
         assertEquals(1, customRecipes.size());
 
         Identifier id = Identifier.fromNamespaceAndPath("reliable_recipes", "dirt_to_stick");
@@ -201,7 +201,7 @@ public class RecipeConfigIOTest extends MinecraftTestBase {
         """;
         Files.writeString(reliableRecipesDir.resolve("multiple_recipes.json"), content);
 
-        Map<Identifier, JsonElement> customRecipes = RecipeConfigIO.loadCustomRecipes();
+        Map<Identifier, JsonElement> customRecipes = customRecipesById();
         assertEquals(3, customRecipes.size());
 
         Identifier idOne = Identifier.fromNamespaceAndPath("reliable_recipes", "recipe_one");
