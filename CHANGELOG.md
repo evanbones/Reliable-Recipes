@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.0] - 2026-10-17
+
+### Added
+
+- JEI integration on all versions:
+    - Custom anvil repair materials now show up in JEI, along with custom brewing recipes and replaced brewing
+      ingredients (up to 26.2).
+    - Recipes removed by rules, or that use hidden items, are now hidden from JEI.
+    - In dev mode, pressing Delete while hovering a recipe in JEI's recipe screen deletes it, and `/rrecipes_undo`
+      brings it back right away.
+
 ## [3.6.0] - 2026-10-13
 
 ### Fixed

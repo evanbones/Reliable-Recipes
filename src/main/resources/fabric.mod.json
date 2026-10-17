@@ -26,6 +26,9 @@
     ],
     "emi": [
       "com.evandev.reliable_recipes.compat.emi.ReliableRecipesEmiPlugin"
+    ],
+    "jei_mod_plugin": [
+      "com.evandev.reliable_recipes.compat.jei.ReliableRecipesJeiPlugin"
     ]
   },
   "mixins": [
@@ -42,6 +45,7 @@
     "yet_another_config_lib_v3": "*",
     "reliable_remover": "*",
     "emi": "*",
-    "rrv": "*"
+    "rrv": "*",
+    "jei": "*"
   }
 }

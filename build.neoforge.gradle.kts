@@ -76,6 +76,13 @@ repositories {
         }
     }
     maven {
+        name = "BlameJared (JEI)"
+        url = uri("https://maven.blamejared.com/")
+        content {
+            includeGroupAndSubgroups("mezz.jei")
+        }
+    }
+    maven {
         name = "Modrinth"
         url = uri("https://api.modrinth.com/maven")
         content {
@@ -136,9 +143,6 @@ tasks {
     withType<JavaExec>().configureEach {
         jvmArgs("-Dkotlinx.coroutines.debug=off")
     }
-
-    named("compileTestJava") { enabled = false }
-    named("test") { enabled = false }
 }
 
 dependencies {
@@ -148,6 +152,9 @@ dependencies {
     // EMI/RRV
     findProperty("deps.emi")?.let { implementation("dev.emi:emi-neoforge:$it") }
     findProperty("deps.rrv")?.let { implementation("cc.cassian.rrv:reliable-recipe-viewer-neoforge:$it") }
+
+    // JEI
+    compileOnly("mezz.jei:jei-${property("deps.minecraft")}-neoforge-api:${property("deps.jei")}")
 
     // Mixin Constraints
     compileOnly("com.moulberry:mixinconstraints:${property("deps.mixin_constraints")}")
@@ -207,6 +214,9 @@ publishMods {
         minecraftVersions.add(property("deps.minecraft") as String)
         minecraftVersions.addAll(additionalVersions)
         optional("yacl")
+        optional("rrv")
+        optional("emi")
+        optional("jei")
     }
 
     curseforge {
@@ -215,6 +225,9 @@ publishMods {
         minecraftVersions.add(property("deps.minecraft") as String)
         minecraftVersions.addAll(additionalVersions)
         optional("yacl")
+        optional("rrv")
+        optional("emi")
+        optional("jei")
         client = true
         server = true
     }

@@ -18,6 +18,7 @@
   ],
   "client": [
     "emi.EmiRecipeScreenMixin",
+    "jei.KeyboardHandlerJeiMixin",
     "minecraft.ClientPacketListenerMixin",
     "rrv.RrvRecipeScreenMixin"
   ],

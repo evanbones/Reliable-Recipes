@@ -1,6 +1,7 @@
 package com.evandev.reliable_recipes.client;
 
 import com.evandev.reliable_recipes.Constants;
+import com.evandev.reliable_recipes.compat.jei.JeiInteractions;
 import com.evandev.reliable_recipes.config.ConfigSync;
 import com.evandev.reliable_recipes.config.ModConfig;
 import com.evandev.reliable_recipes.platform.Services;
@@ -57,6 +58,11 @@ public class ClientRecipeSync {
         ItemStack icon = RrvInteractions.onRecipeRemoved(recipeKey);
         //?}
 
+        if (Services.PLATFORM.isModLoaded("jei")) {
+            ItemStack jeiIcon = JeiInteractions.onRecipeRemoved(recipeId);
+            if (icon.isEmpty()) icon = jeiIcon;
+        }
+
         showRemovalFeedback(recipeId, icon);
     }
 
@@ -66,10 +72,14 @@ public class ClientRecipeSync {
         //? if >=1.21.2 {
         RrvInteractions.onRecipeAdded(recipeHolder);
         //?}
+
+        if (Services.PLATFORM.isModLoaded("jei")) {
+            JeiInteractions.onRecipeAdded(CompatUtil.recipeId(recipeHolder));
+        }
     }
 
     /**
-     * Switches to the rule files the server sent. Does nothing in singleplayer since the server has the same config folder as the client.
+     * Switches to the rule files the server sent. Does nothing in singleplayer since the server has the same config folder as the client
      */
     public static void onConfigSynced(Map<String, List<ConfigSync.SyncedFile>> channels) {
         if (Minecraft.getInstance().hasSingleplayerServer()) return;
@@ -87,9 +97,6 @@ public class ClientRecipeSync {
         }
     }
 
-    /**
-     * Whether the connected server has Reliable Recipes, so the tags it sends already have the rules applied.
-     */
     public static boolean isServerAuthoritative() {
         return !Minecraft.getInstance().hasSingleplayerServer() && Services.PLATFORM.canSendToServer();
     }
@@ -110,6 +117,10 @@ public class ClientRecipeSync {
         *///?} else {
         RrvInteractions.refresh();
         //?}
+
+        if (Services.PLATFORM.isModLoaded("jei")) {
+            JeiInteractions.refresh();
+        }
     }
 
     private static void showRemovalFeedback(Identifier recipeId, ItemStack icon) {

@@ -78,6 +78,13 @@ repositories {
         }
     }
     maven {
+        name = "BlameJared (JEI)"
+        url = uri("https://maven.blamejared.com/")
+        content {
+            includeGroupAndSubgroups("mezz.jei")
+        }
+    }
+    maven {
         name = "Modrinth"
         url = uri("https://api.modrinth.com/maven")
         content {
@@ -102,11 +109,11 @@ dependencies {
     findProperty("deps.emi")?.let { modImplementation("dev.emi:emi-fabric:$it") }
     findProperty("deps.rrv")?.let { modImplementation("cc.cassian.rrv:reliable-recipe-viewer-fabric:$it") }
 
+    // JEI
+    modCompileOnly("mezz.jei:jei-${property("deps.minecraft")}-fabric-api:${property("deps.jei")}")
+
     // Mixin Constraints
     include(implementation("com.moulberry:mixinconstraints:${property("deps.mixin_constraints")}")!!)
-
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks {
@@ -129,9 +136,6 @@ tasks {
         jvmArgs("-Dkotlinx.coroutines.debug=off")
     }
 
-    test {
-        useJUnitPlatform()
-    }
 }
 
 loom {
@@ -193,6 +197,9 @@ publishMods {
         requires("fabric-api")
         optional("yacl")
         optional("modmenu")
+        optional("rrv")
+        optional("emi")
+        optional("jei")
     }
 
     curseforge {
@@ -203,6 +210,9 @@ publishMods {
         requires("fabric-api")
         optional("yacl")
         optional("modmenu")
+        optional("rrv")
+        optional("emi")
+        optional("jei")
         client = true
         server = true
     }

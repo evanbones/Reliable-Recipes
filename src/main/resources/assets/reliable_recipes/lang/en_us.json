@@ -21,13 +21,13 @@
   "config.reliable_recipes.title": "Reliable Recipes Config",
   "config.reliable_recipes.general": "General",
   "config.reliable_recipes.show_toast": "Show Toast",
-  "config.reliable_recipes.show_toast.tooltip": "Show a toast after removing a recipe through the recipe viewer (EMI/RRV)",
+  "config.reliable_recipes.show_toast.tooltip": "Show a toast after removing a recipe through the recipe viewer (EMI/JEI/RRV)",
   "config.reliable_recipes.show_chat_messages": "Show Chat Messages",
-  "config.reliable_recipes.show_chat_messages.tooltip": "Show chat feedback after removing a recipe through the recipe viewer (EMI/RRV)",
+  "config.reliable_recipes.show_chat_messages.tooltip": "Show chat feedback after removing a recipe through the recipe viewer (EMI/JEI/RRV)",
   "config.reliable_recipes.reload_rrv": "Reload Recipe Viewer After Removal",
   "config.reliable_recipes.reload_rrv.tooltip": "Reload the recipe viewer (EMI/RRV) immediately after recipe removal",
   "config.reliable_recipes.ignored_tags": "Ignored Tags",
   "config.reliable_recipes.ignored_tags.tooltip": "List of specific namespaced tags to retain when removing items with Reliable Remover",
   "config.reliable_recipes.dev_mode": "Enable Dev Mode",
-  "config.reliable_recipes.dev_mode.tooltip": "Allow deleting recipes by hovering them in the recipe viewer (EMI/RRV) and pressing Delete"
+  "config.reliable_recipes.dev_mode.tooltip": "Allow deleting recipes by hovering them in the recipe viewer (EMI/JEI/RRV) and pressing Delete"
 }

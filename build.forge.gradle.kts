@@ -79,6 +79,13 @@ repositories {
         }
     }
     maven {
+        name = "BlameJared (JEI)"
+        url = uri("https://maven.blamejared.com/")
+        content {
+            includeGroupAndSubgroups("mezz.jei")
+        }
+    }
+    maven {
         name = "Modrinth"
         url = uri("https://api.modrinth.com/maven")
         content {
@@ -154,9 +161,6 @@ tasks {
     withType<JavaExec>().configureEach {
         jvmArgs("-Dkotlinx.coroutines.debug=off")
     }
-
-    named("compileTestJava") { enabled = false }
-    named("test") { enabled = false }
 }
 
 dependencies {
@@ -167,6 +171,10 @@ dependencies {
 
     // EMI
     findProperty("deps.emi")?.let { modImplementation("dev.emi:emi-forge:$it") }
+
+    // JEI
+    modCompileOnly("mezz.jei:jei-${property("deps.minecraft")}-common-api:${property("deps.jei")}")
+    modCompileOnly("mezz.jei:jei-${property("deps.minecraft")}-forge-api:${property("deps.jei")}")
 
     // GregTech (don't ask)
     findProperty("deps.gtceu")?.let { modCompileOnly("maven.modrinth:gregtechceu-modern:$it") }
@@ -229,6 +237,8 @@ publishMods {
         minecraftVersions.add(property("deps.minecraft") as String)
         minecraftVersions.addAll(additionalVersions)
         optional("yacl")
+        optional("emi")
+        optional("jei")
     }
 
     curseforge {
@@ -237,6 +247,8 @@ publishMods {
         minecraftVersions.add(property("deps.minecraft") as String)
         minecraftVersions.addAll(additionalVersions)
         optional("yacl")
+        optional("emi")
+        optional("jei")
         client = true
         server = true
     }
