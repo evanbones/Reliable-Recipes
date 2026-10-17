@@ -462,6 +462,7 @@ public class ReliableRecipesJeiPlugin implements IModPlugin {
         return BuiltInRegistries.POTION.get(ResourceKey.create(Registries.POTION, potionId)).map(potion -> PotionContents.createItemStack(item, potion));
         //?}
     }
+    //?}
 
     @Override
     public Identifier getPluginUid() {
@@ -550,5 +551,4 @@ public class ReliableRecipesJeiPlugin implements IModPlugin {
             return typeId.getPath();
         }
     }
-    //?}
 }
