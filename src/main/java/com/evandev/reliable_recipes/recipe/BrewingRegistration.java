@@ -17,35 +17,49 @@ import net.minecraftforge.registries.RegisterEvent;
 public class BrewingRegistration {
     public static void registerFabric() {
         //? if <=26.2 {
-        Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, Identifier.withDefaultNamespace("brewing"), BrewingRecipe.SERIALIZER);
-        Registry.register(BuiltInRegistries.RECIPE_TYPE, Identifier.withDefaultNamespace("brewing"), BrewingRecipe.TYPE);
+        Identifier brewingId = Identifier.withDefaultNamespace("brewing");
+        if (!BuiltInRegistries.RECIPE_SERIALIZER.containsKey(brewingId))
+            Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, brewingId, BrewingRecipe.SERIALIZER);
+        if (!BuiltInRegistries.RECIPE_TYPE.containsKey(brewingId))
+            Registry.register(BuiltInRegistries.RECIPE_TYPE, brewingId, BrewingRecipe.TYPE);
         //?}
         //? if <1.21.2 {
-        /*Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, Identifier.withDefaultNamespace("crafting_transmute"), TransmuteRecipe.SERIALIZER);
-        Registry.register(BuiltInRegistries.RECIPE_TYPE, Identifier.withDefaultNamespace("crafting_transmute"), TransmuteRecipe.TYPE);
+        /*Identifier transmuteId = Identifier.withDefaultNamespace("crafting_transmute");
+        if (!BuiltInRegistries.RECIPE_SERIALIZER.containsKey(transmuteId))
+            Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, transmuteId, TransmuteRecipe.SERIALIZER);
+        if (!BuiltInRegistries.RECIPE_TYPE.containsKey(transmuteId))
+            Registry.register(BuiltInRegistries.RECIPE_TYPE, transmuteId, TransmuteRecipe.TYPE);
         *///?}
     }
 
     //? if <=26.2 && neoforge {
     /*public static void registerNeoForge(RegisterEvent event) {
-        event.register(Registries.RECIPE_SERIALIZER, Identifier.withDefaultNamespace("brewing"), () -> BrewingRecipe.SERIALIZER);
-        event.register(Registries.RECIPE_TYPE, Identifier.withDefaultNamespace("brewing"), () -> BrewingRecipe.TYPE);
+        Identifier brewingId = Identifier.withDefaultNamespace("brewing");
+        if (!BuiltInRegistries.RECIPE_SERIALIZER.containsKey(brewingId))
+            event.register(Registries.RECIPE_SERIALIZER, brewingId, () -> BrewingRecipe.SERIALIZER);
+        if (!BuiltInRegistries.RECIPE_TYPE.containsKey(brewingId))
+            event.register(Registries.RECIPE_TYPE, brewingId, () -> BrewingRecipe.TYPE);
         //? if <1.21.2 {
-        /^event.register(Registries.RECIPE_SERIALIZER, Identifier.withDefaultNamespace("crafting_transmute"), () -> TransmuteRecipe.SERIALIZER);
-        event.register(Registries.RECIPE_TYPE, Identifier.withDefaultNamespace("crafting_transmute"), () -> TransmuteRecipe.TYPE);
+        /^Identifier transmuteId = Identifier.withDefaultNamespace("crafting_transmute");
+        if (!BuiltInRegistries.RECIPE_SERIALIZER.containsKey(transmuteId))
+            event.register(Registries.RECIPE_SERIALIZER, transmuteId, () -> TransmuteRecipe.SERIALIZER);
+        if (!BuiltInRegistries.RECIPE_TYPE.containsKey(transmuteId))
+            event.register(Registries.RECIPE_TYPE, transmuteId, () -> TransmuteRecipe.TYPE);
         ^///?}
     }
     *///?}
     //? if forge {
     /*public static void registerForge(RegisterEvent event) {
-        event.register(Registries.RECIPE_SERIALIZER, Identifier.withDefaultNamespace("brewing"), () -> BrewingRecipe.SERIALIZER);
-        event.register(Registries.RECIPE_TYPE, Identifier.withDefaultNamespace("brewing"), () -> BrewingRecipe.TYPE);
-        event.register(Registries.RECIPE_SERIALIZER, Identifier.withDefaultNamespace("crafting_transmute"), () -> TransmuteRecipe.SERIALIZER);
-        event.register(Registries.RECIPE_TYPE, Identifier.withDefaultNamespace("crafting_transmute"), () -> TransmuteRecipe.TYPE);
+        Identifier brewingId = Identifier.withDefaultNamespace("brewing");
+        if (!BuiltInRegistries.RECIPE_SERIALIZER.containsKey(brewingId))
+            event.register(Registries.RECIPE_SERIALIZER, brewingId, () -> BrewingRecipe.SERIALIZER);
+        if (!BuiltInRegistries.RECIPE_TYPE.containsKey(brewingId))
+            event.register(Registries.RECIPE_TYPE, brewingId, () -> BrewingRecipe.TYPE);
+        Identifier transmuteId = Identifier.withDefaultNamespace("crafting_transmute");
+        if (!BuiltInRegistries.RECIPE_SERIALIZER.containsKey(transmuteId))
+            event.register(Registries.RECIPE_SERIALIZER, transmuteId, () -> TransmuteRecipe.SERIALIZER);
+        if (!BuiltInRegistries.RECIPE_TYPE.containsKey(transmuteId))
+            event.register(Registries.RECIPE_TYPE, transmuteId, () -> TransmuteRecipe.TYPE);
     }
     *///?}
-    //? if >26.2 || fabric {
-    public static void registerNeoForge(Object event) {
-    }
-    //?}
 }

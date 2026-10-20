@@ -15,7 +15,7 @@ import java.util.Set;
 public class RecipeJsonMutator {
 
     public enum IngredientFormat {
-        OBJECT(Set.of("result", "results", "output"), Set.of(), false),
+        OBJECT(Set.of("result", "results", "output", "outputs"), Set.of(), false),
         STRING(Set.of("result", "results", "output", "outputs"),
                 Set.of("ingredients", "ingredient", "key", "base", "addition", "input", "inputs", "reagent", "material"),
                 true);
@@ -184,7 +184,7 @@ public class RecipeJsonMutator {
 
     private static Expansion replaceObject(JsonObject obj, Map<String, JsonElement> reps, boolean output, IngredientFormat format) {
         JsonElement wildcard = output ? wildcard(reps) : null;
-        if (wildcard != null && wildcard.isJsonObject()) return Expansion.single(wildcard.deepCopy());
+        if (wildcard != null && wildcard.isJsonObject() && namesItem(obj)) return Expansion.single(wildcard.deepCopy());
 
         ObjectMatch match = matchObject(obj, reps, wildcard);
         if (match == null) return null;
@@ -223,6 +223,13 @@ public class RecipeJsonMutator {
             if (reps.containsKey(tagValue)) return new ObjectMatch("tag", reps.get(tagValue));
         }
         return null;
+    }
+
+    private static boolean namesItem(JsonObject obj) {
+        for (String key : OBJECT_ITEM_KEYS) {
+            if (isString(obj.get(key))) return true;
+        }
+        return isString(obj.get("tag"));
     }
 
     private static boolean replaceStringField(JsonObject obj, String key, String value, Map<String, JsonElement> reps, boolean output, IngredientFormat format) {

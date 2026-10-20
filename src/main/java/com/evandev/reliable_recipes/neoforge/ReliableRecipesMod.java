@@ -29,7 +29,6 @@ import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
-import net.neoforged.neoforge.registries.RegisterEvent;
 import org.jetbrains.annotations.NotNull;
 
 @Mod(Constants.MOD_ID)
@@ -40,7 +39,9 @@ public class ReliableRecipesMod {
         ModConfig.load();
         ConfigSync.register(Constants.MOD_ID, RecipeConfigIO::createSyncSnapshot, RecipeConfigIO::invalidateCache);
 
-        eventBus.addListener(ReliableRecipesMod::registerRegistries);
+        //? if <=26.2 {
+        eventBus.addListener(BrewingRegistration::registerNeoForge);
+        //?}
         eventBus.addListener(ReliableRecipesMod::registerPayloadHandlers);
 
         eventBus.register(new Object() {
@@ -59,10 +60,6 @@ public class ReliableRecipesMod {
                 }
             }
         });
-    }
-
-    public static void registerRegistries(RegisterEvent event) {
-        BrewingRegistration.registerNeoForge(event);
     }
 
     @SubscribeEvent

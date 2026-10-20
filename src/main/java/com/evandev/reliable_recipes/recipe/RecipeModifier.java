@@ -295,8 +295,15 @@ public class RecipeModifier {
                     }
                 }
             }
+            for (JsonElement content : getCapabilityItemContents(jsonObject, "outputs")) {
+                if (isIngredientHidden(content, isItemHidden)) return true;
+            }
 
             if (!checkInputs) return false;
+
+            for (JsonElement content : getCapabilityItemContents(jsonObject, "inputs")) {
+                if (isIngredientHidden(content, isItemHidden)) return true;
+            }
 
             if (jsonObject.has("key") && jsonObject.get("key").isJsonObject()) {
                 for (Map.Entry<String, JsonElement> slot : jsonObject.getAsJsonObject("key").entrySet()) {
@@ -321,6 +328,23 @@ public class RecipeModifier {
         } catch (Exception ignored) {
         }
         return false;
+    }
+
+    /**
+     * Collects the item ingredients of a GregTech-style recipe, which keys its {@code inputs}/{@code outputs} by
+     * capability and wraps each ingredient in a {@code content} object.
+     */
+    private static List<JsonElement> getCapabilityItemContents(JsonObject recipeJson, String key) {
+        List<JsonElement> contents = new ArrayList<>();
+        if (!recipeJson.has(key) || !recipeJson.get(key).isJsonObject()) return contents;
+        JsonElement items = recipeJson.getAsJsonObject(key).get("item");
+        if (items == null || !items.isJsonArray()) return contents;
+        for (JsonElement entry : items.getAsJsonArray()) {
+            if (entry.isJsonObject() && entry.getAsJsonObject().has("content")) {
+                contents.add(entry.getAsJsonObject().get("content"));
+            }
+        }
+        return contents;
     }
 
     private static boolean isIngredientHidden(JsonElement element, Predicate<String> isItemHidden) {

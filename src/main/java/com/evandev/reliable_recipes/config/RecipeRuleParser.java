@@ -33,7 +33,7 @@ public class RecipeRuleParser {
             "action", "target", "replacement", "material", "items", "tags", "tag", "filter"
     );
 
-    private static final Set<String> NON_INPUT_KEYS = Set.of("result", "output", "results", SYNTHETIC_TYPE_KEY, SYNTHETIC_RESULTS_KEY);
+    private static final Set<String> NON_INPUT_KEYS = Set.of("result", "output", "results", "outputs", SYNTHETIC_TYPE_KEY, SYNTHETIC_RESULTS_KEY);
 
     public static RecipeRule parseRule(JsonObject mod) {
         if (!mod.has("action")) {
@@ -206,7 +206,8 @@ public class RecipeRuleParser {
                         yield (id, recipe) -> {
                             JsonElement res = recipe.has("result") ? recipe.get("result") :
                                     (recipe.has("results") ? recipe.get("results") :
-                                            (recipe.has("output") ? recipe.get("output") : recipe.get(SYNTHETIC_RESULTS_KEY)));
+                                            (recipe.has("output") ? recipe.get("output") :
+                                                    (recipe.has("outputs") ? recipe.get("outputs") : recipe.get(SYNTHETIC_RESULTS_KEY))));
                             return jsonContainsValue(res, matcher);
                         };
                     }
