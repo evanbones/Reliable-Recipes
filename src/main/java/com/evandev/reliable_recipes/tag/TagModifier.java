@@ -52,12 +52,14 @@ public class TagModifier {
         List<TagRule> removeAllRules = new ArrayList<>();
         List<TagRule> removeFromTagRules = new ArrayList<>();
         List<TagRule> clearTagRules = new ArrayList<>();
+        List<TagRule> addToTagRules = new ArrayList<>();
 
         for (TagRule rule : rules) {
             switch (rule.action()) {
                 case REMOVE_ALL_TAGS -> removeAllRules.add(rule);
                 case REMOVE_FROM_TAG -> removeFromTagRules.add(rule);
                 case CLEAR_TAG -> clearTagRules.add(rule);
+                case ADD_TO_TAG -> addToTagRules.add(rule);
             }
         }
 
@@ -131,6 +133,25 @@ public class TagModifier {
 
         if (removalCount > 0) {
             Constants.LOG.info("TagModifier removed {} {}-tag associations.", removalCount, debugName);
+        }
+
+        if (!addToTagRules.isEmpty()) {
+            int additionCount = 0;
+            for (HolderSet.Named<T> tag : getAllTags(registry)) {
+                Identifier tagId = tag.key().location();
+                Set<T> toAdd = new LinkedHashSet<>();
+                for (TagRule rule : addToTagRules) {
+                    if (!rule.tagMatcher().test(tagId)) continue;
+                    for (T object : registry) {
+                        Identifier id = registry.getKey(object);
+                        if (id != null && rule.itemMatcher().test(id)) toAdd.add(object);
+                    }
+                }
+                additionCount += batchAddToTag(registry, tag, toAdd);
+            }
+            if (additionCount > 0) {
+                Constants.LOG.info("TagModifier added {} {}-tag associations.", additionCount, debugName);
+            }
         }
     }
 
@@ -235,6 +256,36 @@ public class TagModifier {
             return toRemove.size();
         }
         return 0;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> int batchAddToTag(Registry<T> registry, HolderSet.Named<T> tag, Set<T> valuesToAdd) {
+        if (valuesToAdd.isEmpty() || !(tag instanceof HolderSetNamedAccessor accessor)) return 0;
+
+        List<Holder<T>> currentContents = (List<Holder<T>>) (Object) accessor.getContents();
+        List<Holder<T>> mutableContents = currentContents != null ? new ArrayList<>(currentContents) : new ArrayList<>();
+        Set<T> present = new HashSet<>();
+        for (Holder<T> holder : mutableContents) present.add(holder.value());
+
+        int added = 0;
+        for (T value : valuesToAdd) {
+            if (present.contains(value)) continue;
+            //? if <1.19.3 {
+            /*Holder<T> holder = registry.getHolderOrThrow(registry.getResourceKey(value).orElseThrow());
+            *///?} else {
+            Holder<T> holder = registry.wrapAsHolder(value);
+            //?}
+            mutableContents.add(holder);
+            if (holder instanceof Holder.Reference<?> ref && ref instanceof HolderReferenceAccessor refAccessor) {
+                Set<TagKey<?>> tags = new HashSet<>(refAccessor.getTags());
+                tags.add(tag.key());
+                refAccessor.setTags(Set.copyOf(tags));
+            }
+            added++;
+        }
+
+        if (added > 0) accessor.setContents((List<Holder<?>>) (Object) mutableContents);
+        return added;
     }
 
     private static void clearTag(Object tag) {

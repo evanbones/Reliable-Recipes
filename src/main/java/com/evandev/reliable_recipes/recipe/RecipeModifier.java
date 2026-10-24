@@ -64,7 +64,7 @@ public class RecipeModifier {
      *///?}
 
     //? if <1.21.2 {
-    /*public static void modifyRecipesJson(Map<Identifier, JsonElement> map, ResourceManager resourceManager, Predicate<JsonObject> recipeConditions) {
+    /*public static Map<Identifier, JsonElement> modifyRecipesJson(Map<Identifier, JsonElement> map, ResourceManager resourceManager, Predicate<JsonObject> recipeConditions) {
         if (resourceManager != null) {
             try {
                 //? if <1.21 {
@@ -84,6 +84,10 @@ public class RecipeModifier {
         }
         try {
             modifyRecipesJson(map, recipeConditions);
+            List<RecipeRule> rules = RecipeConfigIO.loadRules();
+            Map<String, String> globalReplacements = getExpandedReplacements();
+            return new LateRecipeFilterMap(map, (id, element) -> !element.isJsonObject()
+                    || processRecipeJson(id, element.getAsJsonObject(), rules, globalReplacements, false));
         } finally {
             currentItemTags = null;
         }

@@ -45,7 +45,7 @@ public class RecipeRuleParser {
             return null;
         }
 
-        if (Set.of("remove_all_tags", "remove_tag", "remove_from_tag", "clear_tag").contains(actionStr)) {
+        if (Set.of("remove_all_tags", "remove_tag", "remove_from_tag", "clear_tag", "add_to_tag").contains(actionStr)) {
             return null;
         }
 
@@ -143,6 +143,7 @@ public class RecipeRuleParser {
                     new TagRule(TagRule.Action.REMOVE_ALL_TAGS, itemMatcher, rl -> false);
             case "remove_from_tag" -> new TagRule(TagRule.Action.REMOVE_FROM_TAG, itemMatcher, tagMatcher);
             case "clear_tag" -> new TagRule(TagRule.Action.CLEAR_TAG, rl -> false, tagMatcher);
+            case "add_to_tag" -> new TagRule(TagRule.Action.ADD_TO_TAG, itemMatcher, tagMatcher);
             default -> throw new IllegalArgumentException("Unknown tag action: " + actionStr);
         };
     }

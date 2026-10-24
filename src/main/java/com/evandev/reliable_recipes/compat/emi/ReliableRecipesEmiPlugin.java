@@ -23,6 +23,8 @@ import dev.emi.emi.recipe.special.EmiAnvilRepairItemRecipe;
 import dev.emi.emi.recipe.special.EmiGrindstoneDisenchantingBookRecipe;
 import dev.emi.emi.recipe.special.EmiGrindstoneDisenchantingRecipe;
 import dev.emi.emi.recipe.special.EmiRepairItemRecipe;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -35,7 +37,6 @@ import net.minecraft.world.item.crafting.Ingredient;
 //? if <1.21 {
 /^import net.minecraft.world.item.alchemy.PotionUtils;
 ^///?} else {
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -195,6 +196,7 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
         List<RecipeRule> rules = RecipeConfigIO.loadRules();
         if (rules.isEmpty()) return false;
 
+        if (recipe.getId() != null && isKeptByServer(recipe.getId())) return false;
         Identifier recipeId = recipe.getId() != null ? recipe.getId() : Identifier.withDefaultNamespace("emi_recipe");
         JsonObject recipeJson = null;
 
@@ -207,6 +209,11 @@ public class ReliableRecipesEmiPlugin implements EmiPlugin {
             }
         }
         return false;
+    }
+
+    private static boolean isKeptByServer(Identifier id) {
+        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        return connection != null && connection.getRecipeManager().byKey(id).isPresent();
     }
 
     private JsonObject createJsonFromEmiRecipe(EmiRecipe recipe) {

@@ -13,8 +13,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.crafting.RecipeManager;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 import java.util.Map;
 *///?}
@@ -24,13 +23,14 @@ import java.util.Map;
 public class RecipeManagerMixin {
 
     //? if <1.21.2 {
-    /*@Inject(
+    /*@ModifyVariable(
             method = "apply(Ljava/util/Map;Lnet/minecraft/server/packs/resources/ResourceManager;Lnet/minecraft/util/profiling/ProfilerFiller;)V",
-            at = @At("HEAD")
+            at = @At("HEAD"),
+            argsOnly = true
     )
-    private void reliableRecipes$filterJsonAndReset(Map<Identifier, JsonElement> object, ResourceManager resourceManager, ProfilerFiller profiler, CallbackInfo ci) {
+    private Map<Identifier, JsonElement> reliableRecipes$filterJsonAndReset(Map<Identifier, JsonElement> object, Map<Identifier, JsonElement> unused, ResourceManager resourceManager, ProfilerFiller profiler) {
         RecipeConfigIO.invalidateCache();
-        RecipeModifier.modifyRecipesJson(object, resourceManager, Services.PLATFORM.recipeConditions((RecipeManager) (Object) this));
+        return RecipeModifier.modifyRecipesJson(object, resourceManager, Services.PLATFORM.recipeConditions((RecipeManager) (Object) this));
     }
     *///?}
 }

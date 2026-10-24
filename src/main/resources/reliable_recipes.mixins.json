@@ -13,6 +13,7 @@
     "minecraft.ItemMixin",
     "minecraft.PotionBrewingMixin",
     "minecraft.RecipeManagerMixin",
+    "minecraft.RecipeManagerResultMixin",
     "minecraft.ReloadableServerResourcesMixin",
     "minecraft.RepairItemRecipeMixin"
   ],

@@ -238,6 +238,7 @@ public class ReliableRecipesJeiPlugin implements IModPlugin {
 
     private static boolean matchesUserRemovalRule(RecipeView recipe, List<RecipeRule> rules) {
         if (rules.isEmpty()) return false;
+        if (recipe.id() != null && isKeptByServer(recipe.id())) return false;
 
         Identifier recipeId = recipe.id() != null ? recipe.id() : Identifier.withDefaultNamespace("jei_recipe");
         JsonObject recipeJson = null;
@@ -251,6 +252,15 @@ public class ReliableRecipesJeiPlugin implements IModPlugin {
             }
         }
         return false;
+    }
+
+    private static boolean isKeptByServer(Identifier id) {
+        //? if <1.21.2 {
+        /*net.minecraft.client.multiplayer.ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        return connection != null && connection.getRecipeManager().byKey(id).isPresent();
+        *///?} else {
+        return false;
+        //?}
     }
 
     private static JsonObject createRecipeJson(RecipeView recipe) {

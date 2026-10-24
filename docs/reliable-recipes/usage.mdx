@@ -47,9 +47,9 @@ Configuration files can define rules within a single top-level JSON array. Each 
     "recipe": {
       "type": "minecraft:crafting_shapeless",
       "ingredients": [
-        { "item": "minecraft:gravel" },
-        { "item": "minecraft:gravel" },
-        { "item": "minecraft:gravel" }
+        "minecraft:gravel",
+        "minecraft:gravel",
+        "minecraft:gravel"
       ],
       "result": {
         "count": 1,
@@ -60,6 +60,10 @@ Configuration files can define rules within a single top-level JSON array. Each 
 ]
 ```
 
+<Callout variant='info'>
+Recipes use the same JSON format as data pack recipes for your Minecraft version. See [Recipe formats by version](#recipe-formats-by-version) below.
+</Callout>
+
 ### 2. Standalone Recipe Files
 
 You can drop arbitrary standard Minecraft or modded recipe JSON files directly into `./config/reliable_recipes/` (or any subfolder, e.g. `./config/reliable_recipes/recipes/crafting/my_recipe.json`):
@@ -69,11 +73,11 @@ You can drop arbitrary standard Minecraft or modded recipe JSON files directly i
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "#": { "item": "minecraft:stick" }
+    "#": "minecraft:stick"
   },
   "pattern": [
     "###",
-    "###",
+    "# #",
     "###"
   ],
   "result": {
@@ -86,3 +90,46 @@ You can drop arbitrary standard Minecraft or modded recipe JSON files directly i
 * **Recipe ID:** If you provide an `"id"` field (e.g. `"id": "reliable_recipes:my_recipe"` or `"id": "minecraft:cake"`), that ID will be used. Providing an existing recipe ID overrides the existing recipe. If `"id"` is omitted, Reliable Recipes automatically derives an ID from the relative file path.
 * **Overriding Recipes:** Files laid out like a data pack override the recipe they mirror. If no such recipe exists, the file is added as a new recipe under the `reliable_recipes` namespace instead.
 * **Load Conditions:** Fabric's `"fabric:load_conditions"` and NeoForge's `"neoforge:conditions"` are respected. A recipe whose conditions fail is skipped, leaving any recipe it would have overridden in place.
+
+## Recipe formats by version
+
+Custom recipes are read by Minecraft's own recipe reader, so they have to match the data pack format of the version you're playing. The ingredient format changed in 1.21.2:
+
+| | 1.21.2 and newer (incl. 26.x) | 1.21.1 and older |
+|---|---|---|
+| Item | `"minecraft:stick"` | `{ "item": "minecraft:stick" }` |
+| Tag | `"#minecraft:planks"` | `{ "tag": "minecraft:planks" }` |
+| Any of several | `["minecraft:stick", "minecraft:bamboo"]` | `[{ "item": "minecraft:stick" }, { "item": "minecraft:bamboo" }]` |
+
+The same shaped recipe in the older format:
+
+```json
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": { "item": "minecraft:stick" }
+  },
+  "pattern": [
+    "###",
+    "# #",
+    "###"
+  ],
+  "result": {
+    "count": 1,
+    "id": "minecraft:diamond"
+  }
+}
+```
+
+A few rules for shaped recipes:
+
+* A space in `pattern` is an empty slot. It doesn't need a `key` entry.
+* Every symbol in `pattern` needs a `key` entry, and every `key` entry has to be used in `pattern`.
+* Patterns can be smaller than 3x3 (e.g. `["#", "#"]` for a 1x2 recipe).
+
+If a recipe doesn't show up, check the log for `Failed to parse custom recipe`. The message says which part Minecraft rejected.
+
+### Modded recipe types
+
+Modded recipe types work the same way. Copy the format from one of the mod's own recipes (they're in the mod's jar under `data/<modid>/recipe/` or `data/<modid>/recipes/`), including any extra fields the mod uses. Giving the recipe the same `id` as one of the mod's recipes replaces it.

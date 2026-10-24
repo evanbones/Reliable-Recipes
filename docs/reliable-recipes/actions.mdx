@@ -162,6 +162,8 @@ Creates a brand new recipe. You can define custom recipes within your rule array
 * **`id`** (Optional): A custom identifier for the recipe (e.g. `"reliable_recipes:my_recipe"`). If an existing recipe ID is provided, it replaces the existing recipe.
 * **`recipe`** (Optional): A JSON object containing the recipe definition.
 
+The recipe itself uses your Minecraft version's data pack format. These examples use the 1.21.2+ format, where ingredients are plain item IDs or `#tags`. On 1.21.1 and older, write them as `{ "item": "minecraft:gravel" }` or `{ "tag": "minecraft:planks" }`. See [Recipe formats by version](usage#recipe-formats-by-version).
+
 **Example 1: Using the `recipe` wrapper**
 ```json
 [
@@ -171,9 +173,9 @@ Creates a brand new recipe. You can define custom recipes within your rule array
     "recipe": {
       "type": "minecraft:crafting_shapeless",
       "ingredients": [
-        { "item": "minecraft:gravel" },
-        { "item": "minecraft:gravel" },
-        { "item": "minecraft:gravel" }
+        "minecraft:gravel",
+        "minecraft:gravel",
+        "minecraft:gravel"
       ],
       "result": {
         "count": 1,
@@ -192,7 +194,7 @@ Creates a brand new recipe. You can define custom recipes within your rule array
     "id": "reliable_recipes:dirt_to_stick",
     "type": "minecraft:crafting_shapeless",
     "ingredients": [
-      { "item": "minecraft:dirt" }
+      "minecraft:dirt"
     ],
     "result": {
       "count": 4,

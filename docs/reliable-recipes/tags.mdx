@@ -3,8 +3,10 @@ title: Tags
 hide_meta: true
 ---
 
-The configuration file allows you to strip tags from items using specific tag arrays.
-This is extremely useful for cleaning up recipe viewers (JEI/EMI) or removing unobtainable items from tag groups.
+Tag actions add items to tags or take them out.
+This is useful for cleaning up recipe viewers (JEI/EMI), removing unobtainable items from tag groups, or letting an item stand in for others in tag-based recipes.
+
+Tag actions apply to both item and block tags with the given ID.
 
 ## Action: `remove_all_tags` (or `remove_tag`)
 Removes **all** tags from the specified items. This effectively orphans the item from tag-based recipe lookups.
@@ -60,3 +62,29 @@ This is useful for clearing out mod-added tags that you want to disable entirely
 ]
 
 ```
+
+## Action: `add_to_tag`
+
+Adds items to one or more **existing** tags. The items keep their other tags.
+Any recipe that uses the tag accepts the added items too.
+
+**Example:** Let bamboo planks count as wooden planks and logs as wooden rods.
+
+```json
+[
+  {
+    "action": "add_to_tag",
+    "tag": "minecraft:planks",
+    "id": "minecraft:bamboo_planks"
+  },
+  {
+    "action": "add_to_tag",
+    "tags": ["c:rods/wooden"],
+    "id": ["minecraft:oak_log", "minecraft:birch_log"]
+  }
+]
+```
+
+<Callout variant='info'>
+`add_to_tag` can only add to tags that already exist. To create a new tag, use a data pack.
+</Callout>
