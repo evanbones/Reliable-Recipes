@@ -137,7 +137,7 @@ public class RecipeModifier {
                 expanded.putIfAbsent(itemId, replacement);
             }
         }
-        return expanded;
+        return new GlobalReplacements(expanded);
     }
 
     //? if <1.21.2 {
@@ -246,8 +246,12 @@ public class RecipeModifier {
      * @return false if the recipe should be removed.
      */
     private static boolean processCustomRecipeJson(JsonObject recipeJson, Map<String, String> globalReplacements, boolean checkInputs) {
-        for (Map.Entry<String, String> rep : globalReplacements.entrySet()) {
-            applyGlobalReplacement(recipeJson, rep.getKey(), rep.getValue());
+        if (globalReplacements instanceof GlobalReplacements indexed) {
+            indexed.applyTo(recipeJson);
+        } else {
+            for (Map.Entry<String, String> rep : globalReplacements.entrySet()) {
+                applyGlobalReplacement(recipeJson, rep.getKey(), rep.getValue());
+            }
         }
 
         return !ReliableRecipesAPI.hasItemHidingCapabilities() || !shouldHideRecipeJson(recipeJson, RecipeModifier::isItemHidden, checkInputs);
