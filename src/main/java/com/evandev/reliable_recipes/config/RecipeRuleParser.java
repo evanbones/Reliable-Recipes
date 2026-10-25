@@ -62,15 +62,23 @@ public class RecipeRuleParser {
         }
 
         JsonElement filterEl = mod.has("filter") ? mod.get("filter") : mod;
-        if (actionStr.equals("remove_output") && filterEl.isJsonObject()) {
+        if (filterEl.isJsonObject()) {
             JsonObject filterObj = filterEl.getAsJsonObject();
-            if (filterObj.has("target") && !filterObj.has("output") && !filterObj.has("result") && !filterObj.has("results")) {
+            String outputAlias = null;
+            if (actionStr.equals("remove_output") && filterObj.has("target")) outputAlias = "target";
+            else if (Set.of("remove", "remove_recipe", "remove_output").contains(actionStr) && filterObj.has("items")) outputAlias = "items";
+            if (outputAlias != null && !filterObj.has("output") && !filterObj.has("result") && !filterObj.has("results")) {
                 JsonObject adjusted = filterObj.deepCopy();
-                adjusted.add("output", adjusted.get("target"));
+                adjusted.add("output", adjusted.get(outputAlias));
                 filterEl = adjusted;
             }
         }
         BiPredicate<Identifier, JsonObject> filter = parseFilter(filterEl);
+
+        if (Set.of("remove", "remove_recipe", "remove_output").contains(actionStr) && !hasFilterCriteria(filterEl)) {
+            Constants.LOG.warn("Ignoring '{}' rule with no filter criteria (use keys like 'id', 'output' or 'input'): {}", actionStr, mod);
+            return null;
+        }
 
         RecipeRule rule = switch (actionStr) {
             case "remove", "remove_recipe", "remove_output" -> new RecipeRule(RecipeRule.Action.REMOVE, filter);
@@ -355,6 +363,15 @@ public class RecipeRuleParser {
         String str = element.getAsString();
         if (str.startsWith("/") && str.endsWith("/") && str.length() > 2) return false;
         return !str.startsWith("#") && !str.startsWith("+#");
+    }
+
+    private static boolean hasFilterCriteria(JsonElement json) {
+        if (!json.isJsonObject()) return false;
+        for (String rawKey : json.getAsJsonObject().keySet()) {
+            String key = rawKey.trim().replaceAll(":$", "").trim();
+            if (!IGNORED_KEYS.contains(rawKey) && !IGNORED_KEYS.contains(key)) return true;
+        }
+        return false;
     }
 
     private static boolean filterNeedsJson(JsonElement json) {

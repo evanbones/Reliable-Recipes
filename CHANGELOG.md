@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.2] - 2026-10-25
+
+### Added
+
+- `items` can now be used in place of `output` on `remove_recipe` rules.
+
+### Fixed
+
+- `remove_recipe` rules with nothing to filter by no longer remove every recipe. They are now skipped with a warning in
+  the log.
+
 ## [3.8.1] - 2026-10-25
 
 ### Fixed
