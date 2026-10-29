@@ -240,7 +240,7 @@ public class TagModifier {
         }
 
         if (!toRemove.isEmpty()) {
-            mutableContents.removeAll(toRemove);
+            mutableContents.removeAll(new HashSet<>(toRemove));
             accessor.setContents((List<Holder<?>>) (Object) mutableContents);
 
             if (updateHolderReference) {
